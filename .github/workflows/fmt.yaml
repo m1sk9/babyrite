@@ -1,0 +1,30 @@
+name: rustfmt
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/v*.*.*'
+  pull_request:
+    branches:
+      - main
+      - 'release/v*.*.*'
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    name: rustfmt babyrite
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "babyrite/gh-actions-cache"
+
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check

@@ -1,0 +1,30 @@
+name: clippy
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/v*.*.*'
+  pull_request:
+    branches:
+      - main
+      - 'release/v*.*.*'
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    name: clippy babyrite
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "babyrite/gh-actions-cache"
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features

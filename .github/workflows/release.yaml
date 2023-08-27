@@ -1,0 +1,40 @@
+name: Release babyrite
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+
+      - name: Get token
+        id: babyrite-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Run release-please-action
+        uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          release-type: rust
+          token: ${{ steps.babyrite-token.outputs.token }}
+          package-name: babyrite
+
+      - name: Publish the Docker package
+        if: steps.release.outputs.release_created
+        uses: ./.github/actions/publish
+        with:
+          major: ${{ steps.release.outputs.major }}
+          minor: ${{ steps.release.outputs.minor }}
+          patch: ${{ steps.release.outputs.patch }}
+          sha: ${{ steps.release.outputs.sha }}
