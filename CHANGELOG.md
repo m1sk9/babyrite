@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/m1sk9/babyrite/compare/v0.1.0...v0.1.1) (2023-08-30)
+
+
+### Bug Fixes
+
+* ビルドエラーの修正 ([9f88c10](https://github.com/m1sk9/babyrite/commit/9f88c1062fdc5b2e81097e9c963fc120461f36ba))
+
 ## 0.1.0 (2023-08-30)
 
 
