@@ -8,9 +8,11 @@ use crate::{
     env::{env_var, load_dotenv},
 };
 
+mod adapters;
 mod client;
 mod env;
 mod event;
+mod model;
 
 #[allow(dead_code)]
 pub static DEFAULT_TIMEOUT_DURATION: Duration = Duration::from_secs(10);
