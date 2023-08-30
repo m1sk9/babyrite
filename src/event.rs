@@ -7,7 +7,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::{
     async_trait,
-    model::prelude::{ChannelId, GuildId, Message, MessageId, Ready},
+    model::prelude::{Activity, ChannelId, GuildId, Message, MessageId, Ready},
     prelude::{Context, EventHandler},
 };
 use tracing::{error, info, warn};
@@ -36,6 +36,10 @@ impl EventHandler for EvHandler {
         let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
 
         if let Some(triple) = extract_ids_from_link(matched_str) {
+            if triple.guild_id != message.guild_id.unwrap() {
+                return;
+            }
+
             if let Err(why) = send_citation_embed(triple, &ctx.http, &message).await {
                 let _ = send_error_embed(&ctx.http, &message, &why).await;
                 error!("{:?}", why)
@@ -46,7 +50,10 @@ impl EventHandler for EvHandler {
         }
     }
 
-    async fn ready(&self, _: Context, bot: Ready) {
+    async fn ready(&self, ctx: Context, bot: Ready) {
+        ctx.set_activity(Activity::playing(&format!("babyrite v{}", VERSION)))
+            .await;
+
         info!(
             "Connected to {name}(ID:{id}). (Using babyrite v{version}).",
             name = bot.user.name,
