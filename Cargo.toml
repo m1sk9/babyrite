@@ -12,9 +12,11 @@ enable_sentry = []
 anyhow = { version = "1.0" }
 dotenvy = { version = "0.15" }
 once_cell = { version = "1.18" }
+regex = { version = "1.9" }
 sentry = { version = "0.31" }
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
+typed-builder = { version = "0.16" }
 
 [dependencies.serenity]
 version = "0.11"
