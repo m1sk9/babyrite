@@ -67,6 +67,10 @@ async fn get_citation_message(
 
     match guild_channels.get(&channel_id) {
         Some(channel) => {
+            if channel.is_nsfw() || !channel.is_text_based() {
+                return Err(anyhow::anyhow!("[ID: {}]のチャンネルはNSFWに指定されているか, テキストベースのチャンネルではありません", channel_id));
+            }
+
             let message = channel
                 .message(http, message_id)
                 .await
@@ -85,7 +89,7 @@ async fn get_citation_message(
                 .build())
         }
         None => Err(anyhow::anyhow!(
-            "[{}]のチャンネルを見つけることが出来ませんでした",
+            "[ID: {}]のチャンネルを見つけることが出来ませんでした",
             channel_id
         )),
     }
