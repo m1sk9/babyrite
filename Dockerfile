@@ -16,4 +16,5 @@ USER babyrite
 WORKDIR /home/babyrite
 
 LABEL org.opencontainers.image.source=https://github.com/m1sk9/babyrite
+
 ENTRYPOINT [ "babyrite" ]
