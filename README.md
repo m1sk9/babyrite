@@ -13,7 +13,10 @@ A citation message Discord bot
 
 ### Todo
 
-- [ ] 添付ファイルのサポート
+- [ ] 添付ファイルのサポート ( [#5](https://github.com/m1sk9/babyrite/issues/5) )
+- [ ] チャンネルリストのキャッシュ ( [#6](https://github.com/m1sk9/babyrite/issues/6) )
+
+[babyrite v1.0.0 リリースのためのマイルストーンはこちら](https://github.com/m1sk9/babyrite2/milestone/1)
 
 ## Installation
 
