@@ -11,13 +11,6 @@ A citation message Discord bot
 
 - メッセージリンクのメッセージ内容を展開する
 
-### Todo
-
-- [ ] 添付ファイルのサポート ( [#5](https://github.com/m1sk9/babyrite/issues/5) )
-- [ ] チャンネルリストのキャッシュ ( [#6](https://github.com/m1sk9/babyrite/issues/6) )
-
-[babyrite v1.0.0 リリースのためのマイルストーンはこちら](https://github.com/m1sk9/babyrite2/milestone/1)
-
 ## Installation
 
 babyrite の Docker Image は ghcr.io から取得することができます.
