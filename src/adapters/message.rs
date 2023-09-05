@@ -4,6 +4,7 @@ use anyhow::{Context, Error, Ok};
 use serenity::{http::Http, model::channel::Message};
 
 use crate::adapters::embed::convert_embed;
+use crate::model::embed::EmbedMessageImage;
 use crate::model::{
     embed::{EmbedMessage, EmbedMessageAuthor, EmbedMessageFooter},
     id::DiscordIds,
@@ -19,20 +20,25 @@ pub async fn send_citation_embed(
     http: &Arc<Http>,
     target_message: &Message,
 ) -> anyhow::Result<()> {
-    let citation_message = get_citation_message(ids, &http).await?;
+    let message = get_citation_message(ids, &http).await?;
 
-    let embed_footer = EmbedMessageFooter::builder()
-        .text(citation_message.channel_name)
+    let footer = EmbedMessageFooter::builder()
+        .text(message.channel_name)
         .build();
-    let embed_author = EmbedMessageAuthor::builder()
-        .name(citation_message.author_name)
-        .icon_url(citation_message.author_avatar_url)
+    let author = EmbedMessageAuthor::builder()
+        .name(message.author_name)
+        .icon_url(message.author_avatar_url)
         .build();
-    let embed_object = EmbedMessage::builder()
-        .description(Some(citation_message.content))
-        .footer(Some(embed_footer))
-        .author(Some(embed_author))
-        .timestamp(Some(citation_message.create_at))
+    let image = EmbedMessageImage::builder()
+        .url(message.attachment_image_url)
+        .build();
+
+    let embed = EmbedMessage::builder()
+        .description(Some(message.content))
+        .footer(Some(footer))
+        .image(Some(image))
+        .author(Some(author))
+        .timestamp(Some(message.create_at))
         .color(Some(PERSONAL_COLOR))
         .build();
 
@@ -44,7 +50,7 @@ pub async fn send_citation_embed(
                 mention.replied_user(true);
                 mention
             });
-            m.set_embed(convert_embed(embed_object))
+            m.set_embed(convert_embed(embed))
         })
         .await
         .context("引用メッセージの送信に失敗しました")?;
@@ -80,8 +86,18 @@ async fn get_citation_message(
             // アバター画像が存在していなくても埋め込み生成時に無視される
             let author_icon_url = author.avatar_url();
 
+            let attachment_url = if !message.attachments.is_empty() {
+                message
+                    .attachments
+                    .first()
+                    .map(|attachment| attachment.url.clone())
+            } else {
+                None
+            };
+
             Ok(CitationMessage::builder()
                 .content(message.content)
+                .attachment_image_url(attachment_url)
                 .author_name(author.name)
                 .author_avatar_url(author_icon_url)
                 .channel_name(channel.clone().name)

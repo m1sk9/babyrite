@@ -31,6 +31,21 @@ pub struct EmbedMessageFooter {
 }
 
 #[derive(TypedBuilder)]
+pub struct EmbedMessageImage {
+    #[builder(default)]
+    pub url: Option<String>,
+
+    #[builder(default)]
+    pub proxy_url: Option<String>,
+
+    #[builder(default)]
+    pub height: Option<String>,
+
+    #[builder(default)]
+    pub width: Option<String>,
+}
+
+#[derive(TypedBuilder)]
 pub struct EmbedMessageThumbnail {
     pub url: String,
 }
@@ -57,6 +72,9 @@ pub struct EmbedMessage {
 
     #[builder(default)]
     pub url: Option<String>,
+
+    #[builder(default)]
+    pub image: Option<EmbedMessageImage>,
 
     #[builder(default)]
     pub thumbnail: Option<EmbedMessageThumbnail>,

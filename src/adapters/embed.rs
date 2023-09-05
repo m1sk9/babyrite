@@ -10,6 +10,7 @@ pub fn convert_embed(
         footer,
         color,
         url,
+        image,
         thumbnail,
         timestamp,
     }: EmbedMessage,
@@ -59,6 +60,12 @@ pub fn convert_embed(
 
     if let Some(url) = url {
         create_embed.url(url);
+    }
+
+    if let Some(image) = image {
+        if let Some(image_url) = image.url {
+            create_embed.image(image_url);
+        }
     }
 
     if let Some(thumbnail) = thumbnail {
