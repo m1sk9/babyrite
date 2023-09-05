@@ -20,25 +20,25 @@ pub async fn send_citation_embed(
     http: &Arc<Http>,
     target_message: &Message,
 ) -> anyhow::Result<()> {
-    let citation_message = get_citation_message(ids, &http).await?;
+    let message = get_citation_message(ids, &http).await?;
 
-    let embed_footer = EmbedMessageFooter::builder()
-        .text(citation_message.channel_name)
+    let footer = EmbedMessageFooter::builder()
+        .text(message.channel_name)
         .build();
-    let embed_author = EmbedMessageAuthor::builder()
-        .name(citation_message.author_name)
-        .icon_url(citation_message.author_avatar_url)
+    let author = EmbedMessageAuthor::builder()
+        .name(message.author_name)
+        .icon_url(message.author_avatar_url)
         .build();
-    let embed_image = EmbedMessageImage::builder()
-        .url(citation_message.attachment_image_url)
+    let image = EmbedMessageImage::builder()
+        .url(message.attachment_image_url)
         .build();
 
-    let embed_object = EmbedMessage::builder()
-        .description(Some(citation_message.content))
-        .footer(Some(embed_footer))
-        .image(Some(embed_image))
-        .author(Some(embed_author))
-        .timestamp(Some(citation_message.create_at))
+    let embed = EmbedMessage::builder()
+        .description(Some(message.content))
+        .footer(Some(footer))
+        .image(Some(image))
+        .author(Some(author))
+        .timestamp(Some(message.create_at))
         .color(Some(PERSONAL_COLOR))
         .build();
 
@@ -50,7 +50,7 @@ pub async fn send_citation_embed(
                 mention.replied_user(true);
                 mention
             });
-            m.set_embed(convert_embed(embed_object))
+            m.set_embed(convert_embed(embed))
         })
         .await
         .context("引用メッセージの送信に失敗しました")?;
