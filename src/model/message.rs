@@ -6,6 +6,9 @@ pub struct CitationMessage {
     // メッセージ内容
     pub content: String,
 
+    // 添付ファイル (画像/GIFのみ)
+    pub attachment_image_url: Option<String>,
+
     // メッセージ送信者のユーザーネーム
     pub author_name: String,
 

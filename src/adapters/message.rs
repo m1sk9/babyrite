@@ -4,6 +4,7 @@ use anyhow::{Context, Error, Ok};
 use serenity::{http::Http, model::channel::Message};
 
 use crate::adapters::embed::convert_embed;
+use crate::model::embed::EmbedMessageImage;
 use crate::model::{
     embed::{EmbedMessage, EmbedMessageAuthor, EmbedMessageFooter},
     id::DiscordIds,
@@ -28,9 +29,14 @@ pub async fn send_citation_embed(
         .name(citation_message.author_name)
         .icon_url(citation_message.author_avatar_url)
         .build();
+    let embed_image = EmbedMessageImage::builder()
+        .url(citation_message.attachment_image_url)
+        .build();
+
     let embed_object = EmbedMessage::builder()
         .description(Some(citation_message.content))
         .footer(Some(embed_footer))
+        .image(Some(embed_image))
         .author(Some(embed_author))
         .timestamp(Some(citation_message.create_at))
         .color(Some(PERSONAL_COLOR))
@@ -80,8 +86,18 @@ async fn get_citation_message(
             // アバター画像が存在していなくても埋め込み生成時に無視される
             let author_icon_url = author.avatar_url();
 
+            let attachment_url = if !message.attachments.is_empty() {
+                message
+                    .attachments
+                    .first()
+                    .map(|attachment| attachment.url.clone())
+            } else {
+                None
+            };
+
             Ok(CitationMessage::builder()
                 .content(message.content)
+                .attachment_image_url(attachment_url)
                 .author_name(author.name)
                 .author_avatar_url(author_icon_url)
                 .channel_name(channel.clone().name)
