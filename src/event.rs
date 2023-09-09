@@ -1,8 +1,4 @@
-use crate::{
-    adapters::message::{send_citation_embed, send_error_embed, send_warn_embed},
-    model::id::DiscordIds,
-    VERSION,
-};
+use crate::{adapters::message::send_citation_embed, model::id::DiscordIds, VERSION};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::{
@@ -36,17 +32,15 @@ impl EventHandler for EvHandler {
         let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
 
         if let Some(triple) = extract_ids_from_link(matched_str) {
-            if triple.guild_id != message.guild_id.unwrap() {
-                return;
-            }
-
-            if let Err(why) = send_citation_embed(triple, &ctx.http, &message).await {
-                let _ = send_error_embed(&ctx.http, &message, &why).await;
-                error!("{:?}", why)
+            if triple.guild_id == message.guild_id.unwrap() {
+                if let Err(why) = send_citation_embed(triple, &ctx.http, &message).await {
+                    error!("{:?}", why)
+                }
+            } else {
+                warn!("メッセージ送信元ギルドと一致しないため, 引用をキャンセルしました")
             }
         } else {
-            let _ = send_warn_embed(&ctx.http, &message, "IDの取り出しに失敗しました").await;
-            warn!("IDの取り出しに失敗したため、引用をキャンセルしました")
+            warn!("IDの取り出しに失敗したため, 引用をキャンセルしました")
         }
     }
 
