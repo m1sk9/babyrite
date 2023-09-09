@@ -68,18 +68,24 @@ async fn get_citation_message(
         .context("チャンネルリストの取得に失敗しました")?;
 
     let target_channel = match guild_channels.get(&channel_id) {
-        Some(channel) => channel,
-        None => return Err(anyhow::anyhow!("引用元チャンネルが見つかりませんでした")),
+        Some(channel) => channel.clone(),
+        None => {
+            let guild_threads = guild_id
+                .get_active_threads(http)
+                .await
+                .context("スレッドリストの取得に失敗しました")?;
+            let thread = match guild_threads.threads.iter().find(|c| &c.id == &channel_id) {
+                Some(channel) => channel.clone(),
+                None => {
+                    return Err(anyhow::anyhow!("引用元チャンネルは見つかりませんでした."));
+                }
+            };
+            thread
+        }
     };
 
     if target_channel.is_nsfw() {
         return Err(anyhow::anyhow!("引用元チャンネルはNSFWに指定されています"));
-    }
-
-    if !target_channel.is_text_based() {
-        return Err(anyhow::anyhow!(
-            "引用元チャンネルはテキストベースのチャンネルではありません"
-        ));
     }
 
     let target_message = target_channel
