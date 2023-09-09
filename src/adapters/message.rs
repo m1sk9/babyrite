@@ -87,6 +87,12 @@ async fn get_citation_message(
         .await
         .context("メッセージの取得に失敗しました")?;
 
+    if !target_message.embeds.is_empty() {
+        return Err(anyhow::anyhow!(
+            "引用しようとしたメッセージは埋め込みを含んでいるため引用できませんでした"
+        ));
+    }
+
     let author = target_message.clone().author;
     // アバターが存在していなくても埋め込みに問題はない
     let author_icon_url = author.avatar_url();
