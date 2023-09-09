@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{Context, Error, Ok};
+use anyhow::{Context, Ok};
 use serenity::{http::Http, model::channel::Message};
 
 use crate::adapters::embed::convert_embed;
@@ -10,10 +10,6 @@ use crate::model::{
     id::DiscordIds,
     message::CitationMessage,
 };
-
-const PERSONAL_COLOR: u32 = 0xb586f7;
-const WARN_COLOR: u32 = 0xfff700;
-const ERROR_COLOR: u32 = 0xFF0012;
 
 pub async fn send_citation_embed(
     ids: DiscordIds,
@@ -39,7 +35,7 @@ pub async fn send_citation_embed(
         .image(Some(image))
         .author(Some(author))
         .timestamp(Some(message.create_at))
-        .color(Some(PERSONAL_COLOR))
+        .color(Some(0xb586f7))
         .build();
 
     target_message
@@ -71,96 +67,45 @@ async fn get_citation_message(
         .await
         .context("チャンネルリストの取得に失敗しました")?;
 
-    match guild_channels.get(&channel_id) {
-        Some(channel) => {
-            if channel.is_nsfw() || !channel.is_text_based() {
-                return Err(anyhow::anyhow!("[ID: {}]のチャンネルはNSFWに指定されているか, テキストベースのチャンネルではありません", channel_id));
-            }
+    let target_channel = match guild_channels.get(&channel_id) {
+        Some(channel) => channel,
+        None => return Err(anyhow::anyhow!("引用元チャンネルが見つかりませんでした")),
+    };
 
-            let message = channel
-                .message(http, message_id)
-                .await
-                .context("メッセージの取得に失敗しました")?;
-
-            let author = message.clone().author;
-            // アバター画像が存在していなくても埋め込み生成時に無視される
-            let author_icon_url = author.avatar_url();
-
-            let attachment_url = if !message.attachments.is_empty() {
-                message
-                    .attachments
-                    .first()
-                    .map(|attachment| attachment.url.clone())
-            } else {
-                None
-            };
-
-            Ok(CitationMessage::builder()
-                .content(message.content)
-                .attachment_image_url(attachment_url)
-                .author_name(author.name)
-                .author_avatar_url(author_icon_url)
-                .channel_name(channel.clone().name)
-                .create_at(message.timestamp)
-                .build())
-        }
-        None => Err(anyhow::anyhow!(
-            "[ID: {}]のチャンネルを見つけることが出来ませんでした",
-            channel_id
-        )),
+    if target_channel.is_nsfw() {
+        return Err(anyhow::anyhow!("引用元チャンネルはNSFWに指定されています"));
     }
-}
 
-pub async fn send_warn_embed(
-    http: &Arc<Http>,
-    message: &Message,
-    error_reason: &str,
-) -> anyhow::Result<()> {
-    let embed_object = EmbedMessage::builder()
-        .title(Some("警告".to_string()))
-        .description(Some(format!("```\n{}\n```", error_reason)))
-        .color(Some(WARN_COLOR))
-        .build();
+    if !target_channel.is_text_based() {
+        return Err(anyhow::anyhow!(
+            "引用元チャンネルはテキストベースのチャンネルではありません"
+        ));
+    }
 
-    message
-        .channel_id
-        .send_message(http, |m| {
-            m.reference_message(message);
-            m.allowed_mentions(|mention| {
-                mention.replied_user(true);
-                mention
-            });
-            m.set_embed(convert_embed(embed_object))
-        })
+    let target_message = target_channel
+        .message(http, message_id)
         .await
-        .context("警告メッセージの送信に失敗しました")?;
+        .context("メッセージの取得に失敗しました")?;
 
-    Ok(())
-}
+    let author = target_message.clone().author;
+    // アバターが存在していなくても埋め込みに問題はない
+    let author_icon_url = author.avatar_url();
 
-pub async fn send_error_embed(
-    http: &Arc<Http>,
-    message: &Message,
-    error_reason: &Error,
-) -> anyhow::Result<()> {
-    let embed_object = EmbedMessage::builder()
-        .title(Some("エラー".to_string()))
-        .description(Some(format!("```\n{}\n```", error_reason)))
-        .color(Some(ERROR_COLOR))
-        .build();
+    let attachment_url = if !target_message.attachments.is_empty() {
+        target_message
+            .attachments
+            .first()
+            .map(|attachment| attachment.clone().url)
+    } else {
+        None
+    };
 
-    message
-        .channel_id
-        .send_message(http, |m| {
-            m.reference_message(message);
-            m.allowed_mentions(|mention| {
-                mention.replied_user(true);
-                mention
-            });
-            m.set_embed(convert_embed(embed_object))
-        })
-        .await
-        .context("エラーメッセージの送信に失敗しました")?;
-
-    Ok(())
+    Ok(CitationMessage::builder()
+        .content(target_message.content)
+        .attachment_image_url(attachment_url)
+        .author_name(author.name)
+        .author_avatar_url(author_icon_url)
+        .channel_name(target_channel.clone().name)
+        .create_at(target_message.timestamp)
+        .build())
 }
