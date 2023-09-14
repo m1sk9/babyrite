@@ -3,13 +3,8 @@ use std::sync::Arc;
 use anyhow::{Context, Ok};
 use serenity::{http::Http, model::channel::Message};
 
-use crate::adapters::embed::convert_embed;
-use crate::model::embed::EmbedMessageImage;
-use crate::model::{
-    embed::{EmbedMessage, EmbedMessageAuthor, EmbedMessageFooter},
-    id::DiscordIds,
-    message::CitationMessage,
-};
+use crate::adapters::embed::build_citation_embed;
+use crate::model::{id::DiscordIds, message::CitationMessage};
 
 pub async fn send_citation_embed(
     ids: DiscordIds,
@@ -17,26 +12,7 @@ pub async fn send_citation_embed(
     target_message: &Message,
 ) -> anyhow::Result<()> {
     let message = get_citation_message(ids, &http).await?;
-
-    let footer = EmbedMessageFooter::builder()
-        .text(message.channel_name)
-        .build();
-    let author = EmbedMessageAuthor::builder()
-        .name(message.author_name)
-        .icon_url(message.author_avatar_url)
-        .build();
-    let image = EmbedMessageImage::builder()
-        .url(message.attachment_image_url)
-        .build();
-
-    let embed = EmbedMessage::builder()
-        .description(Some(message.content))
-        .footer(Some(footer))
-        .image(Some(image))
-        .author(Some(author))
-        .timestamp(Some(message.create_at))
-        .color(Some(0xb586f7))
-        .build();
+    let embed = build_citation_embed(message).context("埋め込みの生成に失敗しました")?;
 
     target_message
         .channel_id
@@ -46,7 +22,7 @@ pub async fn send_citation_embed(
                 mention.replied_user(true);
                 mention
             });
-            m.set_embed(convert_embed(embed))
+            m.set_embed(embed)
         })
         .await
         .context("引用メッセージの送信に失敗しました")?;

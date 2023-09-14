@@ -1,7 +1,10 @@
-use crate::model::embed::EmbedMessage;
+use crate::model::embed::{
+    EmbedMessage, EmbedMessageAuthor, EmbedMessageFooter, EmbedMessageImage,
+};
+use crate::model::message::CitationMessage;
 use serenity::{builder::CreateEmbed, utils::Colour};
 
-pub fn convert_embed(
+fn convert_embed(
     EmbedMessage {
         title,
         author,
@@ -77,4 +80,28 @@ pub fn convert_embed(
     }
 
     create_embed
+}
+
+pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEmbed> {
+    let footer = EmbedMessageFooter::builder()
+        .text(message.channel_name)
+        .build();
+    let author = EmbedMessageAuthor::builder()
+        .name(message.author_name)
+        .icon_url(message.author_avatar_url)
+        .build();
+    let image = EmbedMessageImage::builder()
+        .url(message.attachment_image_url)
+        .build();
+
+    let embed = EmbedMessage::builder()
+        .description(Some(message.content))
+        .footer(Some(footer))
+        .image(Some(image))
+        .author(Some(author))
+        .timestamp(Some(message.create_at))
+        .color(Some(0xb586f7))
+        .build();
+
+    Ok(convert_embed(embed))
 }
