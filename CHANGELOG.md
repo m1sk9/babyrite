@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/m1sk9/babyrite/compare/v0.2.0...v0.2.1) (2023-09-14)
+
+
+### Performance Improvements
+
+* 埋め込み生成時のエラーパフォーマンスを改善 ([#22](https://github.com/m1sk9/babyrite/issues/22)) ([d893ca3](https://github.com/m1sk9/babyrite/commit/d893ca37862680dab84c462b3c810097a4ca9e77))
+
 ## [0.2.0](https://github.com/m1sk9/babyrite/compare/v0.1.1...v0.2.0) (2023-09-09)
 
 
