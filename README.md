@@ -29,18 +29,6 @@ docker pull ghcr.io/m1sk9/babyrite:vX.Y.Z
 
 取得した Docker Image に対して環境変数を与えると babyrite を起動できます.
 
-## Features Flag
-
-babyrite の各オプション機能は Features Flag で有効化が可能です.
-
-> **Note**
->
-> Docker Image で起動する際は一部の Features Flag のみが利用できます. 自由に設定するには自分でビルドする必要があります.
-
-| Flag | Description | Default (Docker Image) |
-| ---- | ----------- | ------- |
-| `enable_sentry` | Sentry によるエラー報告を有効化します. | `true` |
-
 ## Environment Variables
 
 以下は babyrite が利用する環境変数です.
