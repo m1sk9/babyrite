@@ -76,6 +76,11 @@ async fn get_citation_message(
     }
 
     let author = target_message.clone().author;
+    let author_name = if author.bot {
+        format!("{} [🤖]", author.tag())
+    } else {
+        author.name.clone()
+    };
     // アバターが存在していなくても埋め込みに問題はない
     let author_icon_url = author.avatar_url();
 
@@ -91,7 +96,7 @@ async fn get_citation_message(
     Ok(CitationMessage::builder()
         .content(target_message.content)
         .attachment_image_url(attachment_url)
-        .author_name(author.name)
+        .author_name(author_name)
         .author_avatar_url(author_icon_url)
         .channel_name(target_channel.clone().name)
         .create_at(target_message.timestamp)
