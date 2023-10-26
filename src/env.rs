@@ -1,13 +1,9 @@
-use dotenvy::dotenv;
-use std::env;
+use once_cell::sync::OnceCell;
+use serde::{Deserialize, Serialize};
 
-pub fn load_dotenv() {
-    dotenv().ok();
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BabyriteEnv {
+    pub discord_api_token: String,
 }
 
-pub fn env_var(key: &str) -> String {
-    match env::var(key) {
-        Ok(var) => var,
-        Err(why) => panic!("{}: {}", why, key),
-    }
-}
+pub static BABYRITE_ENV: OnceCell<BabyriteEnv> = OnceCell::new();

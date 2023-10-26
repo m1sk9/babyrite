@@ -3,7 +3,7 @@ use serenity::{prelude::GatewayIntents, Client};
 
 use crate::event::EvHandler;
 
-pub async fn discord_client(token: String) -> anyhow::Result<()> {
+pub async fn discord_client(token: &str) -> anyhow::Result<()> {
     let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
 
     let mut client = Client::builder(token, intents)
