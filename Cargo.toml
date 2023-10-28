@@ -27,3 +27,7 @@ features = ["derive"]
 [dependencies.tokio]
 version = "1.33"
 features = ["macros", "rt-multi-thread", "time"]
+
+[dependencies.moka]
+version = "0.12"
+features = ["future"]

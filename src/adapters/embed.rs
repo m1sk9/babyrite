@@ -84,8 +84,6 @@ fn convert_embed(
 }
 
 pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEmbed> {
-    info!("--- 埋め込みの生成を開始します...");
-
     let footer = EmbedMessageFooter::builder()
         .text(message.channel_name)
         .build();
