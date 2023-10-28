@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use anyhow::{Context, Ok};
 use serenity::{http::Http, model::channel::Message};
-use tracing::{debug, info, warn};
+use tracing::info;
 
-use crate::adapters::cache::{get_cache, save_cache};
+use crate::adapters::channel::get_channel;
 use crate::adapters::embed::build_citation_embed;
+use crate::model::cache::CHANNEL_LIST_CACHE;
 use crate::model::{id::DiscordIds, message::CitationMessage};
 
 pub async fn send_citation_embed(
@@ -40,37 +41,11 @@ async fn get_citation_message(
     }: DiscordIds,
     http: &Arc<Http>,
 ) -> anyhow::Result<CitationMessage> {
-    let target_channel = match get_cache(channel_id).await {
-        Some(channel) => {
-            debug!("--- キャッシュから引用元チャンネルを取得しました.");
-            channel
-        }
-        None => {
-            warn!("--- キャッシュに保存されていなかったため, 再取得します.");
-            let guild_channels = guild_id
-                .channels(&http)
-                .await
-                .context("チャンネルリストの取得に失敗しました")?;
-            let channel = match guild_channels.get(&channel_id) {
-                Some(channel) => channel.clone(),
-                None => {
-                    let guild_threads = guild_id
-                        .get_active_threads(http)
-                        .await
-                        .context("スレッドリストの取得に失敗しました")?;
-                    let thread = match guild_threads.threads.iter().find(|c| c.id == channel_id) {
-                        Some(channel) => channel.clone(),
-                        None => {
-                            return Err(anyhow::anyhow!("引用元チャンネルは見つかりませんでした."));
-                        }
-                    };
-                    thread
-                }
-            };
-            save_cache(channel_id, channel.clone()).await;
-            channel
-        }
-    };
+    let target_channel = CHANNEL_LIST_CACHE
+        .get_with(channel_id, async move {
+            get_channel(channel_id, guild_id, http).await.unwrap()
+        })
+        .await;
 
     if target_channel.is_nsfw() {
         return Err(anyhow::anyhow!("引用元チャンネルはNSFWに指定されています"));
