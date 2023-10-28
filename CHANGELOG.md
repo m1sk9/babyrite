@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/m1sk9/babyrite/compare/v0.3.0...v0.3.1) (2023-10-28)
+
+
+### Performance Improvements
+
+* チャンネルキャッシュのロジックを改善 ([#37](https://github.com/m1sk9/babyrite/issues/37)) ([1c229f1](https://github.com/m1sk9/babyrite/commit/1c229f1bc042e0064ff884213a643d638cb6f815))
+
 ## [0.3.0](https://github.com/m1sk9/babyrite/compare/v0.2.1...v0.3.0) (2023-10-28)
 
 
