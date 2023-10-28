@@ -1,5 +1,5 @@
 use serenity::model::prelude::{ChannelId, GuildChannel};
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::model::cache::CHANNEL_LIST_CACHE;
 
@@ -9,7 +9,6 @@ pub async fn save_cache(key: ChannelId, value: GuildChannel) {
         "キャッシュへの保存が完了しました.: {:?}",
         CHANNEL_LIST_CACHE
     );
-    info!("キャッシュの初期化が完了しました.")
 }
 
 pub async fn get_cache(key_id: ChannelId) -> Option<GuildChannel> {
