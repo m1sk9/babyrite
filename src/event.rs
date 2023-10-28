@@ -10,11 +10,11 @@ use tracing::{error, info, warn};
 
 pub struct EvHandler;
 
-const MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
+static MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"https://(?:ptb\.|canary\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)").unwrap()
 });
 // 引用スキップ機能の正規表現
-const SKIP_MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
+static SKIP_MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"<https://(?:ptb\.|canary\.)?discord\.com/channels/\d+/\d+/\d+>").unwrap()
 });
 
@@ -26,7 +26,7 @@ impl EventHandler for EvHandler {
         }
 
         let content = &message.content;
-        if !MESSAGE_LINK_REGEX.is_match(&content) || SKIP_MESSAGE_LINK_REGEX.is_match(&content) {
+        if !MESSAGE_LINK_REGEX.is_match(content) || SKIP_MESSAGE_LINK_REGEX.is_match(content) {
             return;
         }
         let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
