@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use anyhow::{Context, Ok};
 use serenity::{http::Http, model::channel::Message};
-use tracing::info;
+use tracing::{debug, info, warn};
 
+use crate::adapters::cache::{get_cache, save_cache};
 use crate::adapters::embed::build_citation_embed;
 use crate::model::{id::DiscordIds, message::CitationMessage};
 
@@ -39,27 +40,35 @@ async fn get_citation_message(
     }: DiscordIds,
     http: &Arc<Http>,
 ) -> anyhow::Result<CitationMessage> {
-    info!("--- 引用メッセージの取得を開始します...");
-
-    let guild_channels = guild_id
-        .channels(&http)
-        .await
-        .context("チャンネルリストの取得に失敗しました")?;
-
-    let target_channel = match guild_channels.get(&channel_id) {
-        Some(channel) => channel.clone(),
+    let target_channel = match get_cache(channel_id).await {
+        Some(channel) => {
+            debug!("--- キャッシュから引用元チャンネルを取得しました.");
+            channel
+        }
         None => {
-            let guild_threads = guild_id
-                .get_active_threads(http)
+            warn!("--- キャッシュに保存されていなかったため, 再取得します.");
+            let guild_channels = guild_id
+                .channels(&http)
                 .await
-                .context("スレッドリストの取得に失敗しました")?;
-            let thread = match guild_threads.threads.iter().find(|c| &c.id == &channel_id) {
+                .context("チャンネルリストの取得に失敗しました")?;
+            let channel = match guild_channels.get(&channel_id) {
                 Some(channel) => channel.clone(),
                 None => {
-                    return Err(anyhow::anyhow!("引用元チャンネルは見つかりませんでした."));
+                    let guild_threads = guild_id
+                        .get_active_threads(http)
+                        .await
+                        .context("スレッドリストの取得に失敗しました")?;
+                    let thread = match guild_threads.threads.iter().find(|c| &c.id == &channel_id) {
+                        Some(channel) => channel.clone(),
+                        None => {
+                            return Err(anyhow::anyhow!("引用元チャンネルは見つかりませんでした."));
+                        }
+                    };
+                    thread
                 }
             };
-            thread
+            save_cache(channel_id, channel.clone()).await;
+            channel
         }
     };
 
