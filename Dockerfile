@@ -3,7 +3,7 @@ FROM rust:1.73.0-bullseye as Builder
 WORKDIR /root/app
 COPY --chown=root:root . .
 
-RUN cargo build --release --bin babyrite --features enable_sentry
+RUN cargo build --release --bin babyrite
 
 FROM debian:bullseye-slim as Runner
 
