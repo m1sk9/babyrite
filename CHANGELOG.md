@@ -5,7 +5,6 @@
 
 ### Features
 
-* added logger ([e238e57](https://github.com/m1sk9/babyrite/commit/e238e579331225c2e6a3e8c0601afce69e14f906))
 * Bot のメッセージ引用時埋め込みにフラグを表示するように ([#32](https://github.com/m1sk9/babyrite/issues/32)) ([36d7524](https://github.com/m1sk9/babyrite/commit/36d7524001f59f3fe048ec4019df591d4089d680))
 * チャンネルリストのキャッシュを実装 ([#34](https://github.com/m1sk9/babyrite/issues/34)) ([37cc6c6](https://github.com/m1sk9/babyrite/commit/37cc6c63fd52ed55fec2335b4156b1e7884575fc))
 
