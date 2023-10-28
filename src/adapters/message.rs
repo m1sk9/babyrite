@@ -13,7 +13,7 @@ pub async fn send_citation_embed(
     http: &Arc<Http>,
     target_message: &Message,
 ) -> anyhow::Result<()> {
-    let message = get_citation_message(ids, &http).await?;
+    let message = get_citation_message(ids, http).await?;
     let embed = build_citation_embed(message).context("埋め込みの生成に失敗しました")?;
 
     target_message
@@ -58,7 +58,7 @@ async fn get_citation_message(
                         .get_active_threads(http)
                         .await
                         .context("スレッドリストの取得に失敗しました")?;
-                    let thread = match guild_threads.threads.iter().find(|c| &c.id == &channel_id) {
+                    let thread = match guild_threads.threads.iter().find(|c| c.id == channel_id) {
                         Some(channel) => channel.clone(),
                         None => {
                             return Err(anyhow::anyhow!("引用元チャンネルは見つかりませんでした."));
