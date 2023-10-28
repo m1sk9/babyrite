@@ -3,6 +3,7 @@ use crate::model::embed::{
 };
 use crate::model::message::CitationMessage;
 use serenity::{builder::CreateEmbed, utils::Colour};
+use tracing::info;
 
 fn convert_embed(
     EmbedMessage {
@@ -83,6 +84,8 @@ fn convert_embed(
 }
 
 pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEmbed> {
+    info!("--- 埋め込みの生成を開始します...");
+
     let footer = EmbedMessageFooter::builder()
         .text(message.channel_name)
         .build();
@@ -103,5 +106,6 @@ pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEm
         .color(Some(0xb586f7))
         .build();
 
+    info!("--- 埋め込みの生成が完了しました");
     Ok(convert_embed(embed))
 }

@@ -31,6 +31,8 @@ impl EventHandler for EvHandler {
         }
         let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
 
+        info!("引用を開始します...: Request by {}", message.author.name);
+
         if let Some(triple) = extract_ids_from_link(matched_str) {
             if triple.guild_id == message.guild_id.unwrap() {
                 if let Err(why) = send_citation_embed(triple, &ctx.http, &message).await {
@@ -42,6 +44,8 @@ impl EventHandler for EvHandler {
         } else {
             warn!("IDの取り出しに失敗したため, 引用をキャンセルしました")
         }
+
+        info!("引用が完了しました.");
     }
 
     async fn ready(&self, ctx: Context, bot: Ready) {

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Ok};
 use serenity::{http::Http, model::channel::Message};
+use tracing::info;
 
 use crate::adapters::embed::build_citation_embed;
 use crate::model::{id::DiscordIds, message::CitationMessage};
@@ -38,6 +39,8 @@ async fn get_citation_message(
     }: DiscordIds,
     http: &Arc<Http>,
 ) -> anyhow::Result<CitationMessage> {
+    info!("--- 引用メッセージの取得を開始します...");
+
     let guild_channels = guild_id
         .channels(&http)
         .await
@@ -93,6 +96,7 @@ async fn get_citation_message(
         None
     };
 
+    info!("--- 引用メッセージの取得が完了しました.");
     Ok(CitationMessage::builder()
         .content(target_message.content)
         .attachment_image_url(attachment_url)
