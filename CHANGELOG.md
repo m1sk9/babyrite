@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/m1sk9/babyrite/compare/v0.2.1...v0.3.0) (2023-10-28)
+
+
+### Features
+
+* Bot のメッセージ引用時埋め込みにフラグを表示するように ([#32](https://github.com/m1sk9/babyrite/issues/32)) ([36d7524](https://github.com/m1sk9/babyrite/commit/36d7524001f59f3fe048ec4019df591d4089d680))
+* チャンネルリストのキャッシュを実装 ([#34](https://github.com/m1sk9/babyrite/issues/34)) ([37cc6c6](https://github.com/m1sk9/babyrite/commit/37cc6c63fd52ed55fec2335b4156b1e7884575fc))
+
 ## [0.2.1](https://github.com/m1sk9/babyrite/compare/v0.2.0...v0.2.1) (2023-09-14)
 
 
