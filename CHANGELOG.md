@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.4.0...babyrite-v0.5.0) (2023-12-02)
+
+
+### Features
+
+* force-release babyrite v0.5.0 ([b26a0bc](https://github.com/m1sk9/babyrite/commit/b26a0bc575a4f3bd6d07543438e2e21a5081100d))
+
 ## [0.4.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.3.1...babyrite-v0.4.0) (2023-12-02)
 
 
