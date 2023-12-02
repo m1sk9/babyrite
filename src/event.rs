@@ -3,7 +3,8 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::{
     async_trait,
-    model::prelude::{Activity, ChannelId, GuildId, Message, MessageId, Ready},
+    gateway::ActivityData,
+    model::prelude::{ChannelId, GuildId, Message, MessageId, Ready},
     prelude::{Context, EventHandler},
 };
 use tracing::{error, info, warn};
@@ -49,8 +50,10 @@ impl EventHandler for EvHandler {
     }
 
     async fn ready(&self, ctx: Context, bot: Ready) {
-        ctx.set_activity(Activity::playing(&format!("babyrite v{}", VERSION)))
-            .await;
+        ctx.set_activity(Some(ActivityData::playing(format!(
+            "babyrite v{}",
+            VERSION
+        ))));
 
         info!(
             "Connected to {name}(ID:{id}). (Using babyrite v{version}).",
@@ -79,9 +82,9 @@ fn extract_ids_from_link(message_link: &str) -> Option<DiscordIds> {
 
     Some(
         DiscordIds::builder()
-            .guild_id(GuildId(first))
-            .channel_id(ChannelId(second))
-            .message_id(MessageId(third))
+            .guild_id(GuildId::new(first))
+            .channel_id(ChannelId::new(second))
+            .message_id(MessageId::new(third))
             .build(),
     )
 }

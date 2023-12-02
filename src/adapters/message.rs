@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Ok};
+use serenity::builder::{CreateAllowedMentions, CreateMessage};
 use serenity::{http::Http, model::channel::Message};
 use tracing::info;
 
@@ -17,16 +18,15 @@ pub async fn send_citation_embed(
     let message = get_citation_message(ids, http).await?;
     let embed = build_citation_embed(message).context("埋め込みの生成に失敗しました")?;
 
+    let allowed_mentions = CreateAllowedMentions::default().replied_user(true);
+    let message_builder = CreateMessage::new()
+        .reference_message(target_message)
+        .allowed_mentions(allowed_mentions)
+        .embed(embed);
+
     target_message
         .channel_id
-        .send_message(http, |m| {
-            m.reference_message(target_message);
-            m.allowed_mentions(|mention| {
-                mention.replied_user(true);
-                mention
-            });
-            m.set_embed(embed)
-        })
+        .send_message(http, message_builder)
         .await
         .context("引用メッセージの送信に失敗しました")?;
 
