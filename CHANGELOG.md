@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.4.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.3.1...babyrite-v0.4.0) (2023-12-02)
+
+
+### Features
+
+* Support Serenity v0.12.0 ([#45](https://github.com/m1sk9/babyrite/issues/45)) ([4a0b95d](https://github.com/m1sk9/babyrite/commit/4a0b95da39b0e4440ceaf8a714f09c7de5021c52))
+    - Serenity v0.12.0 では、すべての ID タイプの内部表現が非公開になりました。提供される新しい表現に置き換えられました。
+    - Serenity v0.12.0 では，`Activity` が削除され、新しく `ActivityData` が実装されました。ステータス更新ロジックが置き換えられました。
+    - Serenity v0.12.0 では、埋め込みとメッセージのロジックに破壊的変更が加えられました。これにより、babyrite ビルドインの埋め込み添付ファイルの実装が壊れたため, Serenity 独自の Builder に置き換えられました。
+        - これにより、アバターのないユーザーのメッセージを引用する際の動作が変更されました：アバターのないユーザーを引用する場合、アバターフィールドはデフォルトアバターの画像になります。
+
+
+### Bug Fixes
+
+* サーバーが一致しなかった際引用しないように ([#8](https://github.com/m1sk9/babyrite/issues/8)) ([631414e](https://github.com/m1sk9/babyrite/commit/631414edde6770e31bc79c8b652e9fa5e4f3e482))
+* スレッド内のメッセージを引用できない問題の修正 ([#17](https://github.com/m1sk9/babyrite/issues/17)) ([316217a](https://github.com/m1sk9/babyrite/commit/316217a36fa84794b2ad26e2ac4ffd6ee535adf1))
+* ビルドエラーの修正 ([9f88c10](https://github.com/m1sk9/babyrite/commit/9f88c1062fdc5b2e81097e9c963fc120461f36ba))
+* 埋め込みメッセージをメッセージ文字列なしで引用してしまう不具合を修正 ([#16](https://github.com/m1sk9/babyrite/issues/16)) ([8cac699](https://github.com/m1sk9/babyrite/commit/8cac6991d9b4aac82151737afeeef7ff0aeb1758))
+
+
+### Performance Improvements
+
+* エラーハンドリングの改善 ([#15](https://github.com/m1sk9/babyrite/issues/15)) ([ed79084](https://github.com/m1sk9/babyrite/commit/ed790842ddceaaf9cccb808a629adfefb48df93b))
+* チャンネルキャッシュのロジックを改善 ([#37](https://github.com/m1sk9/babyrite/issues/37)) ([1c229f1](https://github.com/m1sk9/babyrite/commit/1c229f1bc042e0064ff884213a643d638cb6f815))
+* 埋め込み生成時のエラーパフォーマンスを改善 ([#22](https://github.com/m1sk9/babyrite/issues/22)) ([d893ca3](https://github.com/m1sk9/babyrite/commit/d893ca37862680dab84c462b3c810097a4ca9e77))
+
 ## [0.3.1](https://github.com/m1sk9/babyrite/compare/v0.3.0...v0.3.1) (2023-10-28)
 
 
