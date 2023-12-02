@@ -1,0 +1,9 @@
+{
+  "last-release-sha": "a1f8221027c8888a8c34d972df7404fb4cd7729d",
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "package-name": "babyrite"
+    }
+  }
+}
