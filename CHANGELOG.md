@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.3.1...babyrite-v0.4.0) (2023-12-02)
+
+
+### Features
+
+* force-relase babyrite v0.4.0- ([9d0ca3c](https://github.com/m1sk9/babyrite/commit/9d0ca3ce3258ef49ea00b6ad4592e62753b610a1))
+* force-release babyrite v0.4.0 ([2933fce](https://github.com/m1sk9/babyrite/commit/2933fce79c9cbed92a6b2f3d58454695c5170bb7))
+* force-release babyrite v0.4.0 ([7eca408](https://github.com/m1sk9/babyrite/commit/7eca408b75e914f113aafb7c7612cebc47b66068))
+* force-release babyrite v0.5.0 ([33e8f82](https://github.com/m1sk9/babyrite/commit/33e8f8218279fdd2ee2ccab3278887cd0645c09b))
+
 ## [0.3.1](https://github.com/m1sk9/babyrite/compare/v0.3.0...v0.3.1) (2023-10-28)
 
 
