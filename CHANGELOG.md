@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/m1sk9/babyrite/compare/v0.3.1...v0.4.0) (2023-12-02)
+
+
+### Features
+
+* Support Serenity v0.12.0 ([#45](https://github.com/m1sk9/babyrite/issues/45)) ([4a0b95d](https://github.com/m1sk9/babyrite/commit/4a0b95da39b0e4440ceaf8a714f09c7de5021c52))
+
 ## [0.3.1](https://github.com/m1sk9/babyrite/compare/v0.3.0...v0.3.1) (2023-10-28)
 
 
