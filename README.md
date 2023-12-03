@@ -7,6 +7,8 @@
 
 A citation message Discord bot
 
+![babyrite example](docs/example.gif)
+
 ## Features
 
 - メッセージリンクのメッセージ内容を展開する
@@ -28,6 +30,8 @@ docker pull ghcr.io/m1sk9/babyrite:vX.Y.Z
 ```
 
 取得した Docker Image に対して環境変数を与えると babyrite を起動できます.
+
+詳しいセットアップ方法は [babyrite docs](./docs/README.md) を参照してください.
 
 ## Environment Variables
 
