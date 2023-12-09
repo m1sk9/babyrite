@@ -3,6 +3,8 @@ use std::time::Duration;
 use anyhow::Ok;
 use dotenvy::dotenv;
 use env::{BabyriteEnv, BABYRITE_ENV};
+use tracing_subscriber::filter::FilterExt;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use crate::client::discord_client;
 
@@ -19,7 +21,15 @@ pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
-    tracing_subscriber::fmt().compact().init();
+
+    let subscriber = FmtSubscriber::builder()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("debug"))?,
+        )
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("デフォルトのtracing subscriberの設定に失敗しました.");
 
     // 環境変数の読み込み. 読み込み後は [&BABYRITE_ENV.get().unwrap().<key>] でアクセスできる.
     BABYRITE_ENV
