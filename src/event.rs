@@ -26,17 +26,18 @@ impl EventHandler for EvHandler {
         if message.is_private() || message.author.bot {
             return;
         }
-        info!(
-            "Start message citation. Request by: {}({})",
-            message.author.name, message.author.id
-        );
+
+        let content = &message.content;
+        if !MESSAGE_LINK_REGEX.is_match(content) || SKIP_MESSAGE_LINK_REGEX.is_match(content) {
+            return;
+        }
+        let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
 
         measure_time!({
-            let content = &message.content;
-            if !MESSAGE_LINK_REGEX.is_match(content) || SKIP_MESSAGE_LINK_REGEX.is_match(content) {
-                return;
-            }
-            let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
+            info!(
+                "Start message citation. Request by: {}({})",
+                message.author.name, message.author.id
+            );
 
             if let Some(triple) = extract_ids_from_link(matched_str) {
                 if triple.guild_id == message.guild_id.unwrap() {
