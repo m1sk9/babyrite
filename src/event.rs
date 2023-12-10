@@ -7,6 +7,7 @@ use serenity::{
     model::prelude::{ChannelId, GuildId, Message, MessageId, Ready},
     prelude::{Context, EventHandler},
 };
+use tracing::log::debug;
 use tracing::{error, info, warn};
 
 pub struct EvHandler;
@@ -32,7 +33,10 @@ impl EventHandler for EvHandler {
         }
         let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
 
-        info!("引用を開始します...: Request by {}", message.author.name);
+        info!(
+            "Start message citation. Request by: {}({})",
+            message.author.name, message.author.id
+        );
 
         if let Some(triple) = extract_ids_from_link(matched_str) {
             if triple.guild_id == message.guild_id.unwrap() {
@@ -40,20 +44,15 @@ impl EventHandler for EvHandler {
                     error!("{:?}", why)
                 }
             } else {
-                warn!("メッセージ送信元ギルドと一致しないため, 引用をキャンセルしました")
+                warn!("Citation canceled due to message link not matching message sender guild and ID.")
             }
         } else {
-            warn!("IDの取り出しに失敗したため, 引用をキャンセルしました")
+            warn!("Canceled citation due to failure to retrieve ID.")
         }
-
-        info!("引用が完了しました.");
     }
 
     async fn ready(&self, ctx: Context, bot: Ready) {
-        ctx.set_activity(Some(ActivityData::playing(format!(
-            "babyrite v{}",
-            VERSION
-        ))));
+        ctx.set_activity(Some(ActivityData::playing(format!("v{}", VERSION))));
 
         info!(
             "Connected to {name}(ID:{id}). (Using babyrite v{version}).",
@@ -80,6 +79,7 @@ fn extract_ids_from_link(message_link: &str) -> Option<DiscordIds> {
         .get(3)
         .and_then(|m| m.as_str().parse::<u64>().ok())?;
 
+    debug!("Extracted IDs: {}, {}, {}", first, second, third);
     Some(
         DiscordIds::builder()
             .guild_id(GuildId::new(first))
