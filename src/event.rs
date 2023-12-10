@@ -1,4 +1,4 @@
-use crate::{adapters::message::send_citation_embed, model::id::DiscordIds, VERSION};
+use crate::{adapters::message::send_citation_embed, measure_time, model::id::DiscordIds, VERSION};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::{
@@ -26,29 +26,30 @@ impl EventHandler for EvHandler {
         if message.is_private() || message.author.bot {
             return;
         }
-
-        let content = &message.content;
-        if !MESSAGE_LINK_REGEX.is_match(content) || SKIP_MESSAGE_LINK_REGEX.is_match(content) {
-            return;
-        }
-        let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
-
         info!(
             "Start message citation. Request by: {}({})",
             message.author.name, message.author.id
         );
 
-        if let Some(triple) = extract_ids_from_link(matched_str) {
-            if triple.guild_id == message.guild_id.unwrap() {
-                if let Err(why) = send_citation_embed(triple, &ctx.http, &message).await {
-                    error!("{:?}", why)
+        measure_time!({
+            let content = &message.content;
+            if !MESSAGE_LINK_REGEX.is_match(content) || SKIP_MESSAGE_LINK_REGEX.is_match(content) {
+                return;
+            }
+            let matched_str = MESSAGE_LINK_REGEX.find(content).unwrap().as_str();
+
+            if let Some(triple) = extract_ids_from_link(matched_str) {
+                if triple.guild_id == message.guild_id.unwrap() {
+                    if let Err(why) = send_citation_embed(triple, &ctx.http, &message).await {
+                        error!("{:?}", why)
+                    }
+                } else {
+                    warn!("Citation canceled due to message link not matching message sender guild and ID.")
                 }
             } else {
-                warn!("Citation canceled due to message link not matching message sender guild and ID.")
+                warn!("Canceled citation due to failure to retrieve ID.")
             }
-        } else {
-            warn!("Canceled citation due to failure to retrieve ID.")
-        }
+        })
     }
 
     async fn ready(&self, ctx: Context, bot: Ready) {
