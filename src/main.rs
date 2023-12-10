@@ -11,6 +11,7 @@ mod adapters;
 mod client;
 mod env;
 mod event;
+mod macros;
 mod model;
 
 #[allow(dead_code)]
