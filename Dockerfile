@@ -15,4 +15,4 @@ WORKDIR /home/babyrite
 
 LABEL org.opencontainers.image.source=https://github.com/m1sk9/babyrite
 
-ENTRYPOINT [ "babyrite" ]
+ENTRYPOINT [ "sh", "-c", "RUST_LOG=babyrite=info babyrite" ]
