@@ -1,7 +1,7 @@
 use crate::model::message::CitationMessage;
 use serenity::builder::CreateEmbed;
 use serenity::builder::{CreateEmbedAuthor, CreateEmbedFooter};
-use tracing::info;
+use tracing::{debug, info};
 
 pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEmbed> {
     let footer = CreateEmbedFooter::new(message.channel_name);
@@ -23,6 +23,7 @@ pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEm
         embed
     };
 
-    info!("--- 埋め込みの生成が完了しました");
+    debug!("{:?}", embed);
+    info!("--- Generation of embed is complete.");
     Ok(embed)
 }

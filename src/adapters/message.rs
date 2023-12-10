@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Ok};
 use serenity::builder::{CreateAllowedMentions, CreateMessage};
 use serenity::{http::Http, model::channel::Message};
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::adapters::channel::get_channel;
 use crate::adapters::embed::build_citation_embed;
@@ -16,7 +16,9 @@ pub async fn send_citation_embed(
     target_message: &Message,
 ) -> anyhow::Result<()> {
     let message = get_citation_message(ids, http).await?;
-    let embed = build_citation_embed(message).context("埋め込みの生成に失敗しました")?;
+    debug!("{:?}", &message);
+
+    let embed = build_citation_embed(message).context("Failed to generate embed.")?;
 
     let allowed_mentions = CreateAllowedMentions::default().replied_user(true);
     let message_builder = CreateMessage::new()
@@ -28,7 +30,7 @@ pub async fn send_citation_embed(
         .channel_id
         .send_message(http, message_builder)
         .await
-        .context("引用メッセージの送信に失敗しました")?;
+        .context("Failed to send quote message.")?;
 
     Ok(())
 }
@@ -48,17 +50,17 @@ async fn get_citation_message(
         .await;
 
     if target_channel.is_nsfw() {
-        return Err(anyhow::anyhow!("引用元チャンネルはNSFWに指定されています"));
+        return Err(anyhow::anyhow!("The channel is designated NSFW."));
     }
 
     let target_message = target_channel
         .message(http, message_id)
         .await
-        .context("メッセージの取得に失敗しました")?;
+        .context("Failed to retrieve message.")?;
 
     if !target_message.embeds.is_empty() {
         return Err(anyhow::anyhow!(
-            "引用しようとしたメッセージは埋め込みを含んでいるため引用できませんでした"
+            "Message could not be citation because it contained embed"
         ));
     }
 
@@ -80,7 +82,7 @@ async fn get_citation_message(
         None
     };
 
-    info!("--- 引用メッセージの取得が完了しました.");
+    info!("--- Retrieval of citation message has been completed.");
     Ok(CitationMessage::builder()
         .content(target_message.content)
         .attachment_image_url(attachment_url)

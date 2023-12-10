@@ -1,7 +1,7 @@
 use serenity::model::Timestamp;
 use typed_builder::TypedBuilder;
 
-#[derive(TypedBuilder)]
+#[derive(TypedBuilder, Debug, Clone)]
 pub struct CitationMessage {
     // メッセージ内容
     pub content: String,
