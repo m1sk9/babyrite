@@ -9,8 +9,6 @@ FROM debian:bullseye-slim as Runner
 
 COPY --from=Builder --chown=root:root /root/app/target/release/babyrite /usr/local/bin/babyrite
 
-RUN apt-get update && apt-get install -y libssl-dev ca-certificates
-
 RUN useradd --create-home --user-group babyrite
 USER babyrite
 WORKDIR /home/babyrite
