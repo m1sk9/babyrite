@@ -1,30 +1,41 @@
 # Changelog
 
+## [0.5.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.4.0...babyrite-v0.5.0) (2023-12-10)
+
+
+### Features
+
+* メッセージ引用時の計測時間を表示するように ([#65](https://github.com/m1sk9/babyrite/issues/65)) ([c324926](https://github.com/m1sk9/babyrite/commit/c324926cdc4271353893c74016fff1be92890e43))
+  * メッセージ取得〜埋め込み返信までの計測時間がコンソールに表示されるようになりました. これにより, メッセージ引用時のパフォーマンスを測定できます.
+* ロギングシステムの実装 ([#61](https://github.com/m1sk9/babyrite/issues/61)) ([c303560](https://github.com/m1sk9/babyrite/commit/c30356087e5ada988bb7ae1b7cfac0138fd0dc73))
+  * ロギングシステムを実装しました. `RUST_LOG` の設定状況により, ログレベルを変更できます. 詳しくは [ドキュメント](https://docs.rs/env_logger/0.9.0/env_logger/#enabling-logging) を参照してください.
+  * この変更により, デフォルトでは Serenity など babyrite 内部クレートのログは表示されなくなりました.
+
+### Performance Improvements
+
+* 自動でキャッシュをアイドル・解放するように ([#66](https://github.com/m1sk9/babyrite/issues/66)) ([71c7313](https://github.com/m1sk9/babyrite/commit/71c73138e37ed8678cdc32a2119963209ae83d5a))
+  * `Time to live (TTL)`: 最初のキャッシュ保存 (挿入) から1時間経過したキャッシュは自動で解放されます.
+  * `Time to idle (TTI)`: キャッシュされたエントリーが30分間アクセスされなかった場合, キャッシュは自動で解放されます. ただし, アクセスがあっても `TTL` により最大1時間で解放されます.
+  * この変更によりキャッシュの最大サイズ(キャパシティ)を調整しています. 最大キャパシティに達した場合, 古いキャッシュから自動で解放されます. この場合 `TTL`, `TTI` の設定は無視されます.
+* Docker Image のサイズを最適化 ([#159](https://github.com/m1sk9/babyrite/pull/68)) ([17a36e5](https://github.com/m1sk9/babyrite/commit/17a36e57f6c2a0fc0c88815f2d93605e4e2e8146))
+  * 不必要な apt パッケージを削除し, Docker Image のサイズを最適化しました.
+
+| Image | Size |
+| --- | --- |
+| [`m1sk9/babyrite:v0.5.0`](#050-2023-12-10) | 98.93MB |
+| [`m1sk9/babyrite:v0.4.0`](#040-2023-12-02) | 132MB |
+
 ## [0.4.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.3.1...babyrite-v0.4.0) (2023-12-02)
 
 
 ### Features
 
 * Support Serenity v0.12.0 ([#45](https://github.com/m1sk9/babyrite/issues/45)) ([4a0b95d](https://github.com/m1sk9/babyrite/commit/4a0b95da39b0e4440ceaf8a714f09c7de5021c52))
-    - Serenity v0.12.0 では、すべての ID タイプの内部表現が非公開になりました。提供される新しい表現に置き換えられました。
-    - Serenity v0.12.0 では，`Activity` が削除され、新しく `ActivityData` が実装されました。ステータス更新ロジックが置き換えられました。
-    - Serenity v0.12.0 では、埋め込みとメッセージのロジックに破壊的変更が加えられました。これにより、babyrite ビルドインの埋め込み添付ファイルの実装が壊れたため, Serenity 独自の Builder に置き換えられました。
-        - これにより、アバターのないユーザーのメッセージを引用する際の動作が変更されました：アバターのないユーザーを引用する場合、アバターフィールドはデフォルトアバターの画像になります。
+  * Serenity v0.12.0 では、すべての ID タイプの内部表現が非公開になりました。提供される新しい表現に置き換えられました。
+  * Serenity v0.12.0 では，`Activity` が削除され、新しく `ActivityData` が実装されました。ステータス更新ロジックが置き換えられました。
+  * Serenity v0.12.0 では、埋め込みとメッセージのロジックに破壊的変更が加えられました。これにより、babyrite ビルドインの埋め込み添付ファイルの実装が壊れたため, Serenity 独自の Builder に置き換えられました。
+    * これにより、アバターのないユーザーのメッセージを引用する際の動作が変更されました：アバターのないユーザーを引用する場合、アバターフィールドはデフォルトアバターの画像になります。
 
-
-### Bug Fixes
-
-* サーバーが一致しなかった際引用しないように ([#8](https://github.com/m1sk9/babyrite/issues/8)) ([631414e](https://github.com/m1sk9/babyrite/commit/631414edde6770e31bc79c8b652e9fa5e4f3e482))
-* スレッド内のメッセージを引用できない問題の修正 ([#17](https://github.com/m1sk9/babyrite/issues/17)) ([316217a](https://github.com/m1sk9/babyrite/commit/316217a36fa84794b2ad26e2ac4ffd6ee535adf1))
-* ビルドエラーの修正 ([9f88c10](https://github.com/m1sk9/babyrite/commit/9f88c1062fdc5b2e81097e9c963fc120461f36ba))
-* 埋め込みメッセージをメッセージ文字列なしで引用してしまう不具合を修正 ([#16](https://github.com/m1sk9/babyrite/issues/16)) ([8cac699](https://github.com/m1sk9/babyrite/commit/8cac6991d9b4aac82151737afeeef7ff0aeb1758))
-
-
-### Performance Improvements
-
-* エラーハンドリングの改善 ([#15](https://github.com/m1sk9/babyrite/issues/15)) ([ed79084](https://github.com/m1sk9/babyrite/commit/ed790842ddceaaf9cccb808a629adfefb48df93b))
-* チャンネルキャッシュのロジックを改善 ([#37](https://github.com/m1sk9/babyrite/issues/37)) ([1c229f1](https://github.com/m1sk9/babyrite/commit/1c229f1bc042e0064ff884213a643d638cb6f815))
-* 埋め込み生成時のエラーパフォーマンスを改善 ([#22](https://github.com/m1sk9/babyrite/issues/22)) ([d893ca3](https://github.com/m1sk9/babyrite/commit/d893ca37862680dab84c462b3c810097a4ca9e77))
 
 ## [0.3.1](https://github.com/m1sk9/babyrite/compare/v0.3.0...v0.3.1) (2023-10-28)
 
