@@ -48,6 +48,7 @@ async fn get_citation_message(
             get_channel(channel_id, guild_id, http).await.unwrap()
         })
         .await;
+    debug!("{:?}", &CHANNEL_LIST_CACHE);
 
     if target_channel.is_nsfw() {
         return Err(anyhow::anyhow!("The channel is designated NSFW."));
