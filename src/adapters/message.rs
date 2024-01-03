@@ -79,10 +79,21 @@ async fn get_citation_message(
         None
     };
 
+    let sticker_url = if !target_message.sticker_items.is_empty() {
+        target_message
+            .sticker_items
+            .first()
+            // Note: if invalid sticker, return None
+            .map(|sticker| sticker.clone().image_url().unwrap())
+    } else {
+        None
+    };
+
     info!("--- Retrieval of citation message has been completed.");
     Ok(CitationMessage::builder()
         .content(target_message.content)
         .attachment_image_url(attachment_url)
+        .sticker_url(sticker_url)
         .author(author)
         .channel_name(target_channel.clone().name)
         .create_at(target_message.timestamp)
