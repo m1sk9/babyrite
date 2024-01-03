@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.5.0...babyrite-v0.6.0) (2024-01-03)
+
+
+### Features
+
+* スタンプのサポート ([#74](https://github.com/m1sk9/babyrite/issues/74)) ([4e07e5f](https://github.com/m1sk9/babyrite/commit/4e07e5fcda53f3415f67f4a71cc67551096155d9))
+
+
+### Bug Fixes
+
+* 一部の埋め込みメッセージが引用できない不具合を修正 ([#71](https://github.com/m1sk9/babyrite/issues/71)) ([eb6ff62](https://github.com/m1sk9/babyrite/commit/eb6ff62c112824f5c7fec5f38dc9d7d46fb12857))
+
 ## [0.5.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.4.0...babyrite-v0.5.0) (2023-12-10)
 
 
