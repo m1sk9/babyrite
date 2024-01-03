@@ -5,9 +5,10 @@ use tracing::{debug, info};
 
 pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEmbed> {
     let footer = CreateEmbedFooter::new(message.channel_name);
-    let author = CreateEmbedAuthor::new(message.author_name).icon_url(
+    let author = CreateEmbedAuthor::new(message.author.name).icon_url(
         message
-            .author_avatar_url
+            .author
+            .icon_url
             .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png".to_string()),
     );
     let embed = CreateEmbed::new()
