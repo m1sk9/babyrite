@@ -9,6 +9,9 @@ pub struct CitationMessage {
     // 添付ファイル (画像/GIFのみ)
     pub attachment_image_url: Option<String>,
 
+    // スタンプ画像
+    pub sticker_url: Option<String>,
+
     // メッセージ送信者情報
     pub author: CitationMessageAuthor,
 

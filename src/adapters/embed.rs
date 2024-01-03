@@ -24,6 +24,12 @@ pub fn build_citation_embed(message: CitationMessage) -> anyhow::Result<CreateEm
         embed
     };
 
+    let embed = if let Some(sticker_url) = message.sticker_url {
+        embed.thumbnail(sticker_url)
+    } else {
+        embed
+    };
+
     debug!("{:?}", embed);
     info!("--- Generation of embed is complete.");
     Ok(embed)
