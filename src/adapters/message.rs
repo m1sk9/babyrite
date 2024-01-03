@@ -59,7 +59,7 @@ async fn get_citation_message(
         .await
         .context("Failed to retrieve message.")?;
 
-    if !target_message.embeds.is_empty() {
+    if !target_message.embeds.is_empty() && target_message.content.is_empty() {
         return Err(anyhow::anyhow!(
             "Message could not be citation because it contained embed"
         ));
