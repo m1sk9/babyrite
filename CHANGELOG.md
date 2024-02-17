@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.6.1...babyrite-v0.6.2) (2024-02-17)
+
+
+### Bug Fixes
+
+* **bot:** 通常メッセージ以外のメッセージを引用してしまう不具合の修正 ([#81](https://github.com/m1sk9/babyrite/issues/81)) ([7e34746](https://github.com/m1sk9/babyrite/commit/7e34746187804e81ca4bb3a87f520eb31dfe7057))
+
 ## [0.6.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.6.0...babyrite-v0.6.1) (2024-01-19)
 
 
