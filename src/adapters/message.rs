@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Ok};
-use serenity::all::{ChannelId, GuildChannel, GuildId};
+use serenity::all::{ChannelId, GuildChannel, GuildId, MessageType};
 use serenity::builder::{CreateAllowedMentions, CreateMessage};
 use serenity::{http::Http, model::channel::Message, model::user::User};
 use tracing::{debug, info};
@@ -61,6 +61,11 @@ async fn get_citation_message(
         .message(http, message_id)
         .await
         .context("Failed to retrieve message.")?;
+
+    let kind = target_message.kind;
+    if kind != MessageType::Regular && kind != MessageType::InlineReply {
+        anyhow::bail!("Message could not be citation because it was not a regular message.");
+    }
 
     if !target_message.embeds.is_empty() && target_message.content.is_empty() {
         anyhow::bail!("Message could not be citation because it contained embed.");
