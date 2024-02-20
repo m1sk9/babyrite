@@ -1,11 +1,12 @@
 mod event;
+mod model;
 
 use serenity::model::gateway::GatewayIntents;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct BabyriteEnv {
-    pub discord_api_token: String
+    pub discord_api_token: String,
 }
 
 pub fn envs() -> &'static BabyriteEnv {
@@ -21,7 +22,8 @@ async fn main() {
 
     let envs = crate::envs();
 
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
     let subscriber = FmtSubscriber::builder().with_env_filter(filter).finish();
     tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber.");
 
