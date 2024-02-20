@@ -34,7 +34,7 @@ async fn main() {
             sentry::ClientOptions {
                 release: sentry::release_name!(),
                 ..Default::default()
-            }
+            },
         ))
     });
 
