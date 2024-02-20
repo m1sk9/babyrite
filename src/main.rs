@@ -1,42 +1,46 @@
-use std::time::Duration;
-
-use anyhow::Ok;
-use dotenvy::dotenv;
-use env::{BabyriteEnv, BABYRITE_ENV};
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
-
-use crate::client::discord_client;
-
-mod adapters;
-mod client;
-mod env;
 mod event;
-mod macros;
 mod model;
 
-#[allow(dead_code)]
-pub static DEFAULT_TIMEOUT_DURATION: Duration = Duration::from_secs(10);
-pub static VERSION: &str = env!("CARGO_PKG_VERSION");
+use serenity::model::gateway::GatewayIntents;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct BabyriteEnv {
+    pub discord_api_token: String,
+}
+
+pub fn envs() -> &'static BabyriteEnv {
+    static CACHE: std::sync::OnceLock<BabyriteEnv> = std::sync::OnceLock::new();
+    CACHE.get_or_init(|| envy::from_env().expect("Failed to load environment variables."))
+}
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    dotenv().ok();
+async fn main() {
+    if let Err(cause) = dotenvy::dotenv() {
+        tracing::warn!(%cause, "Failed to load environment variables from .env file.");
+    }
 
-    let subscriber = FmtSubscriber::builder()
-        .with_env_filter(
-            EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("babyrite=debug"))?,
-        )
-        .finish();
+    let envs = crate::envs();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set global default tracing-subscriber.");
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
+    let subscriber = FmtSubscriber::builder().with_env_filter(filter).finish();
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber.");
 
-    // 環境変数の読み込み. 読み込み後は [&BABYRITE_ENV.get().unwrap().<key>] でアクセスできる.
-    BABYRITE_ENV
-        .set(envy::from_env::<BabyriteEnv>().expect("Failed to load environment variables."))
-        .unwrap();
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    discord_client(&BABYRITE_ENV.get().unwrap().discord_api_token).await?;
+    let result = serenity::Client::builder(&envs.discord_api_token, intents)
+        .event_handler(event::EvHander)
+        .await;
 
-    Ok(())
+    let mut client = match result {
+        Ok(ret) => ret,
+        Err(cause) => {
+            return tracing::error!(%cause, "Failed to create discord client.");
+        }
+    };
+
+    if let Err(cause) = client.start().await {
+        tracing::error!(%cause, "Failed to start discord client.");
+    }
 }
