@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.6.2...babyrite-v0.7.0) (2024-02-20)
+
+
+### Features
+
+* sentry のサポート ([#84](https://github.com/m1sk9/babyrite/issues/84)) ([614fc0f](https://github.com/m1sk9/babyrite/commit/614fc0f2855a1f866e8efb6e80c8e91d8430db12))
+  * Babyrite に Sentry を導入できるようになりました. `SENTRY_DSN` 環境変数を設定することで, エラーが発生した際に Sentry に通知されます.
+
+### Performance Improvements
+
+* 引用機能の再実装 ([#83](https://github.com/m1sk9/babyrite/issues/83)) ([cd81400](https://github.com/m1sk9/babyrite/commit/cd81400ff96e0e0aa3b27dbc7fa838fae4a50133))
+  * 引用機能を再実装し, コード全体のリファクタリングを行いました.
+  * キャッシュのシステムを変更しました. TTL の設定を削除し, キャッシュのサイズを制限するようにしました.
+
 ## [0.6.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.6.1...babyrite-v0.6.2) (2024-02-17)
 
 
