@@ -42,6 +42,7 @@ docker pull ghcr.io/m1sk9/babyrite:vX.Y.Z
 | Key | Description | Required | Default |
 | --- | ----------- | -------- | ------- |
 | `DISCORD_API_TOKEN` | Discord API トークン | Yes | --- |
+| `SENTRY_DSN` | Sentry DSN | No | --- |
 
 環境変数の設定例は [`.env.example`](.env.example) を参照してください.
 
