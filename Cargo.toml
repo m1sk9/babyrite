@@ -13,7 +13,7 @@ once_cell = { version = "1.19.0" }
 regex = { version = "1.10.1" }
 sentry = { version = "0.32.2" }
 tracing = { version = "0.1.40" }
-typed-builder = { version = "0.18.0" }
+typed-builder = { version = "0.18.1" }
 
 [dependencies.serenity]
 version = "0.12.0"
