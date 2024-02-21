@@ -61,6 +61,7 @@ babyrite をセットアップするには以下の環境変数を設定する�
 | Key | Description | Required | Default |
 | --- | ----------- | -------- | ------- |
 | `DISCORD_API_TOKEN` | Discord API トークン | Yes | --- |
+| `SENTRY_DSN` | Sentry DSN | No | --- |
 
 これらの環境変数を `.env` として設定してください. 設定の例は [.env.example](../.env.example) を参照してください.
 
@@ -114,6 +115,12 @@ RUST_LOG=babyrite=info ./target/release/babyrite
 > [!NOTE]
 > `babyrite=` は `babyrite` クレートのログを指定しています. このため `RUST_LOG` に `babyrite` 以外のクレートを指定 (e.g. `RUST_LOG=serenity=info`) するとそのクレートのログが表示されます.
 
+### Sentry DSN を設定する (Optional)
+
+環境変数 `SENTRY_DSN` に Sentry DSN を設定することで babyrite はエラーを Sentry に送信します.
+
+Sentry については [公式サイト](https://sentry.io/) を参照してください.
+
 ## 使い方
 
 ### メッセージを引用する
@@ -150,12 +157,7 @@ babyrite は引用したメッセージのチャンネルをキャッシュと�
 
 #### キャッシュの有効期限
 
-チャンネルのキャッシュは以下のルールに従って解放が行われます.
-
-- `Time to live (TTL)`: 最初のキャッシュ保存 (挿入) から1時間経過したキャッシュは自動で解放されます.
-- `Time to idle (TTI)`: キャッシュされたエントリーが30分間アクセスされなかった場合, キャッシュは自動で解放されます. この場合でも `TTL` により最大1時間で解放されます.
-
-また, キャッシュの最大サイズ(キャパシティ)に達した場合, 古いキャッシュから自動で解放されます. この場合 `TTL`, `TTI` の設定は無視されます.
+キャッシュされたエントリーが30分間アクセスされなかった場合, キャッシュは自動で解放されます. 
 
 > [!IMPORTANT]
 > キャッシュを強制的に解放する場合は有効な babyrite のプロセスを再起動してください. (Docker Image の場合は `docker restart` で再起動できます)

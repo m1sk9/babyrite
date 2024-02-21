@@ -14,7 +14,7 @@ pub struct DiscordID {
 pub static CHANNEL_LIST_CACHE: Lazy<moka::future::Cache<ChannelId, GuildChannel>> =
     Lazy::new(|| {
         moka::future::CacheBuilder::new(100)
-            .time_to_live(std::time::Duration::from_secs(60))
+            .time_to_idle(std::time::Duration::from_secs(60 * 60))
             .build()
     });
 
