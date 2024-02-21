@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.0...babyrite-v0.7.1) (2024-02-21)
+
+
+### Bug Fixes
+
+* Moka のキャッシュ戦略の修正 ([#92](https://github.com/m1sk9/babyrite/issues/92)) ([589ea1f](https://github.com/m1sk9/babyrite/commit/589ea1f3e49407da00cf15aee93b702218edcc01))
+
 ## [0.7.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.6.2...babyrite-v0.7.0) (2024-02-20)
 
 
