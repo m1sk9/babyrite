@@ -6,7 +6,7 @@ license = "MIT"
 repository = "https://github.com/m1sk9/babyrite"
 
 [dependencies]
-anyhow = { version = "1.0.75" }
+anyhow = { version = "1.0.80" }
 dotenvy = { version = "0.15.7" }
 envy = { version = "0.4.2" }
 once_cell = { version = "1.19.0" }
