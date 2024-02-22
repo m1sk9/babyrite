@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.1...babyrite-v0.7.2) (2024-02-22)
+
+
+### Bug Fixes
+
+* 埋め込みの Author 欄がリクエスト送信者になる問題の修正 ([#95](https://github.com/m1sk9/babyrite/issues/95)) ([23c4e55](https://github.com/m1sk9/babyrite/commit/23c4e55d0998c92b4c9ee38b884de8aaf0c336b9))
+
 ## [0.7.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.0...babyrite-v0.7.1) (2024-02-21)
 
 
