@@ -129,15 +129,15 @@ impl EventHandler for EvHander {
             .sticker_image_url(sticker_url)
             .build();
 
-        let footer = CreateEmbedFooter::new(citation_msg.channel_name);
-        let author = CreateEmbedAuthor::new(message.author.clone().name)
-            .icon_url(citation_msg.author.icon_url.unwrap_or_default());
         let embed = CreateEmbed::default()
             .description(citation_msg.content)
             .color(0xb586f7)
             .timestamp(citation_msg.create_at)
-            .footer(footer)
-            .author(author)
+            .footer(CreateEmbedFooter::new(citation_msg.channel_name))
+            .author(
+                CreateEmbedAuthor::new(citation_msg.author.name)
+                    .icon_url(citation_msg.author.icon_url.unwrap_or_default()),
+            )
             .image(citation_msg.attachment_image_url.unwrap_or_default())
             .thumbnail(citation_msg.sticker_image_url.unwrap_or_default());
 
