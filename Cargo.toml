@@ -16,7 +16,7 @@ tracing = { version = "0.1.40" }
 typed-builder = { version = "0.18.1" }
 
 [dependencies.serenity]
-version = "0.12.0"
+version = "0.12.1"
 features = ["client", "gateway", "model", "cache", "rustls_backend"]
 default-features = false
 
