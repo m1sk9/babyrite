@@ -92,7 +92,7 @@ impl EventHandler for EvHander {
             return;
         }
 
-        if target_msg.embeds.len() > 0 {
+        if !target_msg.embeds.is_empty() && target_msg.content.is_empty() {
             return;
         }
 
