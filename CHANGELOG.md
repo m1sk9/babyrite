@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.2...babyrite-v0.7.3) (2024-03-06)
+
+
+### Bug Fixes
+
+* 埋め込みありのメッセージを引用できるように ([#100](https://github.com/m1sk9/babyrite/issues/100)) ([4ab5a2b](https://github.com/m1sk9/babyrite/commit/4ab5a2bcf1e9b491993d97722e4937189e818f2b))
+
 ## [0.7.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.1...babyrite-v0.7.2) (2024-02-22)
 
 
