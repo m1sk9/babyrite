@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.3...babyrite-v0.7.4) (2024-04-05)
+
+
+### Bug Fixes
+
+* **deps:** bump h2 from 0.3.24 to 0.3.26 ([#107](https://github.com/m1sk9/babyrite/issues/107)) ([3eb5f14](https://github.com/m1sk9/babyrite/commit/3eb5f148d0fe50dc204a29c82db315b53a08368b))
+
 ## [0.7.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.2...babyrite-v0.7.3) (2024-03-06)
 
 
