@@ -21,7 +21,7 @@ features = ["client", "gateway", "model", "cache", "rustls_backend"]
 default-features = false
 
 [dependencies.serde]
-version = "1.0.197"
+version = "1.0.198"
 features = ["derive"]
 
 [dependencies.tokio]
