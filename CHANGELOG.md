@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.4...babyrite-v0.7.5) (2024-04-20)
+
+
+### Bug Fixes
+
+* **deps:** bump rustls from 0.21.6 to 0.21.11 ([#118](https://github.com/m1sk9/babyrite/issues/118)) ([d3e16ba](https://github.com/m1sk9/babyrite/commit/d3e16ba7bf334b16f5a928f51c0db0f16cdfaf96))
+
 ## [0.7.4](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.3...babyrite-v0.7.4) (2024-04-05)
 
 
