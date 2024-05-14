@@ -3,7 +3,4 @@ services:
     image: ghcr.io/m1sk9/babyrite:v0
     env_file:
       - .env
-    deploy:
-      restart_policy:
-        delay: 5s
-        max_attempts: 3
+    restart: always
