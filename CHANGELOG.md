@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.5...babyrite-v0.7.6) (2024-05-14)
+
+
+### Bug Fixes
+
+* release-please-action のワークフローポイントを修正 ([#125](https://github.com/m1sk9/babyrite/issues/125)) ([70afcce](https://github.com/m1sk9/babyrite/commit/70afcce2174c390ac65fa3b918037f1648b91aa1))
+
 ## [0.7.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.4...babyrite-v0.7.5) (2024-04-20)
 
 
