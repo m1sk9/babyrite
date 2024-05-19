@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.6...babyrite-v0.8.0) (2024-05-19)
+
+
+### Breaking Changes
+
+- Sentry のサポートを削除 ([#134](https://github.com/m1sk9/babyrite/issues/134))
+ - v0.8.0 から Sentry が利用できなくなります. Sentry を使用したエラー監視を行いたい場合は自前でのビルドを推奨します.
+
+### Features
+
+- ベースイメージを Debian 12 (bookworm) に更新 ([#131](https://github.com/m1sk9/babyrite/issues/131))
+
 ## [0.7.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.5...babyrite-v0.7.6) (2024-05-14)
 
 
