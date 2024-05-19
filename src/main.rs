@@ -7,7 +7,6 @@ use tracing_subscriber::{EnvFilter, FmtSubscriber};
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct BabyriteEnv {
     pub discord_api_token: String,
-    pub sentry_dsn: Option<String>,
 }
 
 pub fn envs() -> &'static BabyriteEnv {
@@ -27,22 +26,6 @@ async fn main() {
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
     let subscriber = FmtSubscriber::builder().with_env_filter(filter).finish();
     tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber.");
-
-    let guild = envs.sentry_dsn.as_ref().map(|dsn| {
-        sentry::init((
-            dsn.as_str(),
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                ..Default::default()
-            },
-        ))
-    });
-
-    if guild.is_some() {
-        tracing::info!("Sentry is initialized.");
-    } else {
-        tracing::warn!("Sentry is not initialized.");
-    }
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
