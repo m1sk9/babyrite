@@ -1,6 +1,6 @@
 [package]
 name = "babyrite"
-version = "0.8.0-rc.1"
+version = "0.7.6"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/m1sk9/babyrite"
@@ -11,7 +11,6 @@ dotenvy = { version = "0.15.7" }
 envy = { version = "0.4.2" }
 once_cell = { version = "1.19.0" }
 regex = { version = "1.10.4" }
-sentry = { version = "0.32.3" }
 tracing = { version = "0.1.40" }
 typed-builder = { version = "0.18.2" }
 
