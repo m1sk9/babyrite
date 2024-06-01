@@ -109,6 +109,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35636a1494ede3b646cc98f74f8e62c773a38a659ebc777a2cf26b9b74171df9"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -985,7 +991,7 @@ version = "0.11.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "046cd98826c46c2ac8ddecae268eb5c2e58628688a5fc7a2643704a73faba95b"
 dependencies = [
- "base64",
+ "base64 0.21.5",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1099,7 +1105,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d3987094b1d07b653b7dfdc3f70ce9a1da9c51ac18c1b06b662e4f9a0e9f4b2"
 dependencies = [
- "base64",
+ "base64 0.21.5",
 ]
 
 [[package]]
@@ -1177,6 +1183,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_cow"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64e84ce5596a72f0c4c60759a10ff8c22d5eaf227b0dc2789c8746193309058b"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1212,13 +1227,13 @@ dependencies = [
 
 [[package]]
 name = "serenity"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c64da29158bb55d70677cacd4f4f8eab1acef005fb830d9c3bea411b090e96a9"
+checksum = "880a04106592d0a8f5bdacb1d935889bfbccb4a14f7074984d9cd857235d34ac"
 dependencies = [
  "arrayvec",
  "async-trait",
- "base64",
+ "base64 0.22.1",
  "bitflags 2.4.2",
  "bytes",
  "dashmap",
@@ -1231,6 +1246,7 @@ dependencies = [
  "reqwest",
  "secrecy",
  "serde",
+ "serde_cow",
  "serde_json",
  "time",
  "tokio",
