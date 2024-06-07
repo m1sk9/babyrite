@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup toolchain
-        uses: mkroening/rust-toolchain-toml@v1.2.0
+        uses: mkroening/rust-toolchain-toml@v1.3.0
 
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
