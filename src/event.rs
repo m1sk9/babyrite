@@ -22,7 +22,7 @@ static SKIP_MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
 impl EventHandler for EvHander {
     #[tracing::instrument(skip_all)]
     async fn message(&self, ctx: Context, message: Message) {
-        if message.is_private() || message.author.bot {
+        if message.author.bot {
             return;
         }
 
