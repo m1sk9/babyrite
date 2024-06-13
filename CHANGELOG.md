@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.0...babyrite-v0.8.1) (2024-06-13)
+
+
+### Bug Fixes
+
+babyrite が使用している Discord API ライブラリ [Serenity v0.12.2](https://github.com/serenity-rs/serenity/releases/tag/v0.12.2) で非推奨になったメソッドを削除・置き換えを行いました.
+
+* 非推奨メソッド `is_nsfw()` を `nsfw()` に置き換え ([#143](https://github.com/m1sk9/babyrite/issues/143)) ([6bd4047](https://github.com/m1sk9/babyrite/commit/6bd4047084a0d18a20ddf69e40ef2529cab1e317))
+* 非推奨メソッド `is_private()` を削除し, DM かの判定を ID チェックのみに ([#141](https://github.com/m1sk9/babyrite/issues/141)) ([6b26a52](https://github.com/m1sk9/babyrite/commit/6b26a527a985174179b9a2f6b720af67c00832ae))
+  * この変更により, babyrite は ID 取り出し処理による判定のみで DM かどうかを判断します.
+
 ## [0.8.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.7.6...babyrite-v0.8.0) (2024-05-19)
 
 
