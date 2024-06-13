@@ -75,7 +75,7 @@ impl EventHandler for EvHander {
             }
         };
 
-        if target_ch.is_nsfw() {
+        if target_ch.nsfw {
             return;
         }
 
