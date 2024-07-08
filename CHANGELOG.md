@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.2...babyrite-v0.8.3) (2024-07-08)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate moka to v0.12.8 ([#150](https://github.com/m1sk9/babyrite/issues/150)) ([a77ddc0](https://github.com/m1sk9/babyrite/commit/a77ddc00d3f19cd4fb84520624d34d5333cc8187))
+
 ## [0.8.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.1...babyrite-v0.8.2) (2024-07-07)
 
 
