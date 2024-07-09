@@ -1,14 +1,12 @@
-name: Build babyrite
+name: CI
 
 on:
   push:
     branches:
       - main
-      - 'release/v*.*.*'
   pull_request:
     branches:
       - main
-      - 'release/v*.*.*'
 
 jobs:
   build:
@@ -17,14 +15,23 @@ jobs:
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
-
+  
       - name: Setup toolchain
-        uses: mkroening/rust-toolchain-toml@v1.3.0
-
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+  
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "babyrite/gh-actions-cache"
-
+        
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
+        
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features
+        
       - name: Run Build
         run: cargo build --verbose
+                
