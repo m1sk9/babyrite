@@ -147,11 +147,7 @@ impl EventHandler for EvHander {
             .reference_message(&message.clone())
             .allowed_mentions(mention);
 
-        let result = message
-            .channel_id
-            .clone()
-            .send_message(&ctx.http, reply_msg)
-            .await;
+        let result = message.channel_id.send_message(&ctx.http, reply_msg).await;
         if let Err(cause) = result {
             tracing::error!(%cause, "Failed to send citation message.");
         }
