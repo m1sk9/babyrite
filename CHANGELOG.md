@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.5...babyrite-v0.8.6) (2024-07-23)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate tokio to v1.39.1 ([#159](https://github.com/m1sk9/babyrite/issues/159)) ([69dbed0](https://github.com/m1sk9/babyrite/commit/69dbed0e012aa3b43385e3ed0abf3bb843bd8f65))
+
 ## [0.8.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.4...babyrite-v0.8.5) (2024-07-16)
 
 
