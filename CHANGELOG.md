@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.7](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.6...babyrite-v0.8.7) (2024-08-03)
+
+
+### Bug Fixes
+
+* **deps:** bump time to `0.3.36` ([#166](https://github.com/m1sk9/babyrite/issues/166)) ([6f8c069](https://github.com/m1sk9/babyrite/commit/6f8c0691f4b8616f2a5633703ac216e0eac6bc86))
+* **deps:** update rust crate regex to v1.10.6 ([#164](https://github.com/m1sk9/babyrite/issues/164)) ([f2e2716](https://github.com/m1sk9/babyrite/commit/f2e271698aae8cef10440b524b9b2966ea7c317b))
+* **deps:** update rust crate tokio to v1.39.2 ([#162](https://github.com/m1sk9/babyrite/issues/162)) ([6819c35](https://github.com/m1sk9/babyrite/commit/6819c35e6545a17ae0f7eff15a0529c62b18be80))
+
 ## [0.8.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.5...babyrite-v0.8.6) (2024-07-23)
 
 
