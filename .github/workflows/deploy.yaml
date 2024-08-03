@@ -46,7 +46,7 @@ jobs:
       - name: Setup cache
         uses: Swatinem/rust-cache@v2
         with:
-          prefix-key: "dev-guide/gh-actions-cache"
+          prefix-key: "babyrite-docs/gh-actions-cache"
 
       - name: Install mdbook plugins
         run: |
