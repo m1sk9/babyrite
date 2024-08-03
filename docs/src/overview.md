@@ -11,4 +11,7 @@ There are several such bots in the public, but none of them have been released a
 
 ## Navigation
 
-- []
+- [Setup 🛠️](./setup.md)
+- [Sponsor this project ❤️](https://github.com/sponsors/m1sk9)
+- [Packages 📦](https://github.com/m1sk9/babyrite/pkgs/container/babyrite)
+- [Repository 🐱](https://github.com/m1sk9/babyrite)
