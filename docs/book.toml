@@ -1,0 +1,25 @@
+[book]
+language = "ja"
+description = "The documentation for babyrite"
+src = "src"
+title = "babyrite docs"
+multilingual = false
+authors = ["m1sk9"]
+
+[rust]
+edition = "2021"
+
+[build]
+build-dir = "build"
+create-missing = false
+use-default-preprocessors = true
+
+[output.html]
+git-repository-url = "https://github.com/m1sk9/babyrite"
+edit-url-template = "https://github.com/m1sk9/babyrite/edit/main/docs/{path}"
+
+[preprocessor.alerts]
+
+[preprocessor.toc]
+command = "mdbook-toc"
+renderer = ["html"]
