@@ -21,7 +21,7 @@ docker pull ghcr.io/m1sk9/babyrite:v0
 
 You can start babyrite by providing environment variables for the Docker Image you have obtained.
 
-See [babyrite docs](. /docs/README.md) for detailed setup instructions.
+See [babyrite docs](https://babyrite.m1sk9.dev) for detailed setup instructions.
 
 ## Environment Variables
 
