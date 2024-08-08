@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.8](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.7...babyrite-v0.8.8) (2024-08-08)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate serde to v1.0.205 ([#176](https://github.com/m1sk9/babyrite/issues/176)) ([73291a9](https://github.com/m1sk9/babyrite/commit/73291a924d7c0b13baeaaaa9c64144d3787b53b7))
+
 ## [0.8.7](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.6...babyrite-v0.8.7) (2024-08-03)
 
 
