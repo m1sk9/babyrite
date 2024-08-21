@@ -1,7 +1,5 @@
-use crate::model::ids::BabyriteIDs;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serenity::all::{ChannelType, GuildChannel, MessageId, MessageType};
 use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter};
 
 pub static DISCORD_LINK_PATTERN: &str =
@@ -23,10 +21,6 @@ pub struct CitationMessageAuthor {
 
 #[derive(Default, Debug, typed_builder::TypedBuilder)]
 pub struct CitationMessage {
-    pub id: MessageId,
-
-    pub kind: MessageType,
-
     pub content: String,
 
     pub author: CitationMessageAuthor,
@@ -36,13 +30,6 @@ pub struct CitationMessage {
     pub create_at: serenity::model::Timestamp,
 
     pub attachment_image_url: Option<String>,
-}
-
-#[derive(Default, Debug, typed_builder::TypedBuilder)]
-pub struct CitationSourceMessage {
-    pub message: CitationMessage,
-
-    pub channel: GuildChannel,
 }
 
 impl CitationMessage {

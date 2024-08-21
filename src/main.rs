@@ -1,5 +1,8 @@
+#[deny(unused_imports)]
+
 use serenity::prelude::GatewayIntents;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
+use crate::model::config::BabyriteConfig;
 
 mod env;
 mod handler;
@@ -17,6 +20,14 @@ async fn main() -> anyhow::Result<()> {
     let subscriber = FmtSubscriber::builder().with_env_filter(filter).finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to set tracing_subscriber as global default.");
+
+    BabyriteConfig::init();
+    let config = BabyriteConfig::get();
+    tracing::info!("Configuration: {:?}", config);
+
+    if config.bypass_guilds {
+        tracing::warn!("The guild bypass setting is enabled. Quote messages between different guilds. ")
+    }
 
     let envs = env::babyrite_envs();
     // "メッセージの取得", "ギルド内メッセージへのアクセス" に該当する
