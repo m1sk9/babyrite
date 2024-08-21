@@ -1,13 +1,12 @@
 use crate::model::cache::get_channel_list_cache;
+use crate::model::config::BABYRITE_CONFIG;
 use crate::model::ids::BabyriteIDs;
 use crate::model::message::{
-    CitationMessage, CitationMessageAuthor, MESSAGE_LINK_REGEX,
-    SKIP_MESSAGE_LINK_REGEX,
+    CitationMessage, CitationMessageAuthor, MESSAGE_LINK_REGEX, SKIP_MESSAGE_LINK_REGEX,
 };
 use serenity::all::{Context, CreateAllowedMentions, CreateMessage, Message, Ready};
 use serenity::client::EventHandler;
 use serenity::gateway::ActivityData;
-use crate::model::config::BABYRITE_CONFIG;
 
 pub struct BabyriteHandler;
 

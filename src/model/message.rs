@@ -33,21 +33,23 @@ pub struct CitationMessage {
 }
 
 impl CitationMessage {
-    pub fn to_embed(self) -> CreateEmbed {
+    pub fn to_embed(&self) -> CreateEmbed {
         CreateEmbed::default()
-            .description(self.content)
+            .description(&self.content)
             .timestamp(self.create_at)
             .color(0xb586f7)
             .author(
-                CreateEmbedAuthor::new(self.author.name).icon_url(
+                CreateEmbedAuthor::new(&self.author.name).icon_url(
                     self.author
                         .icon_url
+                        .clone()
                         .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png".to_string()),
                 ),
             )
-            .footer(CreateEmbedFooter::new(self.channel_name))
+            .footer(CreateEmbedFooter::new(&self.channel_name))
             .image(
                 self.attachment_image_url
+                    .clone()
                     .map(|url| url.to_string())
                     .unwrap_or_default(),
             )

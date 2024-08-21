@@ -1,8 +1,7 @@
+use crate::model::config::BabyriteConfig;
 #[deny(unused_imports)]
-
 use serenity::prelude::GatewayIntents;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
-use crate::model::config::BabyriteConfig;
 
 mod env;
 mod handler;
@@ -12,8 +11,9 @@ mod model;
 async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting babyrite at v{}", env!("CARGO_PKG_VERSION"));
 
-    dotenvy::dotenv()
-        .expect("Failed to load .env file. Do you placed the .env in the executable directory?");
+    if let Err(cause) = dotenvy::dotenv() {
+        tracing::warn!(%cause, "Failed to load environment variables from .env file.");
+    }
 
     let filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
@@ -26,7 +26,9 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Configuration: {:?}", config);
 
     if config.bypass_guilds {
-        tracing::warn!("The guild bypass setting is enabled. Quote messages between different guilds. ")
+        tracing::warn!(
+            "The guild bypass setting is enabled. Quote messages between different guilds. "
+        )
     }
 
     let envs = env::babyrite_envs();
