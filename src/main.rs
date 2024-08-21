@@ -1,46 +1,28 @@
-mod event;
-mod model;
-
-use serenity::model::gateway::GatewayIntents;
+use serenity::prelude::GatewayIntents;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct BabyriteEnv {
-    pub discord_api_token: String,
-}
-
-pub fn envs() -> &'static BabyriteEnv {
-    static CACHE: std::sync::OnceLock<BabyriteEnv> = std::sync::OnceLock::new();
-    CACHE.get_or_init(|| envy::from_env().expect("Failed to load environment variables."))
-}
+mod env;
+mod handler;
 
 #[tokio::main]
-async fn main() {
-    if let Err(cause) = dotenvy::dotenv() {
-        tracing::warn!(%cause, "Failed to load environment variables from .env file.");
-    }
+async fn main() -> anyhow::Result<()> {
+    tracing::info!("Starting babyrite at v{}", env!("CARGO_PKG_VERSION"));
 
-    let envs = envs();
+    dotenvy::dotenv().expect("Failed to load .env file. Do you placed the .env in the executable directory?");
 
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
     let subscriber = FmtSubscriber::builder().with_env_filter(filter).finish();
-    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber.");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set tracing_subscriber as global default");
 
-    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let envs = env::babyrite_envs();
+    // "メッセージの取得", "ギルド内メッセージへのアクセス" に該当する
+    let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
+    let mut client = serenity::Client::builder(&envs.discord_api_token, intents)
+        .event_handler(handler::BabyriteHandler)
+        .await.expect("Failed to create a new client");
 
-    let result = serenity::Client::builder(&envs.discord_api_token, intents)
-        .event_handler(event::EvHander)
-        .await;
-
-    let mut client = match result {
-        Ok(ret) => ret,
-        Err(cause) => {
-            return tracing::error!(%cause, "Failed to create discord client.");
-        }
-    };
-
-    if let Err(cause) = client.start().await {
-        tracing::error!(%cause, "Failed to start discord client.");
+    if let Err(why) = client.start().await {
+        Err(anyhow::anyhow!("An error occurred while running the client: {:?}", why))?;
     }
+    Ok(())
 }
