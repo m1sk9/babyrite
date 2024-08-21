@@ -32,8 +32,4 @@ impl BabyriteIDs {
             Err(e) => Err(anyhow::anyhow!(e)),
         }
     }
-
-    pub fn is_own_guild(&self, target_id: GuildId) -> bool {
-        target_id == self.guild
-    }
 }
