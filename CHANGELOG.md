@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.9...babyrite-v0.9.0) (2024-08-22)
+
+
+### Features
+
+* Added guild bypass settings ([#191](https://github.com/m1sk9/babyrite/issues/191)) ([cf303f1](https://github.com/m1sk9/babyrite/commit/cf303f13aad13e5767d2bf94758cefe5b59b60c1))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate serde to v1.0.207 ([#182](https://github.com/m1sk9/babyrite/issues/182)) ([45cf1bd](https://github.com/m1sk9/babyrite/commit/45cf1bd61413c98671845715ac4e78c871991b2a))
+* **deps:** update rust crate serde to v1.0.208 ([#188](https://github.com/m1sk9/babyrite/issues/188)) ([27a6fc2](https://github.com/m1sk9/babyrite/commit/27a6fc2e97d7e91e673420c93ce88e59fa65d500))
+* **deps:** update rust crate tokio to v1.39.3 ([#189](https://github.com/m1sk9/babyrite/issues/189)) ([7d75876](https://github.com/m1sk9/babyrite/commit/7d75876abd0b19b97e62e29ba4523448213ee8e9))
+
 ## [0.8.9](https://github.com/m1sk9/babyrite/compare/babyrite-v0.8.8...babyrite-v0.8.9) (2024-08-11)
 
 
