@@ -1,7 +1,5 @@
-use crate::model::ids::BabyriteIDs;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serenity::all::{ChannelType, GuildChannel, MessageId, MessageType};
 use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter};
 
 pub static DISCORD_LINK_PATTERN: &str =
@@ -23,10 +21,6 @@ pub struct CitationMessageAuthor {
 
 #[derive(Default, Debug, typed_builder::TypedBuilder)]
 pub struct CitationMessage {
-    pub id: MessageId,
-
-    pub kind: MessageType,
-
     pub content: String,
 
     pub author: CitationMessageAuthor,
@@ -38,29 +32,24 @@ pub struct CitationMessage {
     pub attachment_image_url: Option<String>,
 }
 
-#[derive(Default, Debug, typed_builder::TypedBuilder)]
-pub struct CitationSourceMessage {
-    pub message: CitationMessage,
-
-    pub channel: GuildChannel,
-}
-
 impl CitationMessage {
-    pub fn to_embed(self) -> CreateEmbed {
+    pub fn to_embed(&self) -> CreateEmbed {
         CreateEmbed::default()
-            .description(self.content)
+            .description(&self.content)
             .timestamp(self.create_at)
             .color(0xb586f7)
             .author(
-                CreateEmbedAuthor::new(self.author.name).icon_url(
+                CreateEmbedAuthor::new(&self.author.name).icon_url(
                     self.author
                         .icon_url
+                        .clone()
                         .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png".to_string()),
                 ),
             )
-            .footer(CreateEmbedFooter::new(self.channel_name))
+            .footer(CreateEmbedFooter::new(&self.channel_name))
             .image(
                 self.attachment_image_url
+                    .clone()
                     .map(|url| url.to_string())
                     .unwrap_or_default(),
             )
