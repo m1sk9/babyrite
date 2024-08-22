@@ -7,3 +7,7 @@
 [Usage](./usage.md)
 
 [Configuration](./configuration.md)
+
+[Hosted babyrite](./hosted.md)
+
+[Changelog](./changelog.md)
