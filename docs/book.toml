@@ -1,10 +1,10 @@
 [book]
-language = "ja"
+language = "en"
 description = "The documentation for babyrite"
 src = "src"
 title = "babyrite docs"
 multilingual = false
-authors = ["m1sk9"]
+authors = ["m1sk9 <me@m1sk9.dev>"]
 
 [rust]
 edition = "2021"

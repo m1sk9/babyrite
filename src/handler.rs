@@ -49,6 +49,10 @@ impl EventHandler for BabyriteHandler {
             }
         };
 
+        if target_channel.nsfw {
+            return;
+        }
+
         if !target_message.embeds.is_empty() || target_message.content.is_empty() {
             return;
         }
