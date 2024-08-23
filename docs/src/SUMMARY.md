@@ -4,10 +4,12 @@
 
 [Installation](./installation.md)
 
-[Usage](./usage.md)
-
 [Configuration](./configuration.md)
 
 [Hosted babyrite](./hosted.md)
+
+[Usage](./usage.md)
+
+[FAQ](./faq.md)
 
 [Changelog](./changelog.md)

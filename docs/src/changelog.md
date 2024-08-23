@@ -1,5 +1,7 @@
 # Changelog
 
+Updates are available for major versions only.
+
 The full version should be checked on [GitHub](https://github.com/m1sk9/babyrite/releases).
 
 ----
