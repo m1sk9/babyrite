@@ -31,7 +31,7 @@ babyrite is a dynamically linked binary compiled with Rust. Unlike discord.js an
 - 1 CPU core
 - 512MB RAM
 
-Supports only **Linux and macOS**. (Windows is not **support**ed)
+Supports only **Linux and macOS**. [(Windows is not **support**ed)](./faq.md#why-is-windows-not-supported)
 
 > [!NOTE]
 > 
