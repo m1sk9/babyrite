@@ -4,13 +4,9 @@
 
 ## Quoting a Message
 
-When you send a message link to a channel, babyrite will fetch and display the message.
+If you send a link to a message sent to a channel that babyrite can view, babyrite will expand the content of that message into an embed.
 
-babyrite can quote the following messages:
-
-- Messages from channels that babyrite has access to
-- Messages from channels with NSFW settings turned off
-- Messages that contain embeds
+Messages with NSFW setting turned on or containing embeds are not quoted.
 
 > [!IMPORTANT]
 >
