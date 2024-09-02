@@ -1,12 +1,19 @@
 # Changelog
 
-Updates are available for major versions only.
-
 The full version should be checked on [GitHub](https://github.com/m1sk9/babyrite/releases).
 
 ----
 
 <!-- toc -->
+
+## v0.9.2 (Backport: v0.9.1)
+
+[released on 2024/09/02](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.9.2)
+
+**Fixed**
+
+- [#198](https://github.com/m1sk9/babyrite/pull/198): Fixed a bug that prevented babyrite from starting in the development environment.
+  - The `CONFIG_FILE_PATH` environment variable must now be set to a path relative to the configuration file.
 
 ## v0.9.0
 
