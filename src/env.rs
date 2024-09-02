@@ -1,5 +1,6 @@
 #[derive(serde::Deserialize)]
 pub struct BabyriteEnv {
+    pub config_file_path: String,
     pub discord_api_token: String,
 }
 
