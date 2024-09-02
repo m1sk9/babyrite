@@ -1,4 +1,4 @@
-name: Deploy CommandReference
+name: Deploy babyrite docs
 
 on:
   push:
