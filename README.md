@@ -1,17 +1,12 @@
 # babyrite
 
+[![CI](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
 [![Release babyrite](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml)
-[![Build](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
+[![Deploy babyrite docs](https://github.com/m1sk9/babyrite/actions/workflows/deploy.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/deploy.yaml)
 
-A citation message Discord bot
+**babyrite** is a citation message Discord bot.
 
-![babyrite example](docs/src/public/example.gif)
-
-## Installation
-
-Can get babyrite Docker Image from ghcr.io:
-
-```shell
+```sh
 # latest version
 docker pull ghcr.io/m1sk9/babyrite:latest
 
@@ -19,16 +14,31 @@ docker pull ghcr.io/m1sk9/babyrite:latest
 docker pull ghcr.io/m1sk9/babyrite:v0
 ```
 
-You can start babyrite by providing environment variables for the Docker Image you have obtained.
+[*API Support: requires Discord API v10*](https://discord.com/developers/docs/reference#api-versioning)
 
-See [babyrite docs](https://babyrite.m1sk9.dev) for detailed setup instructions.
+## Setup and Hosting
 
-## Environment Variables
+babyrite can be hosted using Docker Compose or k8s.
 
-The following are environment variables used by babyrite.
+See [official guide](https://babyrite.m1sk9.dev/installation.html) for setup and hosting.
 
-Key whose `Required` column is `Yes` must be specified. If not specified, babyrite will not start correctly.
+## Details
 
-| Key | Description | Required | Default |
-| --- | ----------- | -------- | ------- |
-| `DISCORD_API_TOKEN` | Discord API Token | Yes | --- |
+- babyrite is one of the Quote Bots that expands the message content of a sent message link into an embed.
+  - There are several such bots in the public, but none of them have been released as OSS. babyrite provides a way to host it yourself as well as to release it as OSS.
+
+<img src="./docs/src/public/using-babyrite.png" alt="Using babyrite" width="70%" >
+
+- babyrite can also extract attached image/GIF files.
+  - These attached files are sent using Discord's CDN and are not stored on the server side.
+
+<img src="./docs/src/public/attachment.png" alt="babyrite attachment" width="70%" >
+
+- In addition to `discord.com`, babyrite supports message links used by a limited number of builds, such as `canary.discord.com` and `ptb.discord.com`.
+  - *Not supported by `discordapp.com`. See [m1sk9/babyrite#172](https://github.com/m1sk9/babyrite/issues/172) for details.*
+
+## LICENSE
+
+babyrite is published under [MIT LIcense](./LICENSE).
+
+<sub>© 2023-2024 m1sk9</sub>

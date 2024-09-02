@@ -1,7 +1,8 @@
 # babyrite
 
+[![CI](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
 [![Release babyrite](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml)
-[![Build](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
+[![Deploy babyrite docs](https://github.com/m1sk9/babyrite/actions/workflows/deploy.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/deploy.yaml)
 
 babyrite is a Discord Bot that can expand a message from a message link into an embed.
 

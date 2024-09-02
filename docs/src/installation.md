@@ -60,7 +60,7 @@
     ```sh
     DISCORD_API_TOKEN=your_discord_api_token
     ```
-   
+
 3. Copy configuration files:
 
     ```sh
@@ -81,7 +81,6 @@
 > Since babyrite is intended for use in a Docker environment, it is not distributed in binary form.
 >
 > If you want to use it in binary format, you need to compile it yourself. To compile it, you need to have [Rust](https://www.rust-lang.org/tools/install) installed.
-
 
 1. Clone the repository:
 
