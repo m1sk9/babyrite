@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.9.1...babyrite-v0.9.2) (2024-09-02)
+
+
+### Bug Fixes
+
+* 開発環境で起動できない問題の修正 ([#198](https://github.com/m1sk9/babyrite/issues/198)) ([e7b5d14](https://github.com/m1sk9/babyrite/commit/e7b5d14d22a6a3c2c60a0403ca9f91910c33729d))
+  * `CONFIG_FILE_PATH` に設定ファイルへのパスを相対で指定することが必須になりました
+
 ## [0.9.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.9.0...babyrite-v0.9.1) (2024-08-29)
 
 
