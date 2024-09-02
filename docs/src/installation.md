@@ -21,9 +21,10 @@
 
    Key whose `Required` column is `Yes` must be specified. If not specified, babyrite will not start correctly.
 
-   | Key                 | Description       | Required | Default |
-   |---------------------|-------------------|----------|---------|
-   | `DISCORD_API_TOKEN` | Discord API Token | Yes      | ---     |
+   | Key                 | Description                             | Required | Default |
+   |---------------------|-----------------------------------------|----------|---------|
+   | `CONFIG_FILE_PATH`  | Configuration file path (relative path) | No       | ---     |
+   | `DISCORD_API_TOKEN` | Discord API Token                       | Yes      | ---     |
 
 3. Copy configuration files:
 
@@ -35,7 +36,7 @@
 4. Start babyrite:
 
     ```sh
-    docker run -e DISCORD_API_TOKEN=your_discord_api_token --volume ./config/config.yaml:/config/config.yaml ghcr.io/m1sk9/babyrite
+    docker run -e CONFIG_FILE_PATH=/path/to/your/config.yaml -e DISCORD_API_TOKEN=your_discord_api_token --volume ./config/config.yaml:/config/config.yaml ghcr.io/m1sk9/babyrite
     ```
 
 ## Using Docker Compose
@@ -58,6 +59,7 @@
 2. Create a `.env` file:
 
     ```sh
+    CONFIG_FILE_PATH=/path/to/your/config.yaml
     DISCORD_API_TOKEN=your_discord_api_token
     ```
 
