@@ -85,7 +85,9 @@ impl EventHandler for BabyriteHandler {
             .send_message(&ctx.http, {
                 CreateMessage::default()
                     .embed(embed)
-                    .allowed_mentions(CreateAllowedMentions::default().replied_user(true))
+                    .allowed_mentions(
+                        CreateAllowedMentions::default().replied_user(config.citation_mention),
+                    )
                     .reference_message(&message.clone())
             })
             .await
