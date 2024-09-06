@@ -5,6 +5,7 @@ use crate::env::babyrite_envs;
 #[derive(Debug, Deserialize)]
 pub struct BabyriteConfig {
     pub bypass_guilds: bool,
+    pub citation_mention: bool,
 }
 
 pub static BABYRITE_CONFIG: once_cell::sync::OnceCell<BabyriteConfig> =
