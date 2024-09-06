@@ -5,6 +5,4 @@ services:
       - .env
     volumes:
       - ./config/config.yaml:/config/config.yaml
-    environment:
-      - RUST_LOG=babyrite=info
     restart: always
