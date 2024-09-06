@@ -31,8 +31,21 @@ impl EventHandler for BabyriteHandler {
             return;
         }
 
+        tracing::info!(
+            "* Request from {}: Start processing...",
+            message.author.tag(),
+        );
+
         let target_channel = match get_channel_list_cache(&ctx, ids.guild, ids.channel).await {
-            Ok(channel) => channel,
+            Ok(channel) => {
+                tracing::info!(
+                    "{} - Message retrieved: {}({})",
+                    message.author.tag(),
+                    channel.name,
+                    channel.id
+                );
+                channel
+            }
             Err(e) => {
                 tracing::error!(
                     "Failed to retrieve channel. It does not exist or the cache is invalid: {:?}",
@@ -41,19 +54,38 @@ impl EventHandler for BabyriteHandler {
                 return;
             }
         };
+
+        if target_channel.nsfw {
+            tracing::warn!(
+                "{} - Cancel message citation: Target channel was NSFW.",
+                message.author.tag()
+            );
+            return;
+        }
+
         let target_message = match target_channel.message(&ctx.http, ids.message).await {
-            Ok(message) => message,
+            Ok(target) => {
+                tracing::info!(
+                    "{} - Channel retrieved: {}",
+                    message.author.tag(),
+                    target.id
+                );
+                target
+            }
             Err(e) => {
                 tracing::error!("Failed to retrieve message: {:?}", e);
                 return;
             }
         };
 
-        if target_channel.nsfw {
-            return;
-        }
-
         if !target_message.embeds.is_empty() && target_message.content.is_empty() {
+            if target_channel.nsfw {
+                tracing::warn!(
+                    "{} - Cancel message citation: Message with embedding.",
+                    message.author.tag()
+                );
+                return;
+            }
             return;
         }
 
@@ -94,6 +126,11 @@ impl EventHandler for BabyriteHandler {
         {
             tracing::error!("Failed to send message: {:?}", why);
         }
+
+        tracing::info!(
+            "* Request from {}: Successful citation.",
+            message.author.tag()
+        );
     }
 
     async fn ready(&self, ctx: Context, client: Ready) {
