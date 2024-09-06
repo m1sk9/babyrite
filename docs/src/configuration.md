@@ -48,20 +48,27 @@ However, the message will be shared to members who do not belong to that guild. 
 
 Whether or not to make a quoted message mentions.
 
-## Change the displayed logs
+#### `logger_format`
 
-Since babyrite uses [tracing, traching-subscriber](https://github.com/tokio-rs/tracing) for logging, you can change the displayed logs by setting the environment variable `RUST_LOG` at startup.
-
-```shell
-RUST_LOG=babyrite=info cargo run
-RUST_LOG=babyrite=debug cargo run
-RUST_LOG=babyrite=info ./target/release/babyrite
-```
-
-When `RUST_LOG` is not set, running cargo run or the binary directly will display babyrite logs including debug events. (default)
-
-If you want to change the type of log displayed, pass `RUST_LOG` as an environment variable.
-
-> [!NOTE]
+> *Available in [v0.10.0](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.10.0)*
 >
-> `babyrite=` specifies the logs for the babyrite. Therefore, if you specify a crate other than babyrite in RUST_LOG (e.g. `RUST_LOG=serenity=info`), the logs for that crate will be displayed.
+> *Expected type: string*
+
+Sets the format of the log output. Both will show logs above babyrite's `INFO` level (when using Docker images).
+
+* `compact`: output logs in normal format. (format: `{time} {level} {target} {message}`)
+* `json`: Output logs in JSON format. This is the recommended setting if you are using [Grafana Loki](https://grafana.com/oss/loki/) or similar.
+
+> [!TIP]
+>
+> The following string can also be used: `Compact`, `Json`
+>
+> ```rs
+> #[derive(Debug, Deserialize)]
+> pub enum LoggerFormat {
+>     #[serde(alias = "compact")]
+>     Compact,
+>     #[serde(alias = "json")]
+>     Json,
+> }
+> ```
