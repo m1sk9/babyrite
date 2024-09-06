@@ -1,7 +1,8 @@
 use crate::model::config::BabyriteConfig;
+use model::config::LoggerFormat;
 #[deny(unused_imports)]
 use serenity::prelude::GatewayIntents;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod env;
 mod handler;
@@ -11,28 +12,40 @@ mod model;
 async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting babyrite at v{}", env!("CARGO_PKG_VERSION"));
 
-    if let Err(cause) = dotenvy::dotenv() {
-        tracing::warn!(%cause, "Failed to load environment variables from .env file.");
-    }
-
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("babyrite=debug"));
-    let subscriber = FmtSubscriber::builder().with_env_filter(filter).finish();
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing_subscriber as global default.");
+    dotenvy::dotenv().ok();
 
     BabyriteConfig::init();
     let config = BabyriteConfig::get();
-    tracing::info!("Configuration: {:?}", config);
+    let envs = env::babyrite_envs();
 
+    match config.logger_format {
+        LoggerFormat::Compact => {
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::EnvFilter::try_from_default_env()
+                        .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
+                )
+                .with(tracing_subscriber::fmt::layer().compact())
+                .init();
+        }
+        LoggerFormat::Json => {
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::EnvFilter::try_from_default_env()
+                        .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
+                )
+                .with(tracing_subscriber::fmt::layer().json())
+                .init();
+        }
+    }
+
+    tracing::info!("Configuration: {:?}", config);
     if config.bypass_guilds {
         tracing::warn!(
             "The guild bypass setting is enabled. Quote messages between different guilds. "
         )
     }
 
-    let envs = env::babyrite_envs();
-    // "メッセージの取得", "ギルド内メッセージへのアクセス" に該当する
     let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
     let mut client = serenity::Client::builder(&envs.discord_api_token, intents)
         .event_handler(handler::BabyriteHandler)

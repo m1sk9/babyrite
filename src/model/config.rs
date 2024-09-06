@@ -6,6 +6,15 @@ use crate::env::babyrite_envs;
 pub struct BabyriteConfig {
     pub bypass_guilds: bool,
     pub citation_mention: bool,
+    pub logger_format: LoggerFormat,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum LoggerFormat {
+    #[serde(alias = "compact")]
+    Compact,
+    #[serde(alias = "json")]
+    Json,
 }
 
 pub static BABYRITE_CONFIG: once_cell::sync::OnceCell<BabyriteConfig> =
