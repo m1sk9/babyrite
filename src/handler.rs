@@ -53,7 +53,7 @@ impl EventHandler for BabyriteHandler {
             return;
         }
 
-        if !target_message.embeds.is_empty() || target_message.content.is_empty() {
+        if !target_message.embeds.is_empty() && target_message.content.is_empty() {
             return;
         }
 
