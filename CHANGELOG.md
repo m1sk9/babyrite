@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.9.2...babyrite-v0.10.0) (2024-09-06)
+
+
+### Features
+
+* JSON 方式でログを出力できるように ([#207](https://github.com/m1sk9/babyrite/issues/207)) ([565a7ec](https://github.com/m1sk9/babyrite/commit/565a7ec0e65cdd6a43f03b00bcd28d4a65147196))
+* 引用メッセージのメンションを切り替えられるように ([#205](https://github.com/m1sk9/babyrite/issues/205)) ([10c8c85](https://github.com/m1sk9/babyrite/commit/10c8c85f119010bcda8737cffa4dafc46f80d9be))
+
+
+### Bug Fixes
+
+* **ci:** release-please の巻き戻しを修正 ([#203](https://github.com/m1sk9/babyrite/issues/203)) ([97fc7c7](https://github.com/m1sk9/babyrite/commit/97fc7c7ff99d86e34d6f7d05517fa1b06bf300ec))
+* 埋め込みが存在しないのにメッセージ内容が空のメッセージを引用しない不具合の修正 ([#206](https://github.com/m1sk9/babyrite/issues/206)) ([3f4fcca](https://github.com/m1sk9/babyrite/commit/3f4fcca4840912766a5bbb5d7eaf77b3d369725b))
+
 ## [0.9.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.9.1...babyrite-v0.9.2) (2024-09-02)
 
 
