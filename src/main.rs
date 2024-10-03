@@ -1,12 +1,26 @@
-use crate::model::config::BabyriteConfig;
-use model::config::LoggerFormat;
-#[deny(unused_imports)]
+#![deny(unused_imports)]
+
+use config::BabyriteConfig;
+use config::LoggerFormat;
 use serenity::prelude::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod env;
-mod handler;
-mod model;
+pub mod handler;
+pub mod config;
+
+#[derive(serde::Deserialize)]
+pub struct BabyriteEnv {
+    pub config_file_path: String,
+    pub discord_api_token: String,
+}
+
+pub fn babyrite_envs() -> &'static BabyriteEnv {
+    static BABYRITE_ENV: std::sync::OnceLock<BabyriteEnv> = std::sync::OnceLock::new();
+    BABYRITE_ENV.get_or_init(|| {
+        envy::from_env()
+            .expect("Failed to read environment variables. Do you set the environment variables?")
+    })
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -14,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
 
     BabyriteConfig::init();
     let config = BabyriteConfig::get();
-    let envs = env::babyrite_envs();
+    let envs = babyrite_envs();
 
     match config.logger_format {
         LoggerFormat::Compact => {
