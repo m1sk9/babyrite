@@ -1,22 +1,18 @@
 use serenity::all::{Context, Ready};
 use serenity::client::EventHandler;
 use serenity::gateway::ActivityData;
+use tracing::{debug, info};
 
 pub struct BabyriteHandler;
 
 #[serenity::async_trait]
 impl EventHandler for BabyriteHandler {
     async fn ready(&self, ctx: Context, client: Ready) {
-        tracing::info!(
-            "Connected as {}, id: {}",
-            &client.user.name,
-            &client.user.id
-        );
+        info!(name: "babyrite Initialize Ready", "babyrite is ready! Connected as {}, id: {}", &client.user.name, &client.user.id);
+        debug!(name: "babyrite Initialize Ready", "client: {:?}", client);
         ctx.set_activity(Some(ActivityData::playing(format!(
-            "babyrite v{}",
+            "v{}",
             env!("CARGO_PKG_VERSION")
         ))));
-        tracing::debug!("client: {:?}", client);
-        tracing::info!("babyrite is ready!");
     }
 }
