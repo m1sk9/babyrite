@@ -10,8 +10,6 @@ mod model;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing::info!("Starting babyrite at v{}", env!("CARGO_PKG_VERSION"));
-
     dotenvy::dotenv().ok();
 
     BabyriteConfig::init();
