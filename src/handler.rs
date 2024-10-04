@@ -1,149 +1,61 @@
-use crate::model::cache::get_channel_list_cache;
-use crate::model::config::BABYRITE_CONFIG;
-use crate::model::ids::BabyriteIDs;
-use crate::model::message::{
-    CitationMessage, CitationMessageAuthor, MESSAGE_LINK_REGEX, SKIP_MESSAGE_LINK_REGEX,
-};
-use serenity::all::{Context, CreateAllowedMentions, CreateMessage, Message, Ready};
+use crate::preview::{MessagePreviewIDs, MESSAGE_LINK_REGEX, SKIP_LINK_REGEX};
+use serenity::all::{Context, CreateAllowedMentions, Message, Ready};
+use serenity::builder::CreateMessage;
 use serenity::client::EventHandler;
 use serenity::gateway::ActivityData;
+use tracing::{debug, info};
 
 pub struct BabyriteHandler;
 
 #[serenity::async_trait]
 impl EventHandler for BabyriteHandler {
     async fn message(&self, ctx: Context, message: Message) {
-        let config = BABYRITE_CONFIG.get().unwrap();
+        let config = crate::config::BabyriteConfig::get();
+
         if message.author.bot {
             return;
         }
 
-        let content = &message.content;
-        if !MESSAGE_LINK_REGEX.is_match(content) || SKIP_MESSAGE_LINK_REGEX.is_match(content) {
-            return;
-        }
-        let captures = MESSAGE_LINK_REGEX
-            .captures(MESSAGE_LINK_REGEX.find(content).unwrap().as_str())
-            .unwrap();
-        let ids = BabyriteIDs::new(captures).unwrap();
-
-        if !config.bypass_guilds && message.guild_id != Some(ids.guild) {
-            return;
-        }
-
-        tracing::info!(
-            "* Request from {}: Start processing...",
-            message.author.tag(),
-        );
-
-        let target_channel = match get_channel_list_cache(&ctx, ids.guild, ids.channel).await {
-            Ok(channel) => {
-                tracing::info!(
-                    "{} - Message retrieved: {}({})",
-                    message.author.tag(),
-                    channel.name,
-                    channel.id
-                );
-                channel
-            }
-            Err(e) => {
-                tracing::error!(
-                    "Failed to retrieve channel. It does not exist or the cache is invalid: {:?}",
-                    e
-                );
-                return;
-            }
-        };
-
-        if target_channel.nsfw {
-            tracing::warn!(
-                "{} - Cancel message citation: Target channel was NSFW.",
-                message.author.tag()
-            );
-            return;
-        }
-
-        let target_message = match target_channel.message(&ctx.http, ids.message).await {
-            Ok(target) => {
-                tracing::info!(
-                    "{} - Channel retrieved: {}",
-                    message.author.tag(),
-                    target.id
-                );
-                target
-            }
-            Err(e) => {
-                tracing::error!("Failed to retrieve message: {:?}", e);
-                return;
-            }
-        };
-
-        if !target_message.embeds.is_empty() && target_message.content.is_empty() {
-            if target_channel.nsfw {
-                tracing::warn!(
-                    "{} - Cancel message citation: Message with embedding.",
-                    message.author.tag()
-                );
-                return;
-            }
-            return;
-        }
-
-        let source_message = CitationMessage::builder()
-            .content(target_message.content.clone())
-            .author(
-                CitationMessageAuthor::builder()
-                    .name(target_message.author.name.clone())
-                    .icon_url(Some(target_message.author.avatar_url().unwrap_or(
-                        "https://cdn.discordapp.com/embed/avatars/0.png".to_string(),
-                    )))
-                    .build(),
-            )
-            .channel_name(target_channel.name.clone())
-            .create_at(target_message.timestamp)
-            .attachment_image_url(target_message.attachments.first().map(|a| a.url.clone()))
-            .build();
-
-        let embed = source_message.to_embed();
-
-        tracing::debug!(
-            "Target: {:?}({:?}), Embed: {:?}",
-            &target_message,
-            &target_channel,
-            &embed
-        );
-        if let Err(why) = message
-            .channel_id
-            .send_message(&ctx.http, {
-                CreateMessage::default()
-                    .embed(embed)
-                    .allowed_mentions(
-                        CreateAllowedMentions::default().replied_user(config.citation_mention),
-                    )
-                    .reference_message(&message.clone())
-            })
-            .await
+        if !MESSAGE_LINK_REGEX.is_match(&message.content)
+            || SKIP_LINK_REGEX.is_match(&message.content)
         {
-            tracing::error!("Failed to send message: {:?}", why);
+            return;
         }
 
-        tracing::info!(
-            "* Request from {}: Successful citation.",
-            message.author.tag()
-        );
+        let ids = match MessagePreviewIDs::find_from_str(&message.content) {
+            Ok(ids) => ids,
+            Err(e) => {
+                debug!(name: "babyrite Message", "Failed to parse message: {:?}", e);
+                return;
+            }
+        };
+        debug!(name: "babyrite Message", "Found ids: {:?}", ids);
+
+        let preview = match ids.get_preview(&ctx).await {
+            Ok(preview) => preview,
+            Err(e) => {
+                debug!(name: "babyrite Message", "Failed to get preview: {:?}", e);
+                return;
+            }
+        };
+        debug!(name: "babyrite Message", "Found preview: {:?}", preview);
+
+        let embed = MessagePreviewIDs::generate_preview(preview);
+        let reply = CreateMessage::default()
+            .embed(embed)
+            .reference_message(&message)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(config.citation_mention));
+        if let Err(why) = message.channel_id.send_message(&ctx.http, reply).await {
+            debug!(name: "babyrite Message", "Failed to send message: {:?}", why);
+        }
     }
 
     async fn ready(&self, ctx: Context, client: Ready) {
-        tracing::info!(
-            "Connected as {}, id: {}",
-            &client.user.name,
-            &client.user.id
-        );
+        info!(name: "babyrite Initialize Ready", "babyrite is ready! Connected as {}, id: {}", &client.user.name, &client.user.id);
+        debug!(name: "babyrite Initialize Ready", "client: {:?}", client);
         ctx.set_activity(Some(ActivityData::playing(format!(
-            "babyrite v{}",
+            "v{}",
             env!("CARGO_PKG_VERSION")
         ))));
-        tracing::debug!("client: {:?}", client);
-        tracing::info!("babyrite is ready!");
     }
 }

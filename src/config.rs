@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::env::babyrite_envs;
+use crate::babyrite_envs;
 
 #[derive(Debug, Deserialize)]
 pub struct BabyriteConfig {
