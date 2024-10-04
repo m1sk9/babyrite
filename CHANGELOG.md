@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.11.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.10.1...babyrite-v0.11.0) (2024-10-04)
+
+
+### Features
+
+* アカウントカラーを埋め込みに ([#219](https://github.com/m1sk9/babyrite/issues/219)) ([308c61a](https://github.com/m1sk9/babyrite/commit/308c61a0baf200004064fab8a494671aa0bc21f0))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate once_cell to v1.20.1 ([#215](https://github.com/m1sk9/babyrite/issues/215)) ([4dc125a](https://github.com/m1sk9/babyrite/commit/4dc125a44664558d7bb4d4c3b45ae10fde14ad32))
+* **deps:** update rust crate regex to v1.11.0 ([#216](https://github.com/m1sk9/babyrite/issues/216)) ([b988438](https://github.com/m1sk9/babyrite/commit/b988438c5112e3c2db2161206b0d9e7f252bdfcc))
+
+
+### Performance Improvements
+
+* メッセージ取得部分の改善 ([#218](https://github.com/m1sk9/babyrite/issues/218)) ([201b83d](https://github.com/m1sk9/babyrite/commit/201b83db21aa8d80a24f25f30ac5ca39132819f0))
+
 ## [0.10.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.10.0...babyrite-v0.10.1) (2024-09-16)
 
 

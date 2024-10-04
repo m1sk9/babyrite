@@ -6,6 +6,41 @@ The full version should be checked on [GitHub](https://github.com/m1sk9/babyrite
 
 <!-- toc -->
 
+## v0.11.0
+
+*[Released on 2024/10/04](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.11.0)*
+
+```shell
+docker pull ghcr.io/m1sk9/babyrite:v0.11.0
+```
+
+> [!IMPORTANT]
+> 
+> The following versions are no longer supported.
+> 
+> - v0.8
+>   - v0.8.0
+>   - v0.8.1
+>   - v0.8.2
+>   - v0.8.3
+>   - v0.8.4
+>   - v0.8.5
+>   - v0.8.6
+>   - v0.8.7
+>   - v0.8.8
+>   - v0.8.9
+
+**Added**
+
+- [#218](https://github.com/m1sk9/babyrite/pull/218): Added private channel hiding feature
+  - Channels without `View Channel` permission for `@everyone` are now ignored and not quoted
+- [#219](https://github.com/m1sk9/babyrite/pull/219): Account color is now used for embed color
+  - If the account color is not set (typically for non-Nitro subscribers), the default color is used
+
+**Performance**
+
+- [#218](https://github.com/m1sk9/babyrite/pull/218): Improved performance when quoting messages
+
 ## v0.10.0
 
 *[Released on 2024/09/06](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.9.2)*
