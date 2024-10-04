@@ -1,4 +1,6 @@
-use serenity::all::{Context, Ready};
+use crate::preview::{MessagePreviewIDs, MESSAGE_LINK_REGEX, SKIP_LINK_REGEX};
+use serenity::all::{Context, CreateAllowedMentions, Message, Ready};
+use serenity::builder::CreateMessage;
 use serenity::client::EventHandler;
 use serenity::gateway::ActivityData;
 use tracing::{debug, info};
@@ -7,6 +9,47 @@ pub struct BabyriteHandler;
 
 #[serenity::async_trait]
 impl EventHandler for BabyriteHandler {
+    async fn message(&self, ctx: Context, message: Message) {
+        let config = crate::config::BabyriteConfig::get();
+
+        if message.author.bot {
+            return;
+        }
+
+        if !MESSAGE_LINK_REGEX.is_match(&message.content)
+            || SKIP_LINK_REGEX.is_match(&message.content)
+        {
+            return;
+        }
+
+        let ids = match MessagePreviewIDs::find_from_str(&message.content) {
+            Ok(ids) => ids,
+            Err(e) => {
+                debug!(name: "babyrite Message", "Failed to parse message: {:?}", e);
+                return;
+            }
+        };
+        debug!(name: "babyrite Message", "Found ids: {:?}", ids);
+
+        let preview = match ids.get_preview(&ctx).await {
+            Ok(preview) => preview,
+            Err(e) => {
+                debug!(name: "babyrite Message", "Failed to get preview: {:?}", e);
+                return;
+            }
+        };
+        debug!(name: "babyrite Message", "Found preview: {:?}", preview);
+
+        let embed = MessagePreviewIDs::generate_preview(preview);
+        let reply = CreateMessage::default()
+            .embed(embed)
+            .reference_message(&message)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(config.citation_mention));
+        if let Err(why) = message.channel_id.send_message(&ctx.http, reply).await {
+            debug!(name: "babyrite Message", "Failed to send message: {:?}", why);
+        }
+    }
+
     async fn ready(&self, ctx: Context, client: Ready) {
         info!(name: "babyrite Initialize Ready", "babyrite is ready! Connected as {}, id: {}", &client.user.name, &client.user.id);
         debug!(name: "babyrite Initialize Ready", "client: {:?}", client);

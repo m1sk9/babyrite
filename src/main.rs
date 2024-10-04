@@ -5,8 +5,9 @@ use config::LoggerFormat;
 use serenity::prelude::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-pub mod handler;
 pub mod config;
+pub mod handler;
+pub mod preview;
 
 #[derive(serde::Deserialize)]
 pub struct BabyriteEnv {
