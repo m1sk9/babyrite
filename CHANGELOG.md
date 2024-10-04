@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.11.0...babyrite-v0.11.1) (2024-10-04)
+
+
+### Bug Fixes
+
+* can quote the same in your private channel ([#221](https://github.com/m1sk9/babyrite/issues/221)) ([eec52cf](https://github.com/m1sk9/babyrite/commit/eec52cf16889e1bd39f55da6ba8c8c7c814ca7c5))
+
 ## [0.11.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.10.1...babyrite-v0.11.0) (2024-10-04)
 
 
