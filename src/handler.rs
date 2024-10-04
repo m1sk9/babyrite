@@ -1,8 +1,9 @@
 use crate::preview::{MessagePreviewIDs, MESSAGE_LINK_REGEX, SKIP_LINK_REGEX};
-use serenity::all::{Context, CreateAllowedMentions, Message, Ready};
+use serenity::all::{Context, CreateAllowedMentions, Message, PermissionOverwriteType, Ready};
 use serenity::builder::CreateMessage;
 use serenity::client::EventHandler;
 use serenity::gateway::ActivityData;
+use serenity::model::Permissions;
 use tracing::{debug, info};
 
 pub struct BabyriteHandler;
@@ -31,7 +32,20 @@ impl EventHandler for BabyriteHandler {
         };
         debug!(name: "babyrite Message", "Found ids: {:?}", ids);
 
-        let preview = match ids.get_preview(&ctx).await {
+        let is_private = message
+            .channel(&ctx)
+            .await
+            .unwrap()
+            .guild()
+            .unwrap()
+            .permission_overwrites
+            .iter()
+            .any(|p| {
+                matches!(p.kind, PermissionOverwriteType::Role(_))
+                    && p.deny.contains(Permissions::VIEW_CHANNEL)
+            });
+
+        let preview = match ids.get_preview(&ctx, is_private).await {
             Ok(preview) => preview,
             Err(e) => {
                 debug!(name: "babyrite Message", "Failed to get preview: {:?}", e);

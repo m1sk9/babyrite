@@ -96,6 +96,7 @@ impl MessagePreviewIDs {
     pub async fn get_preview(
         &self,
         ctx: &Context,
+        is_private: bool,
     ) -> anyhow::Result<MessagePreview, MessagePreviewError> {
         let config = crate::config::BabyriteConfig::get();
         let guild = self.guild_id;
@@ -137,10 +138,12 @@ impl MessagePreviewIDs {
             ));
         }
 
-        if channel.permission_overwrites.iter().any(|p| {
-            matches!(p.kind, PermissionOverwriteType::Role(_))
-                && p.deny.contains(Permissions::VIEW_CHANNEL)
-        }) {
+        if !is_private
+            && channel.permission_overwrites.iter().any(|p| {
+                matches!(p.kind, PermissionOverwriteType::Role(_))
+                    && p.deny.contains(Permissions::VIEW_CHANNEL)
+            })
+        {
             return Err(MessagePreviewError::ChannelError(
                 "Channel is not viewable".to_string(),
             ));
