@@ -6,10 +6,12 @@ A Guide to babyrite's Security Policy.
 
 Below is the support status for each version of babyrite.
 
-| Release | Released   | Status    | Active Support | Security Support |
-|---------|------------|-----------|----------------|------------------|
-| v0.9    | 2024/08/22 | `Active`  | 2024/10/22     | 2024/11/22       |
-| v0.8    | 2024/05/20 | `Security` | 2024/08/22     | 2024/09/22       |
+| Release | Released   | Status     | Active Support | Security Support |
+|---------|------------|------------|----------------|------------------|
+| v0.11   | 2024/10/04 | `Active`   | 2024/12/04     | 2025/01/04       |
+| v0.10   | 2024/09/06 | `Security` | 2024/10/06     | 2024/11/06       |
+| v0.9    | 2024/08/22 | `Security` | 2024/10/22     | 2024/11/22       |
+| v0.8    | 2024/05/20 | `EoL`      | 2024/08/22     | 2024/09/22       |
 
 - Versions prior to v0.7 are no longer supported.
 
