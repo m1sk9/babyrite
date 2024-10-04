@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serenity::all::{ChannelId, Context, CreateEmbed, GuildChannel, GuildId, MessageId};
+use serenity::all::{ChannelId, Colour, Context, CreateEmbed, GuildChannel, GuildId, MessageId};
 use serenity::builder::{CreateEmbedAuthor, CreateEmbedFooter};
 use serenity::model::channel::PermissionOverwriteType;
 use serenity::model::Permissions;
@@ -26,6 +26,7 @@ pub struct MessagePreviewIDs {
 pub struct MessagePreviewAuthor {
     pub name: String,
     pub icon_url: Option<String>,
+    pub color: Option<Colour>,
 }
 
 #[derive(Default, Debug)]
@@ -153,6 +154,12 @@ impl MessagePreviewIDs {
         let author = MessagePreviewAuthor {
             name: message.author.name.clone(),
             icon_url: message.author.avatar_url(),
+            color: ctx
+                .http
+                .get_user(message.author.id)
+                .await
+                .unwrap()
+                .accent_colour,
         };
         let attachment_image_url = message
             .attachments
@@ -176,6 +183,7 @@ impl MessagePreviewIDs {
 
     pub fn generate_preview(preview: MessagePreview) -> CreateEmbed {
         CreateEmbed::default()
+            .color(preview.author.color.unwrap_or(Colour::new(0xFA6300)))
             .description(preview.content)
             .author(
                 CreateEmbedAuthor::new(&preview.author.name).icon_url(
