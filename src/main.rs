@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     tracing::info!("Configuration: {:?}", config);
-    if config.bypass_guilds {
+    if config.preview.bypass_guild_check {
         tracing::warn!(
             "The guild bypass setting is enabled. Quote messages between different guilds. "
         )

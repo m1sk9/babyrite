@@ -126,7 +126,7 @@ impl MessagePreviewIDs {
             };
         debug!("channel: {:?}", channel);
 
-        if !config.bypass_guilds && guild != channel.guild_id {
+        if !config.preview.bypass_guild_check && guild != channel.guild_id {
             return Err(MessagePreviewError::GuildError(
                 "mismatched guilds (set `bypass_guilds` to `true` to enable citation)".to_string(),
             ));
