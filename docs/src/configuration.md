@@ -4,49 +4,31 @@
 
 ## Babyrite Configuration
 
-Configuration of babyrite behavior can be written in YAML format.
+Configuration of babyrite behavior can be written in Toml format.
 
-Babyrite handles configuration files by setting `CONFIG_FILE_PATH` environment variable to a path relative to the configuration file. If not specified, startup will fail. (Example: `/config/config.yaml`)
+Babyrite handles configuration files by setting `CONFIG_FILE_PATH` environment variable to a path relative to the configuration file. If not specified, startup will fail. (Example: `/config/config.toml`)
 
 Recommended settings are as follows:
 
-```yaml
-bypass_guilds: false
-citation_mention: false
+```toml
+logger_format='compact'
+
+[preview]
+bypass_guild_check=false
+is_mention=true
 ```
 
 ### Download configuration file
 
-The default setting for babyrite is `. /config/config.yaml` in m1sk9/babyrite.
+The default setting for babyrite is `./config/config.toml` in [m1sk9/babyrite](https://github.com/m1sk9/babyrite).
 
 The default configuration can be obtained from `curl` or other sources.
 
 ```sh
-curl -o config.yaml https://raw.githubusercontent.com/m1sk9/babyrite/main/config/config.yaml
+curl -o config.toml https://raw.githubusercontent.com/m1sk9/babyrite/main/config/config.toml
 ```
 
 ### Configurable items
-
-#### `bypass_guilds`
-
-> *Available in [v0.9.0](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.9.0)*
-
-Sets whether the guild check process is bypassed when quoting.
-If the guild check process is bypassed, messages can be shared and quoted from all guilds in which babyrite is installed.
-
-However, the message will be shared to members who do not belong to that guild. This setting is recommended when babyrite is used by multiple private guilds.
-
-> [!CAUTION]
->
-> Note that if you enable `bypass_guilds`, bots may be used for malicious purposes. This setting is only intended for use when babyrite is used among a limited group.
->
-> It is recommended that this feature be disabled.
-
-#### `citation_mention`
-
-> *Available in [v0.10.0](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.10.0)*
-
-Whether or not to make a quoted message mentions.
 
 #### `logger_format`
 
@@ -72,3 +54,28 @@ Sets the format of the log output. Both will show logs above babyrite's `INFO` l
 >     Json,
 > }
 > ```
+
+#### `preview.bypass_guild_check`
+
+> *Available in [v0.9.0](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.9.0)*
+>
+> *Expected type: boolean*
+
+Sets whether the guild check process is bypassed when quoting.
+If the guild check process is bypassed, messages can be shared and quoted from all guilds in which babyrite is installed.
+
+However, the message will be shared to members who do not belong to that guild. This setting is recommended when babyrite is used by multiple private guilds.
+
+> [!CAUTION]
+>
+> Note that if you enable `bypass_guilds`, bots may be used for malicious purposes. This setting is only intended for use when babyrite is used among a limited group.
+>
+> It is recommended that this feature be disabled.
+
+#### `preview.is_mention`
+
+> *Available in [v0.10.0](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.10.0)*
+>
+> *Expected type: boolean*
+
+Whether or not to make a quoted message mentions.
