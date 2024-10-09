@@ -202,3 +202,34 @@ impl MessagePreviewIDs {
             .image(preview.attachment_image_url.unwrap_or_default())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_find_from_str_valid_url() {
+        let url =
+            "https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678";
+        let result = MessagePreviewIDs::find_from_str(url).unwrap();
+        assert_eq!(result.guild_id, GuildId::new(123456789012345678));
+        assert_eq!(result.channel_id, ChannelId::new(987654321098765432));
+        assert_eq!(result.message_id, MessageId::new(123456789012345678));
+    }
+
+    #[test]
+    fn test_find_from_str_invalid_url() {
+        let url =
+            "https://example.com/channels/123456789012345678/987654321098765432/123456789012345678";
+        let result = MessagePreviewIDs::find_from_str(url);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_from_str_discordapp_domain() {
+        let url =
+            "https://discordapp.com/channels/123456789012345678/987654321098765432/123456789012345678";
+        let result = MessagePreviewIDs::find_from_str(url);
+        assert!(result.is_err());
+    }
+}
