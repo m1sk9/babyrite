@@ -6,6 +6,27 @@ The full version should be checked on [GitHub](https://github.com/m1sk9/babyrite
 
 <!-- toc -->
 
+## v0.12.0
+
+*[Released on 2024/10/09](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.12.0)*
+
+```shell
+docker pull ghcr.io/m1sk9/babyrite:v0.12.0
+```
+
+> [!IMPORTANT]
+>
+> The following versions are no longer supported due to `serde_yaml` deprecation
+>
+> - v0.11
+> - v0.10
+> - v0.9
+
+**Breaking Changes**
+
+- [#255](https://github.com/m1sk9/babyrite/pull/225): The `YAML` format has been removed from the config file format and only the `TOML` format is supported.
+  - The values in the configuration file have been changed accordingly. See [configuration](configuration.md) for details.
+
 ## v0.11.0
 
 *[Released on 2024/10/04](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.11.0)*
