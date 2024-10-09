@@ -4,9 +4,8 @@ use crate::babyrite_envs;
 
 #[derive(Debug, Deserialize)]
 pub struct BabyriteConfig {
-    pub bypass_guilds: bool,
-    pub citation_mention: bool,
     pub logger_format: LoggerFormat,
+    pub preview: PreviewConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -17,6 +16,12 @@ pub enum LoggerFormat {
     Json,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct PreviewConfig {
+    pub bypass_guild_check: bool,
+    pub is_mention: bool,
+}
+
 pub static BABYRITE_CONFIG: once_cell::sync::OnceCell<BabyriteConfig> =
     once_cell::sync::OnceCell::new();
 
@@ -24,10 +29,10 @@ impl BabyriteConfig {
     pub fn init() {
         BABYRITE_CONFIG
             .set(
-                serde_yaml::from_reader(std::io::BufReader::new(
-                    std::fs::File::open(&babyrite_envs().config_file_path)
-                        .expect("Failed to open configuration file."),
-                ))
+                toml::from_str(
+                    &std::fs::read_to_string(&babyrite_envs().config_file_path)
+                        .expect("Failed to read config.yaml. Please check if the file exists."),
+                )
                 .expect("Failed to parse config.yaml. Please check if the settings are correct."),
             )
             .unwrap();

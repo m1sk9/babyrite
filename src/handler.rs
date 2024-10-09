@@ -58,7 +58,7 @@ impl EventHandler for BabyriteHandler {
         let reply = CreateMessage::default()
             .embed(embed)
             .reference_message(&message)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(config.citation_mention));
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(config.preview.is_mention));
         if let Err(why) = message.channel_id.send_message(&ctx.http, reply).await {
             debug!(name: "babyrite Message", "Failed to send message: {:?}", why);
         }
