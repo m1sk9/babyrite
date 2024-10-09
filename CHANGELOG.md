@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.11.1...babyrite-v0.12.0) (2024-10-09)
+
+
+### Breaking Changes
+
+* Replace YAML format to TOML format ([#225](https://github.com/m1sk9/babyrite/issues/225)) ([bbff7bf](https://github.com/m1sk9/babyrite/commit/bbff7bf5454279632dbeb28605322f1c7a68208b))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate once_cell to v1.20.2 ([#223](https://github.com/m1sk9/babyrite/issues/223)) ([3a9c06f](https://github.com/m1sk9/babyrite/commit/3a9c06ffa17719cc470e30ba7467772d397ec1c6))
+
 ## [0.11.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.11.0...babyrite-v0.11.1) (2024-10-04)
 
 
