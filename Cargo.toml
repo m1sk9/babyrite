@@ -12,9 +12,9 @@ envy = { version = "0.4.2" }
 once_cell = { version = "1.19.0" }
 regex = { version = "1.10.4" }
 tracing = { version = "0.1.40" }
-serde_yaml = { version = "0.9.33" }
 thiserror = { version = "1.0.64" }
 url = { version = "2.5.2" }
+toml = { version = "0.8.19" }
 
 [dependencies.serenity]
 version = "0.12.1"
