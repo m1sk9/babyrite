@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.0...babyrite-v0.12.1) (2024-10-16)
+
+
+### Bug Fixes
+
+* Citation fails if text is included in the URL ([#228](https://github.com/m1sk9/babyrite/issues/228)) ([442a079](https://github.com/m1sk9/babyrite/commit/442a0799c2832160f8f79c8ad050de8f6b707d5e))
+
 ## [0.12.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.11.1...babyrite-v0.12.0) (2024-10-09)
 
 
