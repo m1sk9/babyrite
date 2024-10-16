@@ -65,7 +65,12 @@ pub static MESSAGE_PREVIEW_CHANNEL_CACHE: Lazy<moka::future::Cache<ChannelId, Gu
 
 impl MessagePreviewIDs {
     pub fn find_from_str(content: &str) -> anyhow::Result<MessagePreviewIDs, MessagePreviewError> {
-        let message_link = Url::parse(content)?;
+        let url = MESSAGE_LINK_REGEX
+            .captures(content)
+            .and_then(|cap| cap.get(0).map(|m| m.as_str().to_string()));
+        let url = url.ok_or_else(|| MessagePreviewError::NotFound("URL".to_string()))?;
+        let message_link = Url::parse(&url)?;
+
         if !matches!(
             message_link.host_str(),
             Some("discord.com") | Some("canary.discord.com") | Some("ptb.discord.com")
@@ -231,5 +236,15 @@ mod tests {
             "https://discordapp.com/channels/123456789012345678/987654321098765432/123456789012345678";
         let result = MessagePreviewIDs::find_from_str(url);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_from_str_contain_text() {
+        let url_before_text = "hello https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678";
+        let url_after_text = "https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678 hello";
+        let result_before = MessagePreviewIDs::find_from_str(url_before_text);
+        let result_after = MessagePreviewIDs::find_from_str(url_after_text);
+        assert!(result_before.is_ok());
+        assert!(result_after.is_ok());
     }
 }
