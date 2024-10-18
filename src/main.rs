@@ -11,7 +11,7 @@ pub mod preview;
 
 #[derive(serde::Deserialize)]
 pub struct BabyriteEnv {
-    pub config_file_path: String,
+    pub config_file_path: Option<String>,
     pub discord_api_token: String,
 }
 
