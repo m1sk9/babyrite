@@ -14,10 +14,5 @@ logger_format='compact'
 
 [preview]
 
-# Sets whether the guild check process is bypassed when quoting.
-# If the guild check process is bypassed, messages can be shared and quoted from all guilds in which babyrite is installed.
-# However, the message will be shared to members who do not belong to that guild. This setting is recommended when babyrite is used by multiple private guilds.
-bypass_guild_check=false
-
 # Whether to enable mentions in quoted messages.
 is_mention=true

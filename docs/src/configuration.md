@@ -14,7 +14,6 @@ Recommended settings are as follows:
 logger_format='compact'
 
 [preview]
-bypass_guild_check=false
 is_mention=true
 ```
 
@@ -55,17 +54,6 @@ Sets the format of the log output. Both will show logs above babyrite's `INFO` l
 > }
 > ```
 
-#### `preview.bypass_guild_check`
-
-> *Available in [v0.9.0](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.9.0)*
->
-> *Expected type: boolean*
-
-Sets whether the guild check process is bypassed when quoting.
-If the guild check process is bypassed, messages can be shared and quoted from all guilds in which babyrite is installed.
-
-However, the message will be shared to members who do not belong to that guild. This setting is recommended when babyrite is used by multiple private guilds.
-
 > [!CAUTION]
 >
 > Note that if you enable `bypass_guilds`, bots may be used for malicious purposes. This setting is only intended for use when babyrite is used among a limited group.
@@ -78,4 +66,19 @@ However, the message will be shared to members who do not belong to that guild. 
 >
 > *Expected type: boolean*
 
-Whether or not to make a quoted message mentions.
+Whether to make a quoted message mentions.
+
+------
+
+### Deprecated Configuration
+
+#### `preview.bypass_guild_check`
+
+> *Unavailable in [v0.12.2](https://github.com/m1sk9/babyrite/releases/tag/babyrite-v0.12.2)*  
+>    --- Reason: This setting is not recommended for use in a public environment.
+
+
+Sets whether the guild check process is bypassed when quoting.
+If the guild check process is bypassed, messages can be shared and quoted from all guilds in which babyrite is installed.
+
+However, the message will be shared to members who do not belong to that guild. This setting is recommended when babyrite is used by multiple private guilds.
