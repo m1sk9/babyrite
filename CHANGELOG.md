@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.13.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.1...babyrite-v0.13.0) (2024-10-18)
+
+
+### Features
+
+* JSON 方式でログを出力できるように ([#207](https://github.com/m1sk9/babyrite/issues/207)) ([565a7ec](https://github.com/m1sk9/babyrite/commit/565a7ec0e65cdd6a43f03b00bcd28d4a65147196))
+* Replace YAML format to TOML format ([#225](https://github.com/m1sk9/babyrite/issues/225)) ([bbff7bf](https://github.com/m1sk9/babyrite/commit/bbff7bf5454279632dbeb28605322f1c7a68208b))
+* アカウントカラーを埋め込みに ([#219](https://github.com/m1sk9/babyrite/issues/219)) ([308c61a](https://github.com/m1sk9/babyrite/commit/308c61a0baf200004064fab8a494671aa0bc21f0))
+* 引用メッセージのメンションを切り替えられるように ([#205](https://github.com/m1sk9/babyrite/issues/205)) ([10c8c85](https://github.com/m1sk9/babyrite/commit/10c8c85f119010bcda8737cffa4dafc46f80d9be))
+
+
+### Bug Fixes
+
+* **build:** デバッグレベルのログが Docker コンテナ上に表示されないように ([#208](https://github.com/m1sk9/babyrite/issues/208)) ([368c59c](https://github.com/m1sk9/babyrite/commit/368c59c435716076351265baba438cfebf451247))
+* can quote the same in your private channel ([#221](https://github.com/m1sk9/babyrite/issues/221)) ([eec52cf](https://github.com/m1sk9/babyrite/commit/eec52cf16889e1bd39f55da6ba8c8c7c814ca7c5))
+* **ci:** release-please の巻き戻しを修正 ([#203](https://github.com/m1sk9/babyrite/issues/203)) ([97fc7c7](https://github.com/m1sk9/babyrite/commit/97fc7c7ff99d86e34d6f7d05517fa1b06bf300ec))
+* Citation fails if text is included in the URL ([#228](https://github.com/m1sk9/babyrite/issues/228)) ([442a079](https://github.com/m1sk9/babyrite/commit/442a0799c2832160f8f79c8ad050de8f6b707d5e))
+* **deps:** update rust crate anyhow to v1.0.89 ([#210](https://github.com/m1sk9/babyrite/issues/210)) ([b9c944c](https://github.com/m1sk9/babyrite/commit/b9c944c0805776789cc648d5c0922bffa2cd18ec))
+* **deps:** update rust crate once_cell to v1.20.0 ([#212](https://github.com/m1sk9/babyrite/issues/212)) ([3c7ac9e](https://github.com/m1sk9/babyrite/commit/3c7ac9e00c689408e5fe24269dc114cef32d1f2d))
+* **deps:** update rust crate once_cell to v1.20.1 ([#215](https://github.com/m1sk9/babyrite/issues/215)) ([4dc125a](https://github.com/m1sk9/babyrite/commit/4dc125a44664558d7bb4d4c3b45ae10fde14ad32))
+* **deps:** update rust crate once_cell to v1.20.2 ([#223](https://github.com/m1sk9/babyrite/issues/223)) ([3a9c06f](https://github.com/m1sk9/babyrite/commit/3a9c06ffa17719cc470e30ba7467772d397ec1c6))
+* **deps:** update rust crate regex to v1.11.0 ([#216](https://github.com/m1sk9/babyrite/issues/216)) ([b988438](https://github.com/m1sk9/babyrite/commit/b988438c5112e3c2db2161206b0d9e7f252bdfcc))
+* **deps:** update rust crate serde to v1.0.210 ([#211](https://github.com/m1sk9/babyrite/issues/211)) ([a1409af](https://github.com/m1sk9/babyrite/commit/a1409af00f35303d4746ff1b1a16e0924de4507d))
+* **deps:** update rust crate tokio to v1.40.0 ([#213](https://github.com/m1sk9/babyrite/issues/213)) ([be6f398](https://github.com/m1sk9/babyrite/commit/be6f39899b6f8d75aec5eae8c544743ab9f95188))
+* 埋め込みが存在しないのにメッセージ内容が空のメッセージを引用しない不具合の修正 ([#206](https://github.com/m1sk9/babyrite/issues/206)) ([3f4fcca](https://github.com/m1sk9/babyrite/commit/3f4fcca4840912766a5bbb5d7eaf77b3d369725b))
+
+
+### Performance Improvements
+
+* Remove deprecated configuration `bypass_guild_check` ([4b4c0db](https://github.com/m1sk9/babyrite/commit/4b4c0dbf2e5041b02323b37ad2f9fe94ba357909))
+* メッセージ取得部分の改善 ([#218](https://github.com/m1sk9/babyrite/issues/218)) ([201b83d](https://github.com/m1sk9/babyrite/commit/201b83db21aa8d80a24f25f30ac5ca39132819f0))
+
 ## [0.12.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.0...babyrite-v0.12.1) (2024-10-16)
 
 
