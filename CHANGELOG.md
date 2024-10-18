@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.13.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.1...babyrite-v0.13.0) (2024-10-18)
+
+
+### Features
+
+* Use config default when path is not specified ([#236](https://github.com/m1sk9/babyrite/issues/236)) ([477c6d4](https://github.com/m1sk9/babyrite/commit/477c6d492ebf15abd360b077fad991eff8e197a2))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate anyhow to v1.0.90 ([#238](https://github.com/m1sk9/babyrite/issues/238)) ([be0fc7a](https://github.com/m1sk9/babyrite/commit/be0fc7af2e8b7261a9de6cfc97a8e3c944920e33))
+
+
+### Performance Improvements
+
+* Remove deprecated configuration `bypass_guild_check` ([#234](https://github.com/m1sk9/babyrite/issues/234)) ([b4ee4f1](https://github.com/m1sk9/babyrite/commit/b4ee4f14940a5558bf89da1809de78135007d8ef))
+
 ## [0.12.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.0...babyrite-v0.12.1) (2024-10-16)
 
 
