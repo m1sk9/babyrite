@@ -103,9 +103,7 @@ impl MessagePreviewIDs {
         ctx: &Context,
         is_private: bool,
     ) -> anyhow::Result<MessagePreview, MessagePreviewError> {
-        let config = crate::config::BabyriteConfig::get();
         let guild = self.guild_id;
-
         let channel =
             if let Some(channel) = MESSAGE_PREVIEW_CHANNEL_CACHE.get(&self.channel_id).await {
                 channel
@@ -131,9 +129,9 @@ impl MessagePreviewIDs {
             };
         debug!("channel: {:?}", channel);
 
-        if !config.preview.bypass_guild_check && guild != channel.guild_id {
+        if guild != channel.guild_id {
             return Err(MessagePreviewError::GuildError(
-                "mismatched guilds (set `bypass_guilds` to `true` to enable citation)".to_string(),
+                "Mismatched guilds".to_string(),
             ));
         }
 

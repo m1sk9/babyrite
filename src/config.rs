@@ -18,7 +18,6 @@ pub enum LoggerFormat {
 
 #[derive(Debug, Deserialize)]
 pub struct PreviewConfig {
-    pub bypass_guild_check: bool,
     pub is_mention: bool,
 }
 
