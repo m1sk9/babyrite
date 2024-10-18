@@ -53,12 +53,6 @@ async fn main() -> anyhow::Result<()> {
     }
 
     tracing::info!("Configuration: {:?}", config);
-    if config.preview.bypass_guild_check {
-        tracing::warn!(
-            "The guild bypass setting is enabled. Quote messages between different guilds. "
-        )
-    }
-
     let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
     let mut client = serenity::Client::builder(&envs.discord_api_token, intents)
         .event_handler(handler::BabyriteHandler)
