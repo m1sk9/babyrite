@@ -1,5 +1,5 @@
 {
-  "last-release-sha": "873f04442322e3baa141825fbbc062ac17dea654",
+  "last-release-sha": "4b4c0dbf2e5041b02323b37ad2f9fe94ba357909",
   "packages": {
     ".": {
       "release-type": "rust",
