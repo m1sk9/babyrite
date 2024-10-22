@@ -2,6 +2,7 @@
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml"
     ],
+    "deno.enablePaths": ["./website"],
     "rust-analyzer.restartServerOnConfigChange": true,
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.formatOnSave": true,

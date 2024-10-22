@@ -16,13 +16,13 @@ docker pull ghcr.io/m1sk9/babyrite:v0
 
 [*API Support: requires Discord API v10*](https://discord.com/developers/docs/reference#api-versioning)
 
-![Execution](./docs/src/public/example.gif)
+![Execution](./website/example.gif)
 
 ## Setup and Hosting
 
 babyrite can be hosted using Docker Compose or k8s.
 
-See [official guide](https://babyrite.m1sk9.dev/installation.html) for setup and hosting.
+See [official guide](https://babyrite.m1sk9.dev/guide/hosting.html) for setup and hosting.
 
 ## Details
 
