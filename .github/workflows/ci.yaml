@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-babyrite:
     runs-on: ubuntu-latest
     name: Build babyrite
     steps:
@@ -37,4 +37,29 @@ jobs:
 
       - name: Run Build
         run: cargo build --verbose
-                
+  build-docs:
+    runs-on: ubuntu-latest
+    name: Build babyrite docs
+    defaults:
+      run:
+        working-directory: ./website
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+  
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install dependencies
+        run: deno install
+
+      - name: Run fmt (check)
+        run: deno task fmt:check
+      
+      - name: Run lint
+        run: deno task lint
+
+      - name: Run Build
+        run: deno task build
