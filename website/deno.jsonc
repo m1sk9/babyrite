@@ -1,0 +1,16 @@
+{
+  // Only for Deno fmt and lint settings
+  "fmt": {
+    "exclude": [
+      ".vitepress/cache",
+      ".vitepress/dist"
+    ]
+  },
+  "lint": {
+    "exclude": [
+      ".vitepress/cache",
+      ".vitepress/dist"
+    ]
+  },
+  "nodeModulesDir": "auto"
+}
