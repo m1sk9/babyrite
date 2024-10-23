@@ -1,11 +1,11 @@
-FROM rust:1.81.0-bookworm as Builder
+FROM rust:1.81.0-bookworm AS builder
 
 WORKDIR /root/app
 COPY --chown=root:root . .
 
 RUN cargo build --release --bin babyrite
 
-FROM debian:bookworm-slim as Runner
+FROM debian:bookworm-slim AS runner
 
 COPY --from=Builder --chown=root:root /root/app/target/release/babyrite /usr/local/bin/babyrite
 
