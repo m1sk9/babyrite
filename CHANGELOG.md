@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.13.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.1...babyrite-v0.13.0) (2024-10-23)
+
+
+### Features
+
+* Use config default when path is not specified ([#236](https://github.com/m1sk9/babyrite/issues/236)) ([477c6d4](https://github.com/m1sk9/babyrite/commit/477c6d492ebf15abd360b077fad991eff8e197a2))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate anyhow to v1.0.90 ([#238](https://github.com/m1sk9/babyrite/issues/238)) ([be0fc7a](https://github.com/m1sk9/babyrite/commit/be0fc7af2e8b7261a9de6cfc97a8e3c944920e33))
+* **deps:** update rust crate anyhow to v1.0.91 ([#241](https://github.com/m1sk9/babyrite/issues/241)) ([f0441c8](https://github.com/m1sk9/babyrite/commit/f0441c89e2330006c1bc76ab0a588c78d44dac49))
+* **deps:** update rust crate serde to v1.0.211 ([#239](https://github.com/m1sk9/babyrite/issues/239)) ([62544c7](https://github.com/m1sk9/babyrite/commit/62544c7de8998e0148bdc657381f2014cae664c4))
+* **deps:** update rust crate serde to v1.0.213 ([#242](https://github.com/m1sk9/babyrite/issues/242)) ([e7ccd1b](https://github.com/m1sk9/babyrite/commit/e7ccd1bbaa23a0904a8f330a9008f09e5df44d6a))
+* **deps:** update rust crate thiserror to v1.0.65 ([#243](https://github.com/m1sk9/babyrite/issues/243)) ([8363c8a](https://github.com/m1sk9/babyrite/commit/8363c8a8a0f39a773f6124fa17f4e297a1e54360))
+* **deps:** update rust crate tokio to v1.41.0 ([#240](https://github.com/m1sk9/babyrite/issues/240)) ([d802808](https://github.com/m1sk9/babyrite/commit/d80280814b67a77d0559f06430cfa96826189b58))
+
+
+### Performance Improvements
+
+* **build:** Optimization Dockerfile ([#246](https://github.com/m1sk9/babyrite/issues/246)) ([96cf612](https://github.com/m1sk9/babyrite/commit/96cf61247c593fcdb9600349b33be092db775c45))
+  * [Changed the runner image from `debian:bookworm-slim` to `gcr.io/distroless/cc-debian12` and eliminated unnecessary libraries to reduce the Docker Image size from `102MB` to `53.6MB`](https://mstdn.maud.io/@m1sk9/113354226143062215).
+* Remove deprecated configuration `bypass_guild_check` ([#234](https://github.com/m1sk9/babyrite/issues/234)) ([b4ee4f1](https://github.com/m1sk9/babyrite/commit/b4ee4f14940a5558bf89da1809de78135007d8ef))
+
 ## [0.12.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.12.0...babyrite-v0.12.1) (2024-10-16)
 
 
