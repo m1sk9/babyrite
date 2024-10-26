@@ -8,7 +8,6 @@ export default defineConfig({
   themeConfig: {
     socialLinks: [
       { icon: "github", link: "https://github.com/m1sk9/babyrite" },
-      { icon: "discord", link: "https://run.m1sk9.dev/discord" },
     ],
     footer: {
       message:
