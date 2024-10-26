@@ -24,13 +24,13 @@ babyrite では TOML ファイルを使い, 振る舞いをカスタマイズす
 
    ```yaml
    volumes:
-     - ./config/config.yaml:/config/config.yaml
+     - ./config.yaml:/config.yaml
    ```
 
 3. `.env` の `CONFIG_FILE_PATH` に設定ファイルのパスを設定します.
 
    ```sh
-   CONFIG_FILE_PATH=/config/config.yaml
+   CONFIG_FILE_PATH=/config.yaml
    ```
 
 > [!TIP]
