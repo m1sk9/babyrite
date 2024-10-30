@@ -1,8 +1,0 @@
-{
-    "recommendations": [
-        // Rust Language Server (rust-analyzer)
-        "rust-lang.rust-analyzer",
-        // Deno Language Server (only website)
-        "denoland.vscode-deno"
-    ]
-}
