@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.13.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.2...babyrite-v0.13.3) (2024-11-06)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate anyhow to v1.0.93 ([#261](https://github.com/m1sk9/babyrite/issues/261)) ([336d8a6](https://github.com/m1sk9/babyrite/commit/336d8a67a80eebfb314ce476d89b110e1943650e))
+* **deps:** update rust crate thiserror to v1.0.68 ([#260](https://github.com/m1sk9/babyrite/issues/260)) ([b6a10ca](https://github.com/m1sk9/babyrite/commit/b6a10ca67b592a58fa03d1c0efb66db8f5429f9c))
+* **deps:** update rust crate url to v2.5.3 ([#258](https://github.com/m1sk9/babyrite/issues/258)) ([f42d342](https://github.com/m1sk9/babyrite/commit/f42d342150ca736680c3f09e8ffb56c7a4900f03))
+
 ## [0.13.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.1...babyrite-v0.13.2) (2024-11-03)
 
 
