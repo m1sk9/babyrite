@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.4](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.3...babyrite-v0.13.4) (2024-11-07)
+
+
+### Bug Fixes
+
+* **deps:** Fix renovate artifact error ([#263](https://github.com/m1sk9/babyrite/issues/263)) ([ef8c716](https://github.com/m1sk9/babyrite/commit/ef8c716cbcce91b2f17bd3b210f61ea65e5d86d3))
+* **deps:** update rust crate thiserror to v2 ([#262](https://github.com/m1sk9/babyrite/issues/262)) ([c8dff88](https://github.com/m1sk9/babyrite/commit/c8dff88676b474020f65313e968444d683a85e26))
+
 ## [0.13.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.2...babyrite-v0.13.3) (2024-11-06)
 
 
