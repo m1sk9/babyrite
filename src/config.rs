@@ -40,9 +40,9 @@ impl BabyriteConfig {
                     .set(
                         toml::from_str(
                             &std::fs::read_to_string(p)
-                                .expect("Failed to read config.yaml. Please check if the file exists."),
+                                .expect("Failed to read config.toml. Please check if the file exists."),
                         )
-                            .expect("Failed to parse config.yaml. Please check if the settings are correct."),
+                            .expect("Failed to parse config.toml. Please check if the settings are correct."),
                     )
                     .unwrap();
             }
