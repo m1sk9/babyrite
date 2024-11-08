@@ -64,6 +64,15 @@ pub static MESSAGE_PREVIEW_CHANNEL_CACHE: Lazy<moka::future::Cache<ChannelId, Gu
 };
 
 impl MessagePreviewIDs {
+    /// Extracts MessagePreviewIDs from a given string containing a Discord message link.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - A string slice that holds the content to search for a Discord message link.
+    ///
+    /// # Returns
+    ///
+    /// * `anyhow::Result<MessagePreviewIDs, MessagePreviewError>` - A result containing either the extracted MessagePreviewIDs or an error.
     pub fn find_from_str(content: &str) -> anyhow::Result<MessagePreviewIDs, MessagePreviewError> {
         let url = MESSAGE_LINK_REGEX
             .captures(content)
@@ -98,6 +107,16 @@ impl MessagePreviewIDs {
         })
     }
 
+    /// Retrieves a message preview based on the stored IDs.
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - The context in which the command was executed.
+    /// * `is_private` - A boolean indicating if the message is in a private channel.
+    ///
+    /// # Returns
+    ///
+    /// * `anyhow::Result<MessagePreview, MessagePreviewError>` - A result containing either the message preview or an error.
     pub async fn get_preview(
         &self,
         ctx: &Context,
@@ -187,6 +206,15 @@ impl MessagePreviewIDs {
         })
     }
 
+    /// Generates an embed for the message preview.
+    ///
+    /// # Arguments
+    ///
+    /// * `preview` - The message preview to generate an embed for.
+    ///
+    /// # Returns
+    ///
+    /// * `CreateEmbed` - The generated embed.
     pub fn generate_preview(preview: MessagePreview) -> CreateEmbed {
         CreateEmbed::default()
             .color(preview.author.color.unwrap_or(Colour::new(0xFA6300)))
@@ -211,6 +239,7 @@ mod tests {
     use super::*;
 
     #[test]
+    /// Tests the `find_from_str` function with a valid URL.
     fn test_find_from_str_valid_url() {
         let url =
             "https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678";
@@ -221,6 +250,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests the `find_from_str` function with an invalid URL.
     fn test_find_from_str_invalid_url() {
         let url =
             "https://example.com/channels/123456789012345678/987654321098765432/123456789012345678";
@@ -229,6 +259,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests the `find_from_str` function with a discordapp.com domain.
     fn test_find_from_str_discordapp_domain() {
         let url =
             "https://discordapp.com/channels/123456789012345678/987654321098765432/123456789012345678";
@@ -237,6 +268,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests the `find_from_str` function with a contain text.
     fn test_find_from_str_contain_text() {
         let url_before_text = "hello https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678";
         let url_after_text = "https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678 hello";
