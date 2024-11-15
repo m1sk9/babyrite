@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.8](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.7...babyrite-v0.13.8) (2024-11-15)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate serenity to v0.12.4 ([#276](https://github.com/m1sk9/babyrite/issues/276)) ([977a081](https://github.com/m1sk9/babyrite/commit/977a081b1e91b2209bb544f9b8bc7b13daba1303))
+
 ## [0.13.7](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.6...babyrite-v0.13.7) (2024-11-13)
 
 
