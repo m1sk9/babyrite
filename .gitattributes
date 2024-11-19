@@ -1,2 +1,3 @@
 Dockerfile linguist-vendored
 x linguist-vendored
+*.ts linguist-language=ignore
