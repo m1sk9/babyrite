@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
 [![Release babyrite](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml)
-[![Deploy babyrite docs](https://github.com/m1sk9/babyrite/actions/workflows/deploy.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/deploy.yaml)
 
 **babyrite** is a citation message Discord bot.
 
@@ -15,16 +14,6 @@ docker pull ghcr.io/m1sk9/babyrite:v0
 ```
 
 [*API Support: requires Discord API v10*](https://discord.com/developers/docs/reference#api-versioning)
-
-![Execution](./website/example.gif)
-
-## Setup and Hosting
-
-babyrite can be hosted using Docker Compose or k8s.
-
-See [official guide](https://babyrite.m1sk9.dev/guide/hosting.html) for setup and hosting.
-
-## Details
 
 - babyrite is one of the Quote Bots that expands the message content of a sent message link into an embed.
   - There are several such bots in the public, but none of them have been released as OSS. babyrite provides a way to host it yourself as well as to release it as OSS.
