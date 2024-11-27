@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.10](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.9...babyrite-v0.13.10) (2024-11-27)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate tracing to v0.1.41 ([#282](https://github.com/m1sk9/babyrite/issues/282)) ([23222fa](https://github.com/m1sk9/babyrite/commit/23222fae777f7a6ba595f58e98f63a21a8914be3))
+
 ## [0.13.9](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.8...babyrite-v0.13.9) (2024-11-22)
 
 
