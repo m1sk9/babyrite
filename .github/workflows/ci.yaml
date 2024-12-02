@@ -34,7 +34,7 @@ jobs:
       - name: Run test
         run: cargo test --verbose
   build:
-    name: Build (${{ matrix.job.target }})
+    name: build (${{ matrix.job.target }})
     runs-on: ${{ matrix.job.os || 'ubuntu-latest' }}
     needs: check
     strategy:
@@ -71,6 +71,11 @@ jobs:
       - name: Install cross
         if: matrix.job.use-cross
         run: cargo install cross
+
+      # note: In Ubuntu-latest (Ubuntu 24), musl-tools has disappeared, so it must be installed separately.
+      - name: Install musl-gcc
+        if: matrix.job.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Build
         run: |
