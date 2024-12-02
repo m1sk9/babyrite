@@ -9,9 +9,8 @@ on:
       - main
 
 jobs:
-  build-babyrite:
+  check:
     runs-on: ubuntu-latest
-    name: Build babyrite
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -34,6 +33,50 @@ jobs:
 
       - name: Run test
         run: cargo test --verbose
+  build:
+    name: build (${{ matrix.job.target }})
+    runs-on: ${{ matrix.job.os || 'ubuntu-latest' }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+          # Note: babyrite will no longer support Windows
+          job:
+            - os: ubuntu-latest
+              target: x86_64-unknown-linux-gnu
+              use-cross: false
+            - os: ubuntu-latest
+              target: x86_64-unknown-linux-musl
+              use-cross: true
+            - os: macos-latest
+              target: x86_64-apple-darwin
+              use-cross: false
+            - os: macos-latest
+              target: aarch64-apple-darwin
+              use-cross: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Run Build
-        run: cargo build --verbose
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.job.target }}
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "babyrite/gh-actions-cache"
+
+      - name: Install cross
+        if: matrix.job.use-cross
+        run: cargo install cross
+
+      # note: In Ubuntu-latest (Ubuntu 24), musl-tools has disappeared, so it must be installed separately.
+      - name: Install musl-gcc
+        if: matrix.job.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: |
+          cargo build --verbose --target ${{ matrix.job.target }}
