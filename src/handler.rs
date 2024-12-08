@@ -32,6 +32,11 @@ impl EventHandler for BabyriteHandler {
         };
         debug!(name: "babyrite Message", "Found ids: {:?}", ids);
 
+        // Ignore if the message is not in the same guild
+        if ids.guild_id != message.guild_id.unwrap() {
+            return;
+        }
+
         let is_private = message
             .channel(&ctx)
             .await

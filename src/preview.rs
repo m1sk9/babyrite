@@ -148,12 +148,6 @@ impl MessagePreviewIDs {
             };
         debug!("channel: {:?}", channel);
 
-        if guild != channel.guild_id {
-            return Err(MessagePreviewError::GuildError(
-                "Mismatched guilds".to_string(),
-            ));
-        }
-
         if !channel.is_text_based() || channel.nsfw {
             return Err(MessagePreviewError::ChannelError(
                 "Channel is not text-based or NSFW".to_string(),
