@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.13](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.12...babyrite-v0.13.13) (2024-12-08)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate thiserror to v2.0.5 ([#293](https://github.com/m1sk9/babyrite/issues/293)) ([3bfba97](https://github.com/m1sk9/babyrite/commit/3bfba97bd770e9bf59e6aac00d1b6366fbb65f63))
+* Guild-checker to be able to judge correctly ([#295](https://github.com/m1sk9/babyrite/issues/295)) ([f9c14d4](https://github.com/m1sk9/babyrite/commit/f9c14d4fd8c17884f43c691c6ac31ff0346bdfd4))
+
 ## [0.13.12](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.11...babyrite-v0.13.12) (2024-12-03)
 
 
