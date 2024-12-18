@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.15](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.14...babyrite-v0.13.15) (2024-12-18)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate thiserror to v2.0.7 ([#299](https://github.com/m1sk9/babyrite/issues/299)) ([5ed8676](https://github.com/m1sk9/babyrite/commit/5ed86767f91a25cc17efd290e28a4e8a3341d05a))
+* **deps:** update rust crate thiserror to v2.0.8 ([#301](https://github.com/m1sk9/babyrite/issues/301)) ([4df2d2d](https://github.com/m1sk9/babyrite/commit/4df2d2d41ae1f56c9c97d3c2d1d2549924a67431))
+
 ## [0.13.14](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.13...babyrite-v0.13.14) (2024-12-11)
 
 
