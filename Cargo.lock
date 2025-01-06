@@ -891,9 +891,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.12.9"
+version = "0.12.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23db87a7f248211f6a7c8644a1b750541f8a4c68ae7de0f908860e44c0c201f6"
+checksum = "a9321642ca94a4282428e6ea4af8cc2ca4eac48ac7a6a4ea8f33f76d0ce70926"
 dependencies = [
  "async-lock",
  "crossbeam-channel",
@@ -903,7 +903,7 @@ dependencies = [
  "futures-util",
  "loom",
  "parking_lot",
- "quanta",
+ "portable-atomic",
  "rustc_version",
  "smallvec",
  "tagptr",
@@ -996,6 +996,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "portable-atomic"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "280dc24453071f1b63954171985a0b0d30058d287960968b9b2aca264c8d4ee6"
+
+[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1017,21 +1023,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f139b0662de085916d1fb67d2b4169d1addddda1919e696f3252b740b629986e"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "quanta"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e5167a477619228a0b284fac2674e3c388cba90631d7b7de620e6f1fcd08da5"
-dependencies = [
- "crossbeam-utils",
- "libc",
- "once_cell",
- "raw-cpuid",
- "wasi",
- "web-sys",
- "winapi",
 ]
 
 [[package]]
@@ -1071,15 +1062,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
-]
-
-[[package]]
-name = "raw-cpuid"
-version = "11.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ab240315c661615f2ee9f0f2cd32d5a7343a84d5ebcccb99d46e6637565e7b0"
-dependencies = [
- "bitflags 2.6.0",
 ]
 
 [[package]]
