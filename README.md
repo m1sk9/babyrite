@@ -2,32 +2,42 @@
 
 [![CI](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
 [![Release babyrite](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml)
+[![Docker Image Size](https://ghcr-badge.egpl.dev/m1sk9/babyrite/size)](https://github.com/m1sk9/babyrite/pkgs/container/babyrite/versions)
+[![MIT license](https://img.shields.io/github/license/henrygd/beszel?color=%239944ee)](https://github.com/m1sk9/babyrite/blob/main/LICENSE)
 
-**babyrite** is a citation message Discord bot.
+**babyrite** is a lightweight, fast citation message Discord bot.
 
-```sh
-# latest version
+```shell
+# Latest Release
 docker pull ghcr.io/m1sk9/babyrite:latest
 
-# Minor version (v0.x) - recommended
+# Minor Release
 docker pull ghcr.io/m1sk9/babyrite:v0
+
+# Specific Release
+docker pull ghcr.io/m1sk9/babyrite:v0.14.0
 ```
 
 [*API Support: requires Discord API v10*](https://discord.com/developers/docs/reference#api-versioning)
 
-- babyrite is one of the Quote Bots that expands the message content of a sent message link into an embed.
-  - There are several such bots in the public, but none of them have been released as OSS. babyrite provides a way to host it yourself as well as to release it as OSS.
-- babyrite can also extract attached image/GIF files.
-  - These attached files are sent using Discord's CDN and are not stored on the server side.
-- In addition to `discord.com`, babyrite supports message links used by a limited number of builds, such as `canary.discord.com` and `ptb.discord.com`.
-  - *Not supported by `discordapp.com`. See [m1sk9/babyrite#172](https://github.com/m1sk9/babyrite/issues/172) for details.*
+## Features
+
+- **Lightweight**: babyrite uses [distroless](https://github.com/GoogleContainerTools/distroless) as its base image and consists of a very lightweight Docker Image.
+- **Fast**: babyrite is developed in Rust and is very fast!
+- **OSS**: babyrite is open-source and licensed under the MIT License. It also provides a way to host it yourself as well as publish it as OSS.
+- **Easy to Use**: babyrite is very easy to use and can be deployed in seconds.
+
+## Usage
+
+- Send a message link in a channel where babyrite can view it, and it will send a preview of the message's content
+- babyrite can also show attached images and GIF files as preview. These are sent through Discord's CDN and are never stored on the server side.
 
 ## LICENSE
 
-babyrite is published under [MIT LIcense](./LICENSE).
+babyrite is published under [MIT License](./LICENSE).
 
 <sub>
-  © 2023-2024 m1sk9 - babyrite is not affiliated with Discord.
-  <br />
-  Thanks to MessageQuote, citation, for giving birth to babyrite!
+    ® 2023 - 2025 m1sk9
+    <br/>
+    babyrite is not affiliated with Discord.
 </sub>
