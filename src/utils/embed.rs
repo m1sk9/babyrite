@@ -2,7 +2,6 @@
 // with some properties compatible with Serenity's CreateEmbed,
 // but with some changes, such as default values and no longer being of type Option<T> type.
 
-use moka::ops::compute::Op;
 use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter};
 use serenity::model::{Colour, Timestamp};
 

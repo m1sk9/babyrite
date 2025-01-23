@@ -1,10 +1,5 @@
-use crate::message::MessageLinkIDs;
-use crate::utils::config::PreviewConfig;
-use crate::utils::embed::{BabyriteEmbed, BabyriteEmbedAuthor, BabyriteEmbedFooter};
-use serenity::all::{Context, CreateEmbed, Message, PermissionOverwriteType, ReactionType};
-use serenity::builder::{
-    CreateAllowedMentions, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage,
-};
+use serenity::all::{Context, Message, PermissionOverwriteType, ReactionType};
+use serenity::builder::{CreateAllowedMentions, CreateMessage};
 use serenity::model::Permissions;
 use serenity::prelude::EventHandler;
 
@@ -23,8 +18,8 @@ impl EventHandler for PreviewHandler {
             return;
         };
 
-        let config = PreviewConfig::get_config();
-        let Some(ids) = MessageLinkIDs::parse_url(&request.content) else {
+        let config = crate::PreviewConfig::get_config();
+        let Some(ids) = crate::message::MessageLinkIDs::parse_url(&request.content) else {
             return;
         };
 
@@ -53,16 +48,16 @@ impl EventHandler for PreviewHandler {
             return;
         }
 
-        let embed = BabyriteEmbed::builder()
+        let embed = crate::utils::embed::BabyriteEmbed::builder()
             .description(message.content.clone())
             .author(
-                BabyriteEmbedAuthor::builder()
+                crate::utils::embed::BabyriteEmbedAuthor::builder()
                     .name(message.author.name.clone())
                     .icon_url(message.author.avatar_url())
                     .build(),
             )
             .footer(
-                BabyriteEmbedFooter::builder()
+                crate::utils::embed::BabyriteEmbedFooter::builder()
                     .text(channel.name.clone())
                     .build(),
             )
@@ -84,9 +79,11 @@ impl EventHandler for PreviewHandler {
                 false => vec![],
             })
             .allowed_mentions(CreateAllowedMentions::new().replied_user(config.is_mention));
+
         if let Err(e) = request.channel_id.send_message(&ctx.http, preview).await {
             tracing::error!("Failed to send preview: {:?}", e);
         }
+
         tracing::info!("-- Preview sent successfully.");
     }
 }
