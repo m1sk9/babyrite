@@ -1,4 +1,4 @@
-use crate::config::PreviewConfig;
+use crate::utils::config::PreviewConfig;
 use serenity::all::{EventHandler, Reaction};
 use serenity::client::Context;
 
