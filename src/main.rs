@@ -1,16 +1,12 @@
 #![deny(clippy::all)]
 
-mod cache;
-mod config;
 mod event;
 mod message;
+mod utils;
 
-use crate::config::PreviewConfig;
-use crate::event::preview::PreviewHandler;
-use crate::event::reaction::ReactionHandler;
-use crate::event::ready::ReadyHandler;
 use serenity::all::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utils::config::PreviewConfig;
 
 #[derive(serde::Deserialize)]
 pub struct EnvConfig {
@@ -57,9 +53,9 @@ async fn main() -> anyhow::Result<()> {
             | GatewayIntents::GUILD_MESSAGES
             | GatewayIntents::GUILD_MESSAGE_REACTIONS,
     )
-    .event_handler(ReadyHandler)
-    .event_handler(PreviewHandler)
-    .event_handler(ReactionHandler)
+    .event_handler(event::preview::PreviewHandler)
+    .event_handler(event::reaction::ReactionHandler)
+    .event_handler(event::ready::ReadyHandler)
     .await
     .expect("Failed to initialize client.");
 

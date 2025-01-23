@@ -1,5 +1,3 @@
-use crate::get_env_config;
-
 pub static CONFIG: once_cell::sync::OnceCell<PreviewConfig> = once_cell::sync::OnceCell::new();
 
 #[derive(serde::Deserialize, Debug)]
@@ -35,7 +33,7 @@ pub enum PreviewConfigError {
 
 impl PreviewConfig {
     pub fn init() -> anyhow::Result<(), PreviewConfigError> {
-        let envs = get_env_config();
+        let envs = crate::get_env_config();
         match &envs.config_file_path {
             Some(p) => {
                 let buffer = &std::fs::read_to_string(p)

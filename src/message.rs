@@ -1,4 +1,4 @@
-use crate::cache::get_channel_from_cache;
+use crate::utils::cache::get_channel_from_cache;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::all::{ChannelId, GuildChannel, GuildId, Message, MessageId};
