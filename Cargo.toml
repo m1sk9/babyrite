@@ -1,6 +1,6 @@
 [package]
 name = "babyrite"
-version = "0.13.19"
+version = "0.14.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/m1sk9/babyrite"

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.19...babyrite-v0.14.0) (2025-01-23)
+
+
+### Features and Breaking Changes 💥
+
+* Release babyrite v0.14.0 ([#316](https://github.com/m1sk9/babyrite/issues/316)) ([74f9083](https://github.com/m1sk9/babyrite/commit/74f90835d584f0a51ce5a4a4377b49853b068575))
+  * Please see [74f9083](https://github.com/m1sk9/babyrite/commit/74f90835d584f0a51ce5a4a4377b49853b068575) for detailed changes.
+  * **Features**: Implemented preview deletion feature. You can delete it by reacting with `🗑️` to the preview.
+  * **Features**: Allowed quoting in NSFW channels.
+  * **Performance Improvements**: Improved the speed from message retrieval to generation. Also improved the speed when retrieving cached thread messages.
+  * **Performance Improvements**: Improved some error handling and increased robustness.
+  * **Breaking Changes**: Some configuration values have been changed or removed. See [870f094](https://github.com/m1sk9/babyrite/pull/316/commits/870f0944a4c2e391bff1f27b242a47f1f3664428#diff-dbdae5c8c4051177374bbd329948d6dca856ec4480b8732585c3c6f7c670fd1a) for details.
+
 ## [0.13.19](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.18...babyrite-v0.13.19) (2025-01-10)
 
 
