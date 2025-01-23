@@ -7,6 +7,7 @@ mod message;
 
 use crate::config::PreviewConfig;
 use crate::event::preview::PreviewHandler;
+use crate::event::reaction::ReactionHandler;
 use crate::event::ready::ReadyHandler;
 use serenity::all::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -52,10 +53,13 @@ async fn main() -> anyhow::Result<()> {
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
-        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES,
+        GatewayIntents::MESSAGE_CONTENT
+            | GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::GUILD_MESSAGE_REACTIONS,
     )
     .event_handler(ReadyHandler)
     .event_handler(PreviewHandler)
+    .event_handler(ReactionHandler)
     .await
     .expect("Failed to initialize client.");
 
