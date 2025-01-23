@@ -1,38 +1,42 @@
-#![deny(unused_imports)]
+#![deny(clippy::all)]
 
-use config::BabyriteConfig;
-use config::LoggerFormat;
-use serenity::prelude::GatewayIntents;
+mod event;
+mod message;
+mod utils;
+
+use serenity::all::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-pub mod config;
-pub mod handler;
-pub mod preview;
+use utils::config::PreviewConfig;
 
 #[derive(serde::Deserialize)]
-pub struct BabyriteEnv {
-    pub config_file_path: Option<String>,
+pub struct EnvConfig {
     pub discord_api_token: String,
+    pub config_file_path: Option<String>,
 }
 
-pub fn babyrite_envs() -> &'static BabyriteEnv {
-    static BABYRITE_ENV: std::sync::OnceLock<BabyriteEnv> = std::sync::OnceLock::new();
-    BABYRITE_ENV.get_or_init(|| {
-        envy::from_env()
-            .expect("Failed to read environment variables. Do you set the environment variables?")
-    })
+pub fn get_env_config() -> &'static EnvConfig {
+    static ENV_CONFIG: std::sync::OnceLock<EnvConfig> = std::sync::OnceLock::new();
+    ENV_CONFIG.get_or_init(|| envy::from_env().expect("Failed to load environment configuration."))
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
-    BabyriteConfig::init();
-    let config = BabyriteConfig::get();
-    let envs = babyrite_envs();
-
-    match config.logger_format {
-        LoggerFormat::Compact => {
+    PreviewConfig::init()?;
+    let envs = get_env_config();
+    match PreviewConfig::get_feature_flag("json_logging") {
+        true => {
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::EnvFilter::try_from_default_env()
+                        .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
+                )
+                .with(tracing_subscriber::fmt::layer().json())
+                .init();
+            tracing::info!("Feature Flag : Log output in JSON format is now enabled.");
+        }
+        false => {
             tracing_subscriber::registry()
                 .with(
                     tracing_subscriber::EnvFilter::try_from_default_env()
@@ -41,29 +45,23 @@ async fn main() -> anyhow::Result<()> {
                 .with(tracing_subscriber::fmt::layer().compact())
                 .init();
         }
-        LoggerFormat::Json => {
-            tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::EnvFilter::try_from_default_env()
-                        .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
-                )
-                .with(tracing_subscriber::fmt::layer().json())
-                .init();
-        }
     }
 
-    tracing::info!("Configuration: {:?}", config);
-    let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
-    let mut client = serenity::Client::builder(&envs.discord_api_token, intents)
-        .event_handler(handler::BabyriteHandler)
-        .await
-        .expect("Failed to create a new client");
+    let mut client = serenity::Client::builder(
+        &envs.discord_api_token,
+        GatewayIntents::MESSAGE_CONTENT
+            | GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::GUILD_MESSAGE_REACTIONS,
+    )
+    .event_handler(event::preview::PreviewHandler)
+    .event_handler(event::reaction::ReactionHandler)
+    .event_handler(event::ready::ReadyHandler)
+    .await
+    .expect("Failed to initialize client.");
 
     if let Err(why) = client.start().await {
-        Err(anyhow::anyhow!(
-            "An error occurred while running the client: {:?}",
-            why
-        ))?;
+        return Err(anyhow::anyhow!(why));
     }
+
     Ok(())
 }
