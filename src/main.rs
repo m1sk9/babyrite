@@ -60,7 +60,10 @@ async fn main() -> anyhow::Result<()> {
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
         GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES,
-    ).event_handler(Handler).await.expect("Failed to initialize client.");
+    )
+    .event_handler(Handler)
+    .await
+    .expect("Failed to initialize client.");
 
     if let Err(why) = client.start().await {
         return Err(anyhow::anyhow!(why));
