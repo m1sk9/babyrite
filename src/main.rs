@@ -1,16 +1,20 @@
 #![deny(clippy::all)]
 
+mod cache;
+mod config;
 mod event;
+mod message;
 
+use crate::config::PreviewConfig;
+use crate::event::preview::PreviewHandler;
+use crate::event::ready::ReadyHandler;
 use serenity::all::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-pub struct Handler;
-
 #[derive(serde::Deserialize)]
 pub struct EnvConfig {
-    pub feature_flag: Option<String>,
     pub discord_api_token: String,
+    pub config_file_path: Option<String>,
 }
 
 pub fn get_env_config() -> &'static EnvConfig {
@@ -18,21 +22,13 @@ pub fn get_env_config() -> &'static EnvConfig {
     ENV_CONFIG.get_or_init(|| envy::from_env().expect("Failed to load environment configuration."))
 }
 
-impl EnvConfig {
-    pub fn get_feature(&self, feature: &str) -> bool {
-        self.feature_flag
-            .as_ref()
-            .is_some_and(|f| f.contains(feature))
-    }
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
+    PreviewConfig::init()?;
     let envs = get_env_config();
-    // FIXME: I want to refactor this to be more idiomatic.
-    match envs.get_feature("json_logging") {
+    match PreviewConfig::get_feature_flag("json_logging") {
         true => {
             tracing_subscriber::registry()
                 .with(
@@ -54,14 +50,12 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    // TODO: Add configuration logic here.
-    // ...
-
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
         GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES,
     )
-    .event_handler(Handler)
+    .event_handler(ReadyHandler)
+    .event_handler(PreviewHandler)
     .await
     .expect("Failed to initialize client.");
 
