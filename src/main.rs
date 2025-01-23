@@ -22,7 +22,7 @@ impl EnvConfig {
     pub fn get_feature(&self, feature: &str) -> bool {
         self.feature_flag
             .as_ref()
-            .map_or(false, |f| f.contains(feature))
+            .is_some_and(|f| f.contains(feature))
     }
 }
 
