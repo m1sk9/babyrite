@@ -22,15 +22,46 @@ docker pull ghcr.io/m1sk9/babyrite:v0.14.0
 
 ## Features
 
-- **Lightweight**: babyrite uses [distroless](https://github.com/GoogleContainerTools/distroless) as its base image and consists of a very lightweight Docker Image.
+- **Lightweight**: babyrite uses [distroless](https://github.com/GoogleContainerTools/distroless) as its base image and
+  consists of a very lightweight Docker Image.
 - **Fast**: babyrite is developed in Rust and is very fast!
-- **OSS**: babyrite is open-source and licensed under the MIT License. It also provides a way to host it yourself as well as publish it as OSS.
+- **OSS**: babyrite is open-source and licensed under the MIT License. It also provides a way to host it yourself as
+  well as publish it as OSS.
 - **Easy to Use**: babyrite is very easy to use and can be deployed in seconds.
 
-## Usage
+## Installation
 
-- Send a message link in a channel where babyrite can view it, and it will send a preview of the message's content
-- babyrite can also show attached images and GIF files as preview. These are sent through Discord's CDN and are never stored on the server side.
+It is recommended to use Docker Compose when setting up babyrite. Direct startup using Docker images or binary files is also possible but not recommended.
+```yaml
+services:
+  app:
+    image: ghcr.io/m1sk9/babyrite:v0.14.0
+    env_file:
+      - .env
+    restart: always
+```
+
+If you are using orchestration tools such as k8s or Docker Swarm, please configure them according to their respective configuration files.
+
+## Configuration and Environment Variables
+
+You can customize the behavior of babyrite by using a dedicated configuration file. The settings are written in TOML format. Refer to [`config/config.toml`](./config/config.toml) for configuration items.
+
+You can also start with the default settings without configuring. The following are the default settings used in that case.
+
+```toml
+feature_flag = ""
+is_mention = true
+is_deletable = true
+is_allow_nsfw = false
+```
+
+The environment variables used by babyrite are as follows. Note that the only environment variable required for startup is DISCORD_API_TOKEN.
+
+| Key                 | Description                                     | 
+|---------------------|-------------------------------------------------|
+| `DISCORD_API_TOKEN` | Discord API token                               | 
+| `CONFIG_FILE`       | Path to the configuration file (recursive path) | 
 
 ## LICENSE
 
