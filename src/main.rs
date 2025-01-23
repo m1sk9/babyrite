@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .with(tracing_subscriber::fmt::layer().json())
                 .init();
-            tracing::info!("JSON logging enabled.");
+            tracing::info!("Feature Flag : Log output in JSON format is now enabled.");
         }
         false => {
             tracing_subscriber::registry()

@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 use once_cell::sync::Lazy;
-use serenity::all::{Channel, ChannelId, Guild, GuildChannel, GuildId};
+use serenity::all::{ChannelId, GuildChannel, GuildId};
 use serenity::client::Context;
 
 pub static MESSAGE_PREVIEW_CHANNEL_CACHE: Lazy<moka::future::Cache<ChannelId, GuildChannel>> = {

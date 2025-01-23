@@ -1,9 +1,10 @@
 use crate::config::PreviewConfig;
 use crate::message::MessageLinkIDs;
-use serenity::all::{Context, CreateEmbed, Message, ReactionType};
+use serenity::all::{Context, CreateEmbed, Message, PermissionOverwriteType, ReactionType};
 use serenity::builder::{
     CreateAllowedMentions, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage,
 };
+use serenity::model::Permissions;
 use serenity::prelude::EventHandler;
 
 pub struct PreviewHandler;
@@ -33,11 +34,15 @@ impl EventHandler for PreviewHandler {
         };
 
         let config = PreviewConfig::get_config();
-
         let Some(ids) = MessageLinkIDs::parse_url(&request.content) else {
             return;
         };
 
+        tracing::info!(
+            "Start processing citation requests from {} ({:?})",
+            request.author.name,
+            ids
+        );
         let preview = match ids.get_message(&ctx).await {
             Ok(p) => p,
             Err(e) => {
@@ -46,11 +51,14 @@ impl EventHandler for PreviewHandler {
             }
         };
         let (message, channel) = (preview.preview_message, preview.preview_channel);
+        tracing::debug!("Message: {:?}, Channel: {:?}", message, channel);
 
+        // Verify that: @everyone on the previewer channel does not have read permission (i.e. limit channel)
         if channel.nsfw && !config.is_allow_nsfw
-            || channel
-                .permissions
-                .is_some_and(|p| !p.read_message_history())
+            || channel.permission_overwrites.iter().any(|p| {
+                matches!(p.kind, PermissionOverwriteType::Role(_))
+                    && p.deny.contains(Permissions::VIEW_CHANNEL)
+            })
         {
             return;
         }
@@ -74,6 +82,7 @@ impl EventHandler for PreviewHandler {
         if let Err(e) = request.channel_id.send_message(&ctx.http, preview).await {
             tracing::error!("Failed to send preview: {:?}", e);
         }
+        tracing::info!("-- Preview sent successfully.");
     }
 }
 
