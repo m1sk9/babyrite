@@ -1,5 +1,6 @@
-use crate::config::PreviewConfig;
 use crate::message::MessageLinkIDs;
+use crate::utils::config::PreviewConfig;
+use crate::utils::embed::{BabyriteEmbed, BabyriteEmbedAuthor, BabyriteEmbedFooter};
 use serenity::all::{Context, CreateEmbed, Message, PermissionOverwriteType, ReactionType};
 use serenity::builder::{
     CreateAllowedMentions, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage,
@@ -15,21 +16,10 @@ pub enum PreviewHandlerError {
     FailedToGetPreview(#[from] anyhow::Error),
 }
 
-#[derive(Debug, typed_builder::TypedBuilder)]
-pub struct PreviewEmbedArgs {
-    pub content: String,
-    pub author_name: String,
-    pub author_avatar: Option<String>,
-    pub channel_name: String,
-    pub create_at: serenity::model::Timestamp,
-    pub attachment_url: Option<String>,
-}
-
 #[serenity::async_trait]
 impl EventHandler for PreviewHandler {
     async fn message(&self, ctx: Context, request: Message) {
-        // check if the message is command or bot
-        if request.content.starts_with("b!") || request.author.bot {
+        if request.author.bot {
             return;
         };
 
@@ -63,16 +53,31 @@ impl EventHandler for PreviewHandler {
             return;
         }
 
-        let args = PreviewEmbedArgs::builder()
-            .content(message.content.clone())
-            .author_name(message.author.name.clone())
-            .author_avatar(message.author.avatar_url().clone())
-            .channel_name(channel.name)
-            .create_at(message.timestamp)
-            .attachment_url(message.attachments.first().map(|a| a.url.clone()))
+        let embed = BabyriteEmbed::builder()
+            .description(message.content.clone())
+            .author(
+                BabyriteEmbedAuthor::builder()
+                    .name(message.author.name.clone())
+                    .icon_url(message.author.avatar_url())
+                    .build(),
+            )
+            .footer(
+                BabyriteEmbedFooter::builder()
+                    .text(channel.name.clone())
+                    .build(),
+            )
+            .timestamp(message.timestamp)
+            .image(
+                message
+                    .attachments
+                    .first()
+                    .map(|a| a.url.clone())
+                    .unwrap_or_default(),
+            )
+            .color(0x7A4AFF)
             .build();
         let preview = CreateMessage::default()
-            .embed(generate_preview(args))
+            .embed(embed.build())
             .reference_message(&request)
             .reactions(match config.is_deletable {
                 true => vec![ReactionType::Unicode("🗑️".to_string())],
@@ -84,20 +89,4 @@ impl EventHandler for PreviewHandler {
         }
         tracing::info!("-- Preview sent successfully.");
     }
-}
-
-fn generate_preview(args: PreviewEmbedArgs) -> CreateEmbed {
-    CreateEmbed::default()
-        .description(args.content)
-        .author(
-            CreateEmbedAuthor::new(&args.author_name).icon_url(
-                args.author_avatar
-                    .as_deref()
-                    .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
-            ),
-        )
-        .footer(CreateEmbedFooter::new(&args.channel_name))
-        .timestamp(args.create_at)
-        .image(args.attachment_url.unwrap_or_default())
-        .color(0x7A4AFF)
 }

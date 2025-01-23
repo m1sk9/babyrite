@@ -6,8 +6,6 @@ pub static CONFIG: once_cell::sync::OnceCell<PreviewConfig> = once_cell::sync::O
 pub struct PreviewConfig {
     // Enable optional features.
     pub feature_flag: Option<String>,
-    // Command prefix.
-    pub command_prefix: String,
     // If enabled, previews are generated with mentions.
     pub is_mention: bool,
     // If enabled, preview can be deleted.
@@ -20,7 +18,6 @@ impl Default for PreviewConfig {
     fn default() -> Self {
         Self {
             feature_flag: None,
-            command_prefix: "b!".to_string(),
             is_mention: true,
             is_deletable: true,
             is_allow_nsfw: false,

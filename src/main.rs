@@ -1,16 +1,15 @@
 #![deny(clippy::all)]
 
-mod cache;
-mod config;
 mod event;
 mod message;
+mod utils;
 
-use crate::config::PreviewConfig;
 use crate::event::preview::PreviewHandler;
 use crate::event::reaction::ReactionHandler;
 use crate::event::ready::ReadyHandler;
 use serenity::all::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use utils::config::PreviewConfig;
 
 #[derive(serde::Deserialize)]
 pub struct EnvConfig {
