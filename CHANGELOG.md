@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.14.0...babyrite-v0.14.1) (2025-02-05)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate toml to v0.8.20 ([#324](https://github.com/m1sk9/babyrite/issues/324)) ([43acfbd](https://github.com/m1sk9/babyrite/commit/43acfbd4eb170545a11ad0116c2ec76218633b6d))
+
 ## [0.14.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.13.19...babyrite-v0.14.0) (2025-01-23)
 
 
