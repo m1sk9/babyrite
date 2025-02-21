@@ -11,29 +11,32 @@ impl EventHandler for ReactionHandler {
             return;
         }
 
-        if let Ok(m) = reaction.message(&ctx.http).await {
-            if m.author.id != ctx.cache.current_user().id {
-                return;
-            }
-
-            if let Some(referenced_message) = m.referenced_message.clone() {
-                if referenced_message.author.id != reaction.user_id.unwrap_or_default() {
+        match reaction.message(&ctx.http).await {
+            Ok(m) => {
+                if m.author.id != ctx.cache.current_user().id {
                     return;
                 }
-            } else {
-                return;
-            }
 
-            if let Err(e) = m.delete(&ctx.http).await {
-                tracing::error!("Failed to delete preview: {:?}", e);
-            }
+                if let Some(referenced_message) = m.referenced_message.clone() {
+                    if referenced_message.author.id != reaction.user_id.unwrap_or_default() {
+                        return;
+                    }
+                } else {
+                    return;
+                }
 
-            tracing::info!(
-                "Deleted preview. Requested by {}",
-                reaction.user_id.unwrap_or_default()
-            );
-        } else {
-            tracing::error!("Failed to get preview");
+                if let Err(e) = m.delete(&ctx.http).await {
+                    tracing::error!("Failed to delete preview: {:?}", e);
+                }
+
+                tracing::info!(
+                    "Deleted preview. Requested by {}",
+                    reaction.user_id.unwrap_or_default()
+                );
+            }
+            _ => {
+                tracing::error!("Failed to get preview");
+            }
         }
     }
 }

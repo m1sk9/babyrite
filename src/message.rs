@@ -27,27 +27,28 @@ impl MessageLinkIDs {
             return None;
         }
 
-        if let Some(captures) = MESSAGE_LINK_REGEX.captures(text) {
-            let url = Url::parse(captures.get(0)?.as_str()).ok()?;
+        match MESSAGE_LINK_REGEX.captures(text) {
+            Some(captures) => {
+                let url = Url::parse(captures.get(0)?.as_str()).ok()?;
 
-            if !matches!(
-                url.domain(),
-                Some("discord.com") | Some("canary.discord.com") | Some("ptb.discord.com")
-            ) {
-                return None;
+                if !matches!(
+                    url.domain(),
+                    Some("discord.com") | Some("canary.discord.com") | Some("ptb.discord.com")
+                ) {
+                    return None;
+                }
+
+                let guild_id = GuildId::new(captures.get(1)?.as_str().parse().ok()?);
+                let channel_id = ChannelId::new(captures.get(2)?.as_str().parse().ok()?);
+                let message_id = MessageId::new(captures.get(3)?.as_str().parse().ok()?);
+
+                Some(MessageLinkIDs {
+                    guild_id,
+                    channel_id,
+                    message_id,
+                })
             }
-
-            let guild_id = GuildId::new(captures.get(1)?.as_str().parse().ok()?);
-            let channel_id = ChannelId::new(captures.get(2)?.as_str().parse().ok()?);
-            let message_id = MessageId::new(captures.get(3)?.as_str().parse().ok()?);
-
-            Some(MessageLinkIDs {
-                guild_id,
-                channel_id,
-                message_id,
-            })
-        } else {
-            None
+            _ => None,
         }
     }
 
