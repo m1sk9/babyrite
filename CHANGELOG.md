@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.15.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.14.2...babyrite-v0.15.0) (2025-02-21)
+
+
+### Features
+
+* Support Rust 2024 edition ([#328](https://github.com/m1sk9/babyrite/issues/328)) ([581725d](https://github.com/m1sk9/babyrite/commit/581725dfa151b194f11792a5169ac961de85880a))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate anyhow to v1.0.96 ([#329](https://github.com/m1sk9/babyrite/issues/329)) ([58670ed](https://github.com/m1sk9/babyrite/commit/58670ed992ee836105a33248532e8d214f37491c))
+* **deps:** update rust crate serde to v1.0.218 ([#330](https://github.com/m1sk9/babyrite/issues/330)) ([e694f90](https://github.com/m1sk9/babyrite/commit/e694f90b4029c61c7f4d579ff31228962f8d57d6))
+
 ## [0.14.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.14.1...babyrite-v0.14.2) (2025-02-06)
 
 
