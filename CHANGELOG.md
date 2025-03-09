@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.2...babyrite-v0.15.3) (2025-03-09)
+
+
+### Bug Fixes
+
+* **deps:** bump ring from 0.17.8 to 0.17.13 ([#338](https://github.com/m1sk9/babyrite/issues/338)) ([8c86b18](https://github.com/m1sk9/babyrite/commit/8c86b1894d064a846c85a5941f1c643d45a306e2))
+* **deps:** update rust crate thiserror to v2.0.12 ([#336](https://github.com/m1sk9/babyrite/issues/336)) ([18ab54c](https://github.com/m1sk9/babyrite/commit/18ab54caa9da535ade7cac5b2e59178a5a9505a1))
+
 ## [0.15.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.1...babyrite-v0.15.2) (2025-03-07)
 
 
