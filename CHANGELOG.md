@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.4](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.3...babyrite-v0.15.4) (2025-03-10)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate once_cell to v1.21.0 ([#344](https://github.com/m1sk9/babyrite/issues/344)) ([7a678fb](https://github.com/m1sk9/babyrite/commit/7a678fb7e1255f9dca1a2c9648d76ca0f4182f2a))
+* **deps:** update rust crate serde to v1.0.219 ([#342](https://github.com/m1sk9/babyrite/issues/342)) ([fde5e63](https://github.com/m1sk9/babyrite/commit/fde5e6323dbd591f0a554e18a754fec0aa91cbb4))
+
 ## [0.15.3](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.2...babyrite-v0.15.3) (2025-03-09)
 
 
