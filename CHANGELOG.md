@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.4...babyrite-v0.15.5) (2025-03-19)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate once_cell to v1.21.1 ([#347](https://github.com/m1sk9/babyrite/issues/347)) ([222220a](https://github.com/m1sk9/babyrite/commit/222220a3ce7e5fd049758634eb059fd45e6f62cb))
+* **deps:** update rust crate tokio to v1.44.1 ([#345](https://github.com/m1sk9/babyrite/issues/345)) ([8386ae9](https://github.com/m1sk9/babyrite/commit/8386ae9e86b74aa4921e604b84fd62fd2a8ca83f))
+* **deps:** update rust crate typed-builder to v0.20.1 ([#348](https://github.com/m1sk9/babyrite/issues/348)) ([625951a](https://github.com/m1sk9/babyrite/commit/625951ac337045d0a610a2e7ca8d015834e6d6f9))
+
 ## [0.15.4](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.3...babyrite-v0.15.4) (2025-03-10)
 
 
