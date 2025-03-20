@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.5...babyrite-v0.15.6) (2025-03-20)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate typed-builder to 0.21.0 ([#350](https://github.com/m1sk9/babyrite/issues/350)) ([2095aec](https://github.com/m1sk9/babyrite/commit/2095aecd5b3bb2bb16ac6bb30c3fc659bf137d0a))
+
 ## [0.15.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.4...babyrite-v0.15.5) (2025-03-19)
 
 
