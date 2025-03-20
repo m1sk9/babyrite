@@ -16,7 +16,7 @@ tracing = { version = "0.1.40" }
 thiserror = { version = "2.0.0" }
 url = { version = "2.5.2" }
 toml = { version = "0.8.19" }
-typed-builder = { version = "0.20.0" }
+typed-builder = { version = "0.21.0" }
 
 [dependencies.serenity]
 version = "0.12.1"
