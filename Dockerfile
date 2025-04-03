@@ -1,4 +1,4 @@
-FROM rust:1.85.1-bookworm AS builder
+FROM rust:1.86.0-bookworm AS builder
 
 WORKDIR /root/app
 COPY --chown=root:root . .
