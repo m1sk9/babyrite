@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.10](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.9...babyrite-v0.15.10) (2025-04-10)
+
+
+### Bug Fixes
+
+* **deps:** bump crossbeam-channel from 0.5.13 to 0.5.15 ([#363](https://github.com/m1sk9/babyrite/issues/363)) ([f995c3f](https://github.com/m1sk9/babyrite/commit/f995c3f2c3f4653f5f14f2566caa02294fb1e18e))
+
 ## [0.15.9](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.8...babyrite-v0.15.9) (2025-04-05)
 
 
