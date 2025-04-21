@@ -19,7 +19,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: Setup cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
         with:
           prefix-key: "babyrite/gh-actions-cache"
 
@@ -39,20 +39,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          # Note: babyrite will no longer support Windows
-          job:
-            - os: ubuntu-latest
-              target: x86_64-unknown-linux-gnu
-              use-cross: false
-            - os: ubuntu-latest
-              target: x86_64-unknown-linux-musl
-              use-cross: true
-            - os: macos-latest
-              target: x86_64-apple-darwin
-              use-cross: false
-            - os: macos-latest
-              target: aarch64-apple-darwin
-              use-cross: false
+        # Note: babyrite will no longer support Windows
+        job:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            use-cross: false
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            use-cross: true
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            use-cross: false
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            use-cross: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
           target: ${{ matrix.job.target }}
 
       - name: Setup cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
         with:
           prefix-key: "babyrite/gh-actions-cache"
 
