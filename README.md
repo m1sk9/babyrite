@@ -14,7 +14,7 @@ docker pull ghcr.io/m1sk9/babyrite:latest
 docker pull ghcr.io/m1sk9/babyrite:v0
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v0.15.0
+docker pull ghcr.io/m1sk9/babyrite:v0.16.0
 ```
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
@@ -30,12 +30,24 @@ docker pull ghcr.io/m1sk9/babyrite:v0.15.0
 
 ## Installation
 
+You can install babyrite using Docker. The following command will pull the latest version of babyrite.
+
+```shell
+docker pull ghcr.io/m1sk9/babyrite:v0
+```
+
+- babyrite is tested on macOS and Linux (major distributions) as recommended environment.
+  - Windows is deprecated as it has not been tested.
+- ARM64 environments are supported (v0.16.0+)
+
+### Using Docker Compose
+
 It is recommended to use Docker Compose when setting up babyrite. Direct startup using Docker images or binary files is also possible but not recommended.
 
 ```yaml
 services:
   app:
-    image: ghcr.io/m1sk9/babyrite:v0.15.0
+    image: ghcr.io/m1sk9/babyrite:v0
     env_file:
       - .env
     restart: always
