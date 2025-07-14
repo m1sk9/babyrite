@@ -38,7 +38,7 @@ docker pull ghcr.io/m1sk9/babyrite:v0
 
 - babyrite is tested on macOS and Linux (major distributions) as recommended environment.
   - Windows is deprecated as it has not been tested.
-- ARM64 environment is supported. (v0.16.0 or later)
+- ARM64 environments are supported (v0.16.0+)
 
 ### Using Docker Compose
 

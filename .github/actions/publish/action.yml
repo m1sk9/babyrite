@@ -31,9 +31,9 @@ runs:
 
     - name: Build and push
       uses: docker/build-push-action@v6
-      platforms: linux/amd64,linux/arm64
       with:
         push: true
+        platforms: linux/amd64,linux/arm64
         tags: |
           ghcr.io/m1sk9/babyrite:latest
           ghcr.io/m1sk9/babyrite:${{ inputs.sha }}
