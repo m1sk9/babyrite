@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.19...babyrite-v0.16.0) (2025-07-14)
+
+
+### Features
+
+* Support for ARM64 environment ([#391](https://github.com/m1sk9/babyrite/issues/391)) ([5856e7b](https://github.com/m1sk9/babyrite/commit/5856e7b53ee555b0552bef53a44bbdd75ab1255f))
+
+
+### Bug Fixes
+
+* **deps:** update rust crate toml to v0.9.2 ([#388](https://github.com/m1sk9/babyrite/issues/388)) ([6babd84](https://github.com/m1sk9/babyrite/commit/6babd84e32e9f74c407544ef6d95770e8e08ce64))
+
 ## [0.15.19](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.18...babyrite-v0.15.19) (2025-07-10)
 
 
