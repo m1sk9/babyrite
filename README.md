@@ -14,10 +14,10 @@ docker pull ghcr.io/m1sk9/babyrite:latest
 docker pull ghcr.io/m1sk9/babyrite:v0
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v0.14.0
+docker pull ghcr.io/m1sk9/babyrite:v0.15.0
 ```
 
-[*API Support: requires Discord API v10*](https://discord.com/developers/docs/reference#api-versioning)
+[_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
 
 ## Features
 
@@ -35,7 +35,7 @@ It is recommended to use Docker Compose when setting up babyrite. Direct startup
 ```yaml
 services:
   app:
-    image: ghcr.io/m1sk9/babyrite:v0.14.0
+    image: ghcr.io/m1sk9/babyrite:v0.15.0
     env_file:
       - .env
     restart: always
@@ -56,19 +56,19 @@ is_deletable = true
 is_allow_nsfw = false
 ```
 
-| Key    | Description                                                                | Default Value |
-|-----|-----------------|---------------|
-| `feature_flag`   | Flags to change the behavior of Babyrite. Specify them separated by commas. | `""` (empty)  |
-| `is_mention`     | Specifies whether to mention the request sender when generating a preview.                                            | `true`        |
-| `is_deletable`   | Sets whether to enable the deletion of previews. | `true`        |
-| `is_allow_nsfw`  | Sets whether to allow the generation of messages from channels marked as NSFW.  | `false`       |
+| Key             | Description                                                                    | Default Value |
+| --------------- | ------------------------------------------------------------------------------ | ------------- |
+| `feature_flag`  | Flags to change the behavior of Babyrite. Specify them separated by commas.    | `""` (empty)  |
+| `is_mention`    | Specifies whether to mention the request sender when generating a preview.     | `true`        |
+| `is_deletable`  | Sets whether to enable the deletion of previews.                               | `true`        |
+| `is_allow_nsfw` | Sets whether to allow the generation of messages from channels marked as NSFW. | `false`       |
 
 ## Environment Variables
 
 The environment variables used by babyrite are as follows. Note that the only environment variable required for startup is `DISCORD_API_TOKEN`.
 
 | Key                 | Description                                     |
-|---------------------|-------------------------------------------------|
+| ------------------- | ----------------------------------------------- |
 | `DISCORD_API_TOKEN` | Discord API token                               |
 | `CONFIG_FILE`       | Path to the configuration file (recursive path) |
 
