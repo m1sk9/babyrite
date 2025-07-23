@@ -8,9 +8,11 @@ use serenity::all::GatewayIntents;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::config::PreviewConfig;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub struct EnvConfig {
     pub discord_api_token: String,
+    #[serde(default)]
+    #[serde(deserialize_with = "crate::utils::config::empty_string_as_none")]
     pub config_file_path: Option<String>,
 }
 
@@ -25,6 +27,8 @@ async fn main() -> anyhow::Result<()> {
 
     PreviewConfig::init()?;
     let envs = get_env_config();
+    tracing::debug!("Config: {:?}", PreviewConfig::get_config());
+
     match PreviewConfig::get_feature_flag("json_logging") {
         true => {
             tracing_subscriber::registry()
