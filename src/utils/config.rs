@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 pub static CONFIG: once_cell::sync::OnceCell<PreviewConfig> = once_cell::sync::OnceCell::new();
 
 #[derive(serde::Deserialize, Debug)]
@@ -58,4 +60,13 @@ impl PreviewConfig {
         let c = Self::get_config();
         c.feature_flag.as_ref().is_some_and(|f| f.contains(flag))
     }
+}
+
+/// Deserialize a string as an `Option<String>`, treating empty strings as `None`.
+pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    Ok(opt.filter(|s| !s.is_empty()))
 }
