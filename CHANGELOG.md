@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.16.0...babyrite-v0.17.0) (2025-07-23)
+
+
+### Features
+
+* Deprecate `json_logging` ([#394](https://github.com/m1sk9/babyrite/issues/394)) ([dca62e8](https://github.com/m1sk9/babyrite/commit/dca62e8d91eb1c8f01d2dd4718530f116bbbb164))
+* Use default value for environment variable `CONFIG_FILE_PATH` even if it is an empty string ([#392](https://github.com/m1sk9/babyrite/issues/392)) ([ea0ca43](https://github.com/m1sk9/babyrite/commit/ea0ca43ef94bff60da4b9d6335d686a1ecaed689))
+
 ## [0.16.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.15.19...babyrite-v0.16.0) (2025-07-14)
 
 
