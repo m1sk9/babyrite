@@ -4,8 +4,6 @@ pub static CONFIG: once_cell::sync::OnceCell<PreviewConfig> = once_cell::sync::O
 
 #[derive(serde::Deserialize, Debug)]
 pub struct PreviewConfig {
-    // Enable optional features.
-    pub feature_flag: Option<String>,
     // If enabled, previews are generated with mentions.
     pub is_mention: bool,
     // If enabled, preview can be deleted.
@@ -17,7 +15,6 @@ pub struct PreviewConfig {
 impl Default for PreviewConfig {
     fn default() -> Self {
         Self {
-            feature_flag: None,
             is_mention: true,
             is_deletable: true,
             is_allow_nsfw: false,
@@ -54,11 +51,6 @@ impl PreviewConfig {
 
     pub fn get_config() -> &'static PreviewConfig {
         CONFIG.get().expect("Failed to get configuration.")
-    }
-
-    pub fn get_feature_flag(flag: &str) -> bool {
-        let c = Self::get_config();
-        c.feature_flag.as_ref().is_some_and(|f| f.contains(flag))
     }
 }
 

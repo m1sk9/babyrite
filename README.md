@@ -62,7 +62,6 @@ You can customize the behavior of babyrite by using a dedicated configuration fi
 You can also start with the default settings without configuring. The following are the default settings used in that case.
 
 ```toml
-feature_flag = ""
 is_mention = true
 is_deletable = true
 is_allow_nsfw = false
@@ -70,7 +69,6 @@ is_allow_nsfw = false
 
 | Key             | Description                                                                    | Default Value |
 | --------------- | ------------------------------------------------------------------------------ | ------------- |
-| `feature_flag`  | Flags to change the behavior of Babyrite. Specify them separated by commas.    | `""` (empty)  |
 | `is_mention`    | Specifies whether to mention the request sender when generating a preview.     | `true`        |
 | `is_deletable`  | Sets whether to enable the deletion of previews.                               | `true`        |
 | `is_allow_nsfw` | Sets whether to allow the generation of messages from channels marked as NSFW. | `false`       |
