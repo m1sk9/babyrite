@@ -4,12 +4,6 @@
 # The settings are written in TOML format. To use the configuration file, specify the recursive path to the configuration file in the environment variable "CONFIG_FILE_PATH" injected into the container.
 # Note that babyrite will run with default settings if not configured.
 
-# Startup settings (Feature Flags)
-## Flags to change the behavior of babyrite. Specify them separated by commas. The default is empty.
-## The valid flags are as follows:
-## - "json_logging": Outputs logs in JSON format (useful when integrating with log collection tools like Grafana Loki)
-feature_flag = ""
-
 # Mention settings for preview generation (default is enabled)
 ## Mentions the request sender when generating a preview.
 is_mention = true

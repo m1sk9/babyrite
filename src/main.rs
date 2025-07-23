@@ -29,27 +29,13 @@ async fn main() -> anyhow::Result<()> {
     let envs = get_env_config();
     tracing::debug!("Config: {:?}", PreviewConfig::get_config());
 
-    match PreviewConfig::get_feature_flag("json_logging") {
-        true => {
-            tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::EnvFilter::try_from_default_env()
-                        .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
-                )
-                .with(tracing_subscriber::fmt::layer().json())
-                .init();
-            tracing::info!("Feature Flag : Log output in JSON format is now enabled.");
-        }
-        false => {
-            tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::EnvFilter::try_from_default_env()
-                        .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
-                )
-                .with(tracing_subscriber::fmt::layer().compact())
-                .init();
-        }
-    }
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "babyrite=debug,serenity=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer().compact())
+        .init();
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
