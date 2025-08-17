@@ -2,8 +2,9 @@
 name = "babyrite"
 version = "0.17.3"
 edition = "2024"
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://github.com/m1sk9/babyrite"
+readme = "README.md"
 description = "A citation message Discord bot."
 
 [dependencies]
