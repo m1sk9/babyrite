@@ -8,34 +8,18 @@ readme = "README.md"
 description = "A citation message Discord bot."
 
 [dependencies]
-anyhow = { version = "1.0.82" }
-dotenvy = { version = "0.15.7" }
-envy = { version = "0.4.2" }
-once_cell = { version = "1.19.0" }
-regex = { version = "1.10.4" }
-tracing = { version = "0.1.40" }
-thiserror = { version = "2.0.0" }
-url = { version = "2.5.2" }
-toml = { version = "0.9.0" }
-typed-builder = { version = "0.21.0" }
-
-[dependencies.serenity]
-version = "0.12.1"
-features = ["client", "gateway", "model", "cache", "rustls_backend"]
-default-features = false
-
-[dependencies.serde]
-version = "1.0.200"
-features = ["derive"]
-
-[dependencies.tokio]
-version = "1.37.0"
-features = ["macros", "rt-multi-thread"]
-
-[dependencies.tracing-subscriber]
-version = "0.3.18"
-features = ["env-filter", "json"]
-
-[dependencies.moka]
-version = "0.12.8"
-features = ["future"]
+anyhow = "1.0.82"
+dotenvy = "0.15.7"
+envy = "0.4.2"
+moka = { version = "0.12.8", features = ["future"] }
+once_cell = "1.19.0"
+regex = "1.10.4"
+serde = { version = "1.0.200", features = ["derive"] }
+serenity = { version = "0.12.1", default-features = false, features = ["client", "gateway", "model", "cache", "rustls_backend"] }
+thiserror = "2.0.0"
+tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
+toml = "0.9.0"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
+typed-builder = "0.21.0"
+url = "2.5.2"
