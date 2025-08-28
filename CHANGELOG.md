@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.4...babyrite-v0.17.5) (2025-08-24)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate regex to v1.11.2 ([#414](https://github.com/m1sk9/babyrite/issues/414)) ([d0339f2](https://github.com/m1sk9/babyrite/commit/d0339f2e9de87747c6cb07999fcab7c0029bd906))
+* **deps:** update rust crate url to v2.5.7 ([#412](https://github.com/m1sk9/babyrite/issues/412)) ([598fd5c](https://github.com/m1sk9/babyrite/commit/598fd5c18370985d63b5fabb11f59eb33e820426))
+
 ## [0.17.4](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.3...babyrite-v0.17.4) (2025-08-21)
 
 
