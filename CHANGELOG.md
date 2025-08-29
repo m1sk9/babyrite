@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.5...babyrite-v0.17.6) (2025-08-29)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate tracing-subscriber to v0.3.20 [security] ([#416](https://github.com/m1sk9/babyrite/issues/416)) ([8a1ed1b](https://github.com/m1sk9/babyrite/commit/8a1ed1b081301d29b7b042f4e37b4b056d6307aa))
+
 ## [0.17.5](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.4...babyrite-v0.17.5) (2025-08-24)
 
 
