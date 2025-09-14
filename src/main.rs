@@ -27,7 +27,6 @@ async fn main() -> anyhow::Result<()> {
 
     PreviewConfig::init()?;
     let envs = get_env_config();
-    tracing::debug!("Config: {:?}", PreviewConfig::get_config());
 
     tracing_subscriber::registry()
         .with(
@@ -36,6 +35,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .with(tracing_subscriber::fmt::layer().compact())
         .init();
+    tracing::debug!("Config: {:?}", PreviewConfig::get_config());
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
