@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.17.7](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.6...babyrite-v0.17.7) (2025-09-14)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate serde to v1.0.220 ([#418](https://github.com/m1sk9/babyrite/issues/418)) ([3a46119](https://github.com/m1sk9/babyrite/commit/3a46119dc7558a4f9e79445e8b6f25bab5f2cfe3))
+* **deps:** update rust crate serde to v1.0.221 ([#420](https://github.com/m1sk9/babyrite/issues/420)) ([a692719](https://github.com/m1sk9/babyrite/commit/a6927190e6613eb72892c8c4e6030d8ae3010b1a))
+* Ensure debug logs for configuration values are output correctly ([#421](https://github.com/m1sk9/babyrite/issues/421)) ([ef75925](https://github.com/m1sk9/babyrite/commit/ef759257c6bb58f14f17ec9b200e5451592b32cf))
+
 ## [0.17.6](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.5...babyrite-v0.17.6) (2025-08-29)
 
 
