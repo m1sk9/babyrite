@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.17.8](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.7...babyrite-v0.17.8) (2025-09-16)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate serde to v1.0.223 ([#424](https://github.com/m1sk9/babyrite/issues/424)) ([ca8ed2c](https://github.com/m1sk9/babyrite/commit/ca8ed2c794f0de57f35cc9bdbb18110276cc1822))
+* **deps:** update rust crate serde to v1.0.225 ([#425](https://github.com/m1sk9/babyrite/issues/425)) ([ab8fd0d](https://github.com/m1sk9/babyrite/commit/ab8fd0d976334a322b52077f07166f447e827fa8))
+* **deps:** update rust crate toml to v0.9.6 ([#426](https://github.com/m1sk9/babyrite/issues/426)) ([8644748](https://github.com/m1sk9/babyrite/commit/86447484ea26e17648c587b4beeb76c9cc50c568))
+* **deps:** update rust crate typed-builder to 0.22.0 ([#422](https://github.com/m1sk9/babyrite/issues/422)) ([cf679e4](https://github.com/m1sk9/babyrite/commit/cf679e4d2994f6381654eb30519bd3694cb46911))
+
 ## [0.17.7](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.6...babyrite-v0.17.7) (2025-09-14)
 
 
