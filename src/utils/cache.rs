@@ -2,7 +2,7 @@ use anyhow::Context as _;
 use serenity::all::{ChannelId, GuildChannel, GuildId};
 use serenity::client::Context;
 
-pub static MESSAGE_PREVIEW_CHANNEL_CACHE: once_cell::sync::Lazy<
+pub static CHANNEL_CACHE: once_cell::sync::Lazy<
     moka::future::Cache<ChannelId, GuildChannel>,
 > = {
     once_cell::sync::Lazy::new(|| {
@@ -18,7 +18,7 @@ pub async fn get_channel_from_cache(
     guild: GuildId,
     ctx: &Context,
 ) -> anyhow::Result<GuildChannel> {
-    let channel = match MESSAGE_PREVIEW_CHANNEL_CACHE.get(&id).await {
+    let channel = match CHANNEL_CACHE.get(&id).await {
         Some(c) => Ok(c),
         _ => {
             let channels = guild
@@ -44,7 +44,7 @@ pub async fn get_channel_from_cache(
 
     match channel {
         Ok(c) => {
-            MESSAGE_PREVIEW_CHANNEL_CACHE.insert(id, c.clone()).await;
+            CHANNEL_CACHE.insert(id, c.clone()).await;
             Ok(c)
         }
         _ => channel,
