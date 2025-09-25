@@ -1,13 +1,26 @@
 use anyhow::Context as _;
-use serenity::all::{ChannelId, GuildChannel, GuildId};
+use moka::future::{Cache, CacheBuilder};
+use once_cell::sync::Lazy;
+use serenity::all::{ChannelId, Guild, GuildChannel, GuildId};
 use serenity::client::Context;
 
-pub static CHANNEL_CACHE: once_cell::sync::Lazy<
-    moka::future::Cache<ChannelId, GuildChannel>,
+pub static CHANNEL_CACHE: Lazy<
+    Cache<ChannelId, GuildChannel>,
 > = {
-    once_cell::sync::Lazy::new(|| {
+    Lazy::new(|| {
         moka::future::CacheBuilder::new(1000)
             .name("message_preview_channel_cache")
+            .time_to_idle(std::time::Duration::from_secs(3600))
+            .build()
+    })
+};
+
+pub static GUILD_CACHE: Lazy<
+    Cache<GuildId, Guild>
+> = {
+    Lazy::new(|| {
+        CacheBuilder::new(1000)
+            .name("message_preview_guild_cache")
             .time_to_idle(std::time::Duration::from_secs(3600))
             .build()
     })
