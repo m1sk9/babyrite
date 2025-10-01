@@ -61,7 +61,7 @@ impl MessageLinkIDs {
             channel_id: self.channel_id,
         };
 
-        let channel = args.get_channel_from_cache(&ctx).await?;
+        let channel = args.get_channel_from_cache(ctx).await?;
         let message = channel.message(&ctx.http, self.message_id).await?;
 
         Ok(MessagePreview {
