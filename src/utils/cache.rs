@@ -4,17 +4,10 @@ use once_cell::sync::Lazy;
 use serenity::all::{ChannelId, GuildChannel, GuildId};
 use serenity::client::Context;
 use std::collections::HashMap;
-use thiserror::Error;
 
 pub struct CacheArgs {
     pub guild_id: GuildId,
     pub channel_id: ChannelId,
-}
-
-#[derive(Error, Debug)]
-enum CacheError {
-    #[error("Entity not found in cache")]
-    CacheNotFound,
 }
 
 // Cache for guild channels (channel list)
@@ -50,10 +43,10 @@ impl CacheArgs {
                 // 3. Try to get from channel list cache
                 if let Some(channels) = GUILD_CHANNEL_LIST_CACHE.get(&self.guild_id).await {
                     // 4. If found, try to get the channel from the list
-                    channels
+                    return channels
                         .get(&self.channel_id)
                         .cloned()
-                        .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"))?;
+                        .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"));
                 }
 
                 // 5. If not found, fetch from API and update the cache
@@ -70,7 +63,7 @@ impl CacheArgs {
                             .iter()
                             .find(|t| t.id == self.channel_id)
                             .cloned()
-                            .ok_or(CacheError::CacheNotFound)?
+                            .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"))?
                     }
                 };
 
