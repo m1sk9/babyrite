@@ -1,52 +1,99 @@
 use anyhow::Context as _;
+use moka::future::{Cache, CacheBuilder};
+use once_cell::sync::Lazy;
 use serenity::all::{ChannelId, GuildChannel, GuildId};
 use serenity::client::Context;
+use std::collections::HashMap;
 
-pub static MESSAGE_PREVIEW_CHANNEL_CACHE: once_cell::sync::Lazy<
-    moka::future::Cache<ChannelId, GuildChannel>,
-> = {
-    once_cell::sync::Lazy::new(|| {
-        moka::future::CacheBuilder::new(1000)
-            .name("message_preview_channel_cache")
+pub struct CacheArgs {
+    pub guild_id: GuildId,
+    pub channel_id: ChannelId,
+}
+
+// Cache for guild channels (channel list)
+pub static GUILD_CHANNEL_LIST_CACHE: Lazy<Cache<GuildId, HashMap<ChannelId, GuildChannel>>> = {
+    Lazy::new(|| {
+        CacheBuilder::new(500)
+            .name("guild_channel_list_cache")
             .time_to_idle(std::time::Duration::from_secs(3600))
+            .time_to_live(std::time::Duration::from_secs(43200))
             .build()
     })
 };
 
-pub async fn get_channel_from_cache(
-    id: ChannelId,
-    guild: GuildId,
-    ctx: &Context,
-) -> anyhow::Result<GuildChannel> {
-    let channel = match MESSAGE_PREVIEW_CHANNEL_CACHE.get(&id).await {
-        Some(c) => Ok(c),
-        _ => {
-            let channels = guild
-                .channels(&ctx.http)
-                .await
-                .context("Failed to get channels.")?;
-            if let Some(channel) = channels.get(&id) {
-                Ok(channel.clone())
-            } else {
-                let guild_threads = guild
-                    .get_active_threads(&ctx.http)
-                    .await
-                    .context("Failed to get active threads.")?;
-                guild_threads
-                    .threads
-                    .iter()
-                    .find(|c| c.id == id)
-                    .cloned()
-                    .context("Failed to find channel.")
+// Cache for guild channel
+pub static GUILD_CHANNEL_CACHE: Lazy<Cache<ChannelId, GuildChannel>> = {
+    Lazy::new(|| {
+        CacheBuilder::new(500)
+            .name("guild_channel_cache")
+            .time_to_idle(std::time::Duration::from_secs(3600))
+            .time_to_live(std::time::Duration::from_secs(43200))
+            .build()
+    })
+};
+
+impl CacheArgs {
+    pub async fn get_channel_from_cache(&self, ctx: &Context) -> anyhow::Result<GuildChannel> {
+        // 1. Try to get from channel cache
+        match GUILD_CHANNEL_CACHE.get(&self.channel_id).await {
+            // 2-a. If found, return it
+            Some(channel) => Ok(channel),
+            // 2-b. If not found, try to get from channel list cache.
+            None => {
+                // 3. Try to get from channel list cache
+                if let Some(channels) = GUILD_CHANNEL_LIST_CACHE.get(&self.guild_id).await {
+                    // 4. If found, try to get the channel from the list
+                    return channels
+                        .get(&self.channel_id)
+                        .cloned()
+                        .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"));
+                }
+
+                // 5. If not found, fetch from API and update the cache
+                let channel_list = self.get_channel_list_from_api(ctx).await?;
+                let channel = match channel_list.get(&self.channel_id).cloned() {
+                    Some(c) => c,
+                    None => {
+                        let data = self
+                            .guild_id
+                            .get_active_threads(&ctx.http)
+                            .await
+                            .context("Failed to get active threads")?;
+                        data.threads
+                            .iter()
+                            .find(|t| t.id == self.channel_id)
+                            .cloned()
+                            .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"))?
+                    }
+                };
+
+                // 6. Update the channel cache
+                GUILD_CHANNEL_CACHE
+                    .insert(self.channel_id, channel.clone())
+                    .await;
+                Ok(channel)
             }
         }
-    };
+    }
 
-    match channel {
-        Ok(c) => {
-            MESSAGE_PREVIEW_CHANNEL_CACHE.insert(id, c.clone()).await;
-            Ok(c)
-        }
-        _ => channel,
+    async fn get_channel_list_from_api(
+        &self,
+        ctx: &Context,
+    ) -> anyhow::Result<HashMap<ChannelId, GuildChannel>> {
+        let guild = ctx
+            .http
+            .get_guild(self.guild_id)
+            .await
+            .context("Failed to get guild")?;
+        let channels = guild
+            .channels(&ctx)
+            .await
+            .context("Failed to get channel list")?;
+
+        GUILD_CHANNEL_LIST_CACHE
+            .insert(self.guild_id, channels.clone())
+            .await;
+
+        Ok(channels)
     }
 }
