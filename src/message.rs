@@ -1,4 +1,4 @@
-use crate::utils::cache::get_channel_from_cache;
+use crate::utils::cache::CacheArgs;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::all::{ChannelId, GuildChannel, GuildId, Message, MessageId};
@@ -56,8 +56,12 @@ impl MessageLinkIDs {
         &self,
         ctx: &serenity::prelude::Context,
     ) -> anyhow::Result<MessagePreview> {
-        let guild = self.guild_id;
-        let channel = get_channel_from_cache(self.channel_id, guild, ctx).await?;
+        let args = CacheArgs {
+            guild_id: self.guild_id,
+            channel_id: self.channel_id,
+        };
+
+        let channel = args.get_channel_from_cache(&ctx).await?;
         let message = channel.message(&ctx.http, self.message_id).await?;
 
         Ok(MessagePreview {
