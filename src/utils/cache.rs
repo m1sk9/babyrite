@@ -1,6 +1,9 @@
 use anyhow::Context as _;
-use serenity::all::{ChannelId, GuildChannel, GuildId};
+use moka::future::{Cache, CacheBuilder};
+use once_cell::sync::Lazy;
+use serenity::all::{ChannelId, Guild, GuildChannel, GuildId};
 use serenity::client::Context;
+use std::collections::HashMap;
 
 pub static MESSAGE_PREVIEW_CHANNEL_CACHE: once_cell::sync::Lazy<
     moka::future::Cache<ChannelId, GuildChannel>,
@@ -9,6 +12,27 @@ pub static MESSAGE_PREVIEW_CHANNEL_CACHE: once_cell::sync::Lazy<
         moka::future::CacheBuilder::new(1000)
             .name("message_preview_channel_cache")
             .time_to_idle(std::time::Duration::from_secs(3600))
+            .build()
+    })
+};
+
+// Cache for guilds to reduce API calls
+pub static GUILD_CACHE: Lazy<Cache<GuildId, Guild>> = {
+    Lazy::new(|| {
+        CacheBuilder::new(500)
+            .name("guild_cache")
+            .time_to_idle(std::time::Duration::from_secs(3600))
+            .time_to_live(std::time::Duration::from_secs(43200))
+            .build()
+    })
+};
+
+pub static GUILD_CHANNELS_CACHE: Lazy<Cache<GuildId, HashMap<ChannelId, GuildChannel>>> = {
+    Lazy::new(|| {
+        CacheBuilder::new(500)
+            .name("guild_channels_cache")
+            .time_to_idle(std::time::Duration::from_secs(3600))
+            .time_to_live(std::time::Duration::from_secs(43200))
             .build()
     })
 };
