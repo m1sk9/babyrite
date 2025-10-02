@@ -5,12 +5,6 @@ use serenity::prelude::EventHandler;
 
 pub struct PreviewHandler;
 
-#[derive(thiserror::Error, Debug)]
-pub enum PreviewHandlerError {
-    #[error("Failed to get preview: {0}")]
-    FailedToGetPreview(#[from] anyhow::Error),
-}
-
 #[serenity::async_trait]
 impl EventHandler for PreviewHandler {
     async fn message(&self, ctx: Context, request: Message) {
