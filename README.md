@@ -65,6 +65,7 @@ You can also start with the default settings without configuring. The following 
 is_mention = true
 is_deletable = true
 is_allow_nsfw = false
+log_filter = "babyrite=debug,serenity=info"
 ```
 
 | Key             | Description                                                                    | Default Value |
@@ -72,6 +73,7 @@ is_allow_nsfw = false
 | `is_mention`    | Specifies whether to mention the request sender when generating a preview.     | `true`        |
 | `is_deletable`  | Sets whether to enable the deletion of previews.                               | `true`        |
 | `is_allow_nsfw` | Sets whether to allow the generation of messages from channels marked as NSFW. | `false`       |
+| `log_filter` | Sets the log level for babyrite and serenity (and more crate) | `babyrite=debug,serenity=info` |
 
 ## Environment Variables
 

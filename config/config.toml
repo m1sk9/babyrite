@@ -16,3 +16,9 @@ is_deletable = true
 # Allow NSFW (Not Safe For Work) content (default is disabled)
 ## Sets whether to allow the generation of messages from channels marked as NSFW. It is strongly recommended to disable this setting on community servers.
 is_allow_nsfw = false
+
+# Log level settings (default is "babyrite=debug,serenity=info")
+## Sets the log level for babyrite and serenity (and more crate). The format is "babyrite=<level>,serenity=<level>".
+## Available levels are: trace, debug, info, warn, error.
+## There is no need to change the settings.
+log_filter = "babyrite=debug,serenity=info"
