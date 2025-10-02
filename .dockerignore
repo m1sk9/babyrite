@@ -13,3 +13,15 @@ Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+# GitHub Actions
+.github/
+
+# VS Code
+.vscode/
+
+# JetBrains IDEs
+.idea/
+
+# config files
+.config/
