@@ -10,6 +10,8 @@ pub struct PreviewConfig {
     pub is_deletable: bool,
     // If enabled, allow preview generation of NSFW content.
     pub is_allow_nsfw: bool,
+    // Log filter for babyrite.
+    pub log_filter: String
 }
 
 impl Default for PreviewConfig {
@@ -18,6 +20,7 @@ impl Default for PreviewConfig {
             is_mention: true,
             is_deletable: true,
             is_allow_nsfw: false,
+            log_filter: "babyrite=debug,serenity=info".into()
         }
     }
 }

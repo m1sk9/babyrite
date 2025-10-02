@@ -27,15 +27,16 @@ async fn main() -> anyhow::Result<()> {
 
     PreviewConfig::init()?;
     let envs = get_env_config();
+    let config = crate::PreviewConfig::get_config();
 
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "babyrite=debug,serenity=info".into()),
+                .unwrap_or_else(|_| config.log_filter.parse().unwrap()),
         )
         .with(tracing_subscriber::fmt::layer().compact())
         .init();
-    tracing::debug!("Config: {:?}", PreviewConfig::get_config());
+    tracing::debug!("Config: {:?}", config);
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
