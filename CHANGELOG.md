@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.18.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.9...babyrite-v0.18.0) (2025-10-02)
+
+
+### Features
+
+* Added channel list cache functionality ([#437](https://github.com/m1sk9/babyrite/issues/437)) ([c3a772b](https://github.com/m1sk9/babyrite/commit/c3a772b31bc6bafdb3d7c841624fc0be5263145a))
+  * Previously, babyrite only cached channels when performing the two retrieval processes triggered by a message quote request. Starting with v0.18.0, it now caches the channel list. For consecutive quote requests, it uses data stored in its own memory instead of accessing the Discord API.
+  * Additionally, since babyrite is designed for use in small-scale bots (around 10 guilds), we adjusted several caching strategies to reduce memory usage.
+  * For details, please refer to pull request [#437](https://github.com/m1sk9/babyrite/issues/437).
+
+
+### Bug Fixes
+
+* **deps:** update rust crate moka to v0.12.11 ([#434](https://github.com/m1sk9/babyrite/issues/434)) ([e48d585](https://github.com/m1sk9/babyrite/commit/e48d5859e8be796806f001026b7db31826dd094a))
+* **deps:** update rust crate regex to v1.11.3 ([#435](https://github.com/m1sk9/babyrite/issues/435)) ([de20fbd](https://github.com/m1sk9/babyrite/commit/de20fbde16a79d6855065eed7bd98afcabec82bb))
+* **deps:** update rust crate serde to v1.0.226 ([#432](https://github.com/m1sk9/babyrite/issues/432)) ([1724fde](https://github.com/m1sk9/babyrite/commit/1724fde4bc9b17228298c400c588dd06a538bc32))
+
 ## [0.17.9](https://github.com/m1sk9/babyrite/compare/babyrite-v0.17.8...babyrite-v0.17.9) (2025-09-19)
 
 
