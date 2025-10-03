@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
 [![Release babyrite](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml)
-[![MIT license](https://img.shields.io/github/license/henrygd/beszel?color=%239944ee)](https://github.com/m1sk9/babyrite/blob/main/LICENSE)
+[![Apache License 2.0](https://img.shields.io/github/license/m1sk9/babyrite?color=%239944ee)](https://github.com/m1sk9/babyrite/blob/main/LICENSE)
 
 **babyrite** is a lightweight, fast citation message Discord bot.
 
@@ -84,7 +84,7 @@ The environment variables used by babyrite are as follows. Note that the only en
 
 ## LICENSE
 
-babyrite is published under [MIT License](./LICENSE).
+babyrite is published under [Apache License 2.0](./LICENSE).
 
 <sub>
     ® 2023 - 2025 m1sk9
