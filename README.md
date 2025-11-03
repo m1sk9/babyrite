@@ -14,7 +14,7 @@ docker pull ghcr.io/m1sk9/babyrite:latest
 docker pull ghcr.io/m1sk9/babyrite:v0
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v0.16.0
+docker pull ghcr.io/m1sk9/babyrite:v0.19.0
 ```
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
@@ -37,7 +37,7 @@ docker pull ghcr.io/m1sk9/babyrite:v0
 ```
 
 - babyrite is tested on macOS and Linux (major distributions) as recommended environment.
-  - Windows is deprecated as it has not been tested.
+  - Also compatible with Windows, but we recommend running it on macOS or Linux. (v0.19.0+)
 - ARM64 environments are supported (v0.16.0+)
 
 ### Using Docker Compose
