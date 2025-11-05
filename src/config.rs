@@ -30,9 +30,6 @@ pub struct BabyriteConfig {
     // If enabled, previews are generated with mentions.
     #[serde(alias = "is_mention", default = "default_true")]
     pub preview_mention: bool,
-    // If enabled, preview can be deleted.
-    #[serde(alias = "is_deletable", default = "default_true")]
-    pub preview_deletion: bool,
     // If enabled, allow preview generation of NSFW content.
     #[serde(alias = "is_allow_nsfw", default = "default_false")]
     pub allow_nsfw: bool,
@@ -45,7 +42,6 @@ impl Default for BabyriteConfig {
     fn default() -> Self {
         Self {
             preview_mention: true,
-            preview_deletion: true,
             allow_nsfw: false,
             json_logging: false,
         }

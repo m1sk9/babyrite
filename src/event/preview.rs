@@ -1,4 +1,4 @@
-use serenity::all::{Context, Message, PermissionOverwriteType, ReactionType};
+use serenity::all::{Context, Message, PermissionOverwriteType};
 use serenity::builder::{CreateAllowedMentions, CreateMessage};
 use serenity::model::Permissions;
 use serenity::prelude::EventHandler;
@@ -68,10 +68,6 @@ impl EventHandler for PreviewHandler {
         let preview = CreateMessage::default()
             .embed(embed.build())
             .reference_message(&request)
-            .reactions(match config.preview_deletion {
-                true => vec![ReactionType::Unicode("🗑️".to_string())],
-                false => vec![],
-            })
             .allowed_mentions(CreateAllowedMentions::new().replied_user(config.preview_mention));
 
         if let Err(e) = request.channel_id.send_message(&ctx.http, preview).await {

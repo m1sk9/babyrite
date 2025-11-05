@@ -28,7 +28,6 @@ async fn main() -> anyhow::Result<()> {
             | GatewayIntents::GUILD_MESSAGE_REACTIONS,
     )
     .event_handler(event::preview::PreviewHandler)
-    .event_handler(event::reaction::ReactionHandler)
     .event_handler(event::ready::ReadyHandler)
     .await
     .expect("Failed to initialize client.");
