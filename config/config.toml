@@ -6,13 +6,17 @@
 
 # Mention settings for preview generation (default is enabled)
 ## Mentions the request sender when generating a preview.
-is_mention = true
+preview_mention = true
 
 # Preview deletion feature (default is enabled)
 ## Sets whether to enable the deletion of previews. If enabled, a trash can reaction is added to each preview, and pressing the reaction will delete it.
 ## If disabled, the reaction is not added, and pressing the reaction will not delete the preview.
-is_deletable = true
+preview_deletion = true
 
 # Allow NSFW (Not Safe For Work) content (default is disabled)
 ## Sets whether to allow the generation of messages from channels marked as NSFW. It is strongly recommended to disable this setting on community servers.
-is_allow_nsfw = false
+allow_nsfw = false
+
+# JSON logging format (default is disabled)
+## Output logs in JSON format. This is the recommended setting if you are using Grafana Loki or similar.
+json_logging = false

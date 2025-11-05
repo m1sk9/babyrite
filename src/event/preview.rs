@@ -12,7 +12,7 @@ impl EventHandler for PreviewHandler {
             return;
         };
 
-        let config = crate::PreviewConfig::get_config();
+        let config = crate::BabyriteConfig::get();
         let Some(ids) = crate::message::MessageLinkIDs::parse_url(&request.content) else {
             return;
         };
@@ -33,7 +33,7 @@ impl EventHandler for PreviewHandler {
         tracing::debug!("Message: {:?}, Channel: {:?}", message, channel);
 
         // Verify that: @everyone on the previewer channel does not have read permission (i.e. limit channel)
-        if channel.nsfw && !config.is_allow_nsfw
+        if channel.nsfw && !config.allow_nsfw
             || channel.permission_overwrites.iter().any(|p| {
                 matches!(p.kind, PermissionOverwriteType::Role(_))
                     && p.deny.contains(Permissions::VIEW_CHANNEL)
@@ -68,11 +68,11 @@ impl EventHandler for PreviewHandler {
         let preview = CreateMessage::default()
             .embed(embed.build())
             .reference_message(&request)
-            .reactions(match config.is_deletable {
+            .reactions(match config.preview_deletion {
                 true => vec![ReactionType::Unicode("🗑️".to_string())],
                 false => vec![],
             })
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(config.is_mention));
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(config.preview_mention));
 
         if let Err(e) = request.channel_id.send_message(&ctx.http, preview).await {
             tracing::error!("Failed to send preview: {:?}", e);
