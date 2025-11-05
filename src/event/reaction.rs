@@ -1,13 +1,14 @@
-use crate::utils::config::PreviewConfig;
 use serenity::all::{EventHandler, Reaction};
 use serenity::client::Context;
+
+use crate::config::BabyriteConfig;
 
 pub struct ReactionHandler;
 
 #[serenity::async_trait]
 impl EventHandler for ReactionHandler {
     async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        if reaction.emoji.to_string() != "🗑️" || !PreviewConfig::get_config().is_deletable {
+        if reaction.emoji.to_string() != "🗑️" || !BabyriteConfig::get().preview_deletion {
             return;
         }
 
