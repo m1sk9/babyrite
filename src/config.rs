@@ -55,11 +55,11 @@ impl Default for BabyriteConfig {
 #[derive(thiserror::Error, Debug)]
 pub enum BabyriteConfigError {
     #[error("Failed to read configuration file.")]
-    FailedToReadConfig,
+    Read,
     #[error("Failed to parse configuration file.")]
-    FailedToParseConfig,
+    Parse,
     #[error("Failed to set configuration file.")]
-    FailedToSetConfig,
+    Set,
 }
 
 impl BabyriteConfig {
@@ -67,17 +67,14 @@ impl BabyriteConfig {
         let envs = EnvConfig::get();
         match &envs.config_file_path {
             Some(p) => {
-                let buffer = &std::fs::read_to_string(p)
-                    .map_err(|_| BabyriteConfigError::FailedToReadConfig)?;
+                let buffer = &std::fs::read_to_string(p).map_err(|_| BabyriteConfigError::Read)?;
                 let config: BabyriteConfig =
-                    toml::from_str(buffer).map_err(|_| BabyriteConfigError::FailedToParseConfig)?;
-                Ok(CONFIG
-                    .set(config)
-                    .map_err(|_| BabyriteConfigError::FailedToParseConfig)?)
+                    toml::from_str(buffer).map_err(|_| BabyriteConfigError::Parse)?;
+                Ok(CONFIG.set(config).map_err(|_| BabyriteConfigError::Parse)?)
             }
             None => Ok(CONFIG
                 .set(BabyriteConfig::default())
-                .map_err(|_| BabyriteConfigError::FailedToSetConfig)?),
+                .map_err(|_| BabyriteConfigError::Set)?),
         }
     }
 
