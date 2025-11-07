@@ -21,13 +21,15 @@ impl EventHandler for BabyriteEventHandler {
             return;
         }
 
-        let Some(ids) = MessageLinkIDs::parse(&request.content) else {
-            return;
+        let request_guild_id = match request.guild_id {
+            Some(id) => id,
+            None => return,
         };
 
-        if ids.guild_id != request.guild_id.unwrap_or_default() {
-            return;
-        }
+        let ids = match MessageLinkIDs::parse(&request.content) {
+            Some(ids) if ids.guild_id == request_guild_id => ids,
+            _ => return,
+        };
 
         tracing::info!(
             "Begin generating the preview. (Requester: {})",
