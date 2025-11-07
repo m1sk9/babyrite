@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.18.1...babyrite-v0.19.0) (2025-11-07)
+
+
+### Features
+
+* Replace the builder with our own library `serenity-builder` ([#465](https://github.com/m1sk9/babyrite/issues/465)) ([f09f9e1](https://github.com/m1sk9/babyrite/commit/f09f9e11cbf4517feaab84f699122c3e86186f4c))
+* Restore json logging ([#463](https://github.com/m1sk9/babyrite/issues/463)) ([3e7a605](https://github.com/m1sk9/babyrite/commit/3e7a60560ec58e3b24a54bb3df1a9bdc8ad2567a))
+
 ## [0.18.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.18.0...babyrite-v0.18.1) (2025-10-20)
 
 
