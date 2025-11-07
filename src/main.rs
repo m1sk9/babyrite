@@ -1,11 +1,14 @@
 #![deny(clippy::all)]
 
+mod cache;
 mod config;
 mod event;
-mod message;
-mod utils;
+mod preview;
 
-use crate::config::{BabyriteConfig, EnvConfig};
+use crate::{
+    config::{BabyriteConfig, EnvConfig},
+    event::BabyriteEventHandler,
+};
 use serenity::all::GatewayIntents;
 
 #[tokio::main]
@@ -23,13 +26,9 @@ async fn main() -> anyhow::Result<()> {
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
-        GatewayIntents::MESSAGE_CONTENT
-            | GatewayIntents::GUILD_MESSAGES
-            | GatewayIntents::GUILD_MESSAGE_REACTIONS,
+        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES,
     )
-    .event_handler(event::preview::PreviewHandler)
-    .event_handler(event::reaction::ReactionHandler)
-    .event_handler(event::ready::ReadyHandler)
+    .event_handler(BabyriteEventHandler)
     .await
     .expect("Failed to initialize client.");
 

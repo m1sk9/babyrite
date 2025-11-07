@@ -33,7 +33,7 @@ pub static GUILD_CHANNEL_CACHE: Lazy<Cache<ChannelId, GuildChannel>> = {
 };
 
 impl CacheArgs {
-    pub async fn get_channel_from_cache(&self, ctx: &Context) -> anyhow::Result<GuildChannel> {
+    pub async fn get(&self, ctx: &Context) -> anyhow::Result<GuildChannel> {
         // 1. Try to get from channel cache
         match GUILD_CHANNEL_CACHE.get(&self.channel_id).await {
             // 2-a. If found, return it
