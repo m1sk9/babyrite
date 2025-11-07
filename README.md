@@ -62,16 +62,14 @@ You can customize the behavior of babyrite by using a dedicated configuration fi
 You can also start with the default settings without configuring. The following are the default settings used in that case.
 
 ```toml
-is_mention = true
-is_deletable = true
-is_allow_nsfw = false
+allow_nsfw = false
+json_logging = false
 ```
 
 | Key             | Description                                                                    | Default Value |
 | --------------- | ------------------------------------------------------------------------------ | ------------- |
-| `is_mention`    | Specifies whether to mention the request sender when generating a preview.     | `true`        |
-| `is_deletable`  | Sets whether to enable the deletion of previews.                               | `true`        |
-| `is_allow_nsfw` | Sets whether to allow the generation of messages from channels marked as NSFW. | `false`       |
+| `allow_nsfw` | Sets whether to allow the generation of messages from channels marked as NSFW. | `false`       |
+| `json_logging`  | Sets whether to output logs in JSON format.                                    | `false`       |
 
 ## Environment Variables
 
