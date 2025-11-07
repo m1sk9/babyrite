@@ -19,33 +19,18 @@ impl EnvConfig {
 }
 
 // TODO: Support for the old values will be removed in v0.20.0.
-fn default_true() -> bool {
-    true
-}
 fn default_false() -> bool {
     false
 }
-#[derive(Deserialize, Debug)]
+
+#[derive(Deserialize, Debug, Default)]
 pub struct BabyriteConfig {
-    // If enabled, previews are generated with mentions.
-    #[serde(alias = "is_mention", default = "default_true")]
-    pub preview_mention: bool,
     // If enabled, allow preview generation of NSFW content.
     #[serde(alias = "is_allow_nsfw", default = "default_false")]
     pub allow_nsfw: bool,
     // If enabled, logs are output in JSON format.
     #[serde(default)]
     pub json_logging: bool,
-}
-
-impl Default for BabyriteConfig {
-    fn default() -> Self {
-        Self {
-            preview_mention: true,
-            allow_nsfw: false,
-            json_logging: false,
-        }
-    }
 }
 
 #[derive(thiserror::Error, Debug)]
