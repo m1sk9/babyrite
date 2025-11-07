@@ -25,6 +25,10 @@ impl EventHandler for BabyriteEventHandler {
             return;
         };
 
+        if ids.guild_id != request.guild_id.unwrap_or_default() {
+            return;
+        }
+
         tracing::info!(
             "Begin generating the preview. (Requester: {})",
             &request.author.name
