@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.19.0...babyrite-v0.19.1) (2025-11-07)
+
+
+### Bug Fixes
+
+* Fixed a missed guild check ([#468](https://github.com/m1sk9/babyrite/issues/468)) ([541e149](https://github.com/m1sk9/babyrite/commit/541e149f45cc23cc939142723dac1ae7f049fc4b))
+
 ## [0.19.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.18.1...babyrite-v0.19.0) (2025-11-07)
 
 

@@ -71,7 +71,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "babyrite"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
  "anyhow",
  "dotenvy",
