@@ -18,15 +18,11 @@ impl EnvConfig {
     }
 }
 
-// TODO: Support for the old values will be removed in v0.20.0.
-fn default_false() -> bool {
-    false
-}
-
+// All configuration default value is false.
 #[derive(Deserialize, Debug, Default)]
 pub struct BabyriteConfig {
     // If enabled, allow preview generation of NSFW content.
-    #[serde(alias = "is_allow_nsfw", default = "default_false")]
+    #[serde(default)]
     pub allow_nsfw: bool,
     // If enabled, logs are output in JSON format.
     #[serde(default)]

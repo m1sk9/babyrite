@@ -1,7 +1,0 @@
-{
-  "recommendations": [
-    "tamasfe.even-better-toml",
-    "cordx56.rustowl-vscode",
-    "rust-lang.rust-analyzer"
-  ]
-}
