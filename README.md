@@ -14,7 +14,7 @@ docker pull ghcr.io/m1sk9/babyrite:latest
 docker pull ghcr.io/m1sk9/babyrite:v0
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v0.19.0
+docker pull ghcr.io/m1sk9/babyrite:v0.20.0
 ```
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
