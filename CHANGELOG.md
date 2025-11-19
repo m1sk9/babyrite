@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.19.1...babyrite-v0.20.0) (2025-11-19)
+
+
+### Features
+
+* Remove deprecated config ([#473](https://github.com/m1sk9/babyrite/issues/473)) ([a8ec63d](https://github.com/m1sk9/babyrite/commit/a8ec63d7297213ff4b98c9bbe9b38361558351ee))
+
 ## [0.19.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.19.0...babyrite-v0.19.1) (2025-11-07)
 
 
