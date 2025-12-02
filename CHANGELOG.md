@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.21.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.20.0...babyrite-v0.21.0) (2025-12-02)
+
+
+### Features
+
+* Remove `allow_nsfw` settings ([#481](https://github.com/m1sk9/babyrite/issues/481)) ([9404c9d](https://github.com/m1sk9/babyrite/commit/9404c9d0f4abaea6e8ee5e0d86c605124b37e559))
+
+
+### Bug Fixes
+
+* Display detailed error messages instead of debug format ([#483](https://github.com/m1sk9/babyrite/issues/483)) ([93e3226](https://github.com/m1sk9/babyrite/commit/93e3226d08c8c2608b69b18834d6ff21425363d0))
+
 ## [0.20.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.19.1...babyrite-v0.20.0) (2025-11-19)
 
 
