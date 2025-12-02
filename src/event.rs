@@ -39,7 +39,7 @@ impl EventHandler for BabyriteEventHandler {
         let preview = match Preview::get(ids, &ctx).await {
             Ok(p) => p,
             Err(e) => {
-                tracing::error!(?e);
+                tracing::error!("{}", e);
                 return;
             }
         };
