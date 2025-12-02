@@ -21,9 +21,6 @@ impl EnvConfig {
 // All configuration default value is false.
 #[derive(Deserialize, Debug, Default)]
 pub struct BabyriteConfig {
-    // If enabled, allow preview generation of NSFW content.
-    #[serde(default)]
-    pub allow_nsfw: bool,
     // If enabled, logs are output in JSON format.
     #[serde(default)]
     pub json_logging: bool,

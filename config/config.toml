@@ -4,10 +4,6 @@
 # The settings are written in TOML format. To use the configuration file, specify the recursive path to the configuration file in the environment variable "CONFIG_FILE_PATH" injected into the container.
 # Note that babyrite will run with default settings if not configured.
 
-# Allow NSFW (Not Safe For Work) content (default is disabled)
-## Sets whether to allow the generation of messages from channels marked as NSFW. It is strongly recommended to disable this setting on community servers.
-allow_nsfw = false
-
 # JSON logging format (default is disabled)
 ## Output logs in JSON format. This is the recommended setting if you are using Grafana Loki or similar.
 json_logging = false

@@ -3,7 +3,7 @@ use regex::Regex;
 use serenity::all::{ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId};
 use url::Url;
 
-use crate::{cache::CacheArgs, config::BabyriteConfig};
+use crate::cache::CacheArgs;
 
 pub static MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"https://(?:ptb\.|canary\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)").unwrap()
@@ -76,7 +76,7 @@ impl Preview {
 
         let channel = caches.get(ctx).await.map_err(|_| PreviewError::Cache)?;
 
-        if channel.nsfw && !BabyriteConfig::get().allow_nsfw {
+        if channel.nsfw {
             return Err(PreviewError::Nsfw);
         }
 
