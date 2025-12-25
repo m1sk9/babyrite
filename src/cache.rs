@@ -1,9 +1,19 @@
 use anyhow::Context as _;
 use moka::future::{Cache, CacheBuilder};
 use once_cell::sync::Lazy;
-use serenity::all::{ChannelId, GuildChannel, GuildId};
-use serenity::client::Context;
 use std::collections::HashMap;
+use twilight_http::Client as HttpClient;
+use twilight_model::{
+    channel::Channel,
+    id::{
+        marker::{ChannelMarker, GuildMarker},
+        Id,
+    },
+};
+
+pub type GuildId = Id<GuildMarker>;
+pub type ChannelId = Id<ChannelMarker>;
+pub type ChannelMap = HashMap<ChannelId, Channel>;
 
 pub struct CacheArgs {
     pub guild_id: GuildId,
@@ -11,29 +21,26 @@ pub struct CacheArgs {
 }
 
 // Cache for guild channels (channel list)
-pub static GUILD_CHANNEL_LIST_CACHE: Lazy<Cache<GuildId, HashMap<ChannelId, GuildChannel>>> = {
+pub static GUILD_CHANNEL_LIST_CACHE: Lazy<Cache<GuildId, ChannelMap>> =
     Lazy::new(|| {
         CacheBuilder::new(500)
             .name("guild_channel_list_cache")
             .time_to_idle(std::time::Duration::from_secs(3600))
             .time_to_live(std::time::Duration::from_secs(43200))
             .build()
-    })
-};
+    });
 
 // Cache for guild channel
-pub static GUILD_CHANNEL_CACHE: Lazy<Cache<ChannelId, GuildChannel>> = {
-    Lazy::new(|| {
-        CacheBuilder::new(500)
-            .name("guild_channel_cache")
-            .time_to_idle(std::time::Duration::from_secs(3600))
-            .time_to_live(std::time::Duration::from_secs(43200))
-            .build()
-    })
-};
+pub static GUILD_CHANNEL_CACHE: Lazy<Cache<ChannelId, Channel>> = Lazy::new(|| {
+    CacheBuilder::new(500)
+        .name("guild_channel_cache")
+        .time_to_idle(std::time::Duration::from_secs(3600))
+        .time_to_live(std::time::Duration::from_secs(43200))
+        .build()
+});
 
 impl CacheArgs {
-    pub async fn get(&self, ctx: &Context) -> anyhow::Result<GuildChannel> {
+    pub async fn get(&self, http: &HttpClient) -> anyhow::Result<Channel> {
         // 1. Try to get from channel cache
         match GUILD_CHANNEL_CACHE.get(&self.channel_id).await {
             // 2-a. If found, return it
@@ -50,19 +57,20 @@ impl CacheArgs {
                 }
 
                 // 5. If not found, fetch from API and update the cache
-                let channel_list = self.get_channel_list_from_api(ctx).await?;
+                let channel_list = self.get_channel_list_from_api(http).await?;
                 let channel = match channel_list.get(&self.channel_id).cloned() {
                     Some(c) => c,
                     None => {
-                        let data = self
-                            .guild_id
-                            .get_active_threads(&ctx.http)
+                        let data = http
+                            .active_threads(self.guild_id)
                             .await
-                            .context("Failed to get active threads")?;
+                            .context("Failed to get active threads")?
+                            .model()
+                            .await
+                            .context("Failed to deserialize active threads")?;
                         data.threads
-                            .iter()
+                            .into_iter()
                             .find(|t| t.id == self.channel_id)
-                            .cloned()
                             .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"))?
                     }
                 };
@@ -78,22 +86,22 @@ impl CacheArgs {
 
     async fn get_channel_list_from_api(
         &self,
-        ctx: &Context,
-    ) -> anyhow::Result<HashMap<ChannelId, GuildChannel>> {
-        let guild = ctx
-            .http
-            .get_guild(self.guild_id)
+        http: &HttpClient,
+    ) -> anyhow::Result<ChannelMap> {
+        let channels = http
+            .guild_channels(self.guild_id)
             .await
-            .context("Failed to get guild")?;
-        let channels = guild
-            .channels(&ctx)
+            .context("Failed to get guild channels")?
+            .model()
             .await
-            .context("Failed to get channel list")?;
+            .context("Failed to deserialize guild channels")?;
+
+        let channel_map: ChannelMap = channels.into_iter().map(|c| (c.id, c)).collect();
 
         GUILD_CHANNEL_LIST_CACHE
-            .insert(self.guild_id, channels.clone())
+            .insert(self.guild_id, channel_map.clone())
             .await;
 
-        Ok(channels)
+        Ok(channel_map)
     }
 }

@@ -1,6 +1,15 @@
+#![allow(clippy::enum_variant_names)]
+
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serenity::all::{ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId};
+use twilight_http::Client as HttpClient;
+use twilight_model::{
+    channel::{message::Message, Channel, ChannelType},
+    id::{
+        marker::{ChannelMarker, GuildMarker, MessageMarker},
+        Id,
+    },
+};
 use url::Url;
 
 use crate::cache::CacheArgs;
@@ -9,17 +18,17 @@ pub static MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"https://(?:ptb\.|canary\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)").unwrap()
 });
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Debug)]
 pub struct MessageLinkIDs {
-    pub guild_id: GuildId,
-    pub channel_id: ChannelId,
-    pub message_id: MessageId,
+    pub guild_id: Id<GuildMarker>,
+    pub channel_id: Id<ChannelMarker>,
+    pub message_id: Id<MessageMarker>,
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Preview {
     pub message: Message,
-    pub channel: GuildChannel,
+    pub channel: Channel,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -30,9 +39,10 @@ pub enum PreviewError {
     Nsfw,
     #[error("The channel is a private channel or private thread.")]
     Permission,
-    #[allow(clippy::enum_variant_names)]
     #[error(transparent)]
-    SerenityError(#[from] serenity::Error),
+    TwilightHttpError(#[from] twilight_http::Error),
+    #[error(transparent)]
+    DeserializeError(#[from] twilight_http::response::DeserializeBodyError),
 }
 
 impl MessageLinkIDs {
@@ -52,14 +62,14 @@ impl MessageLinkIDs {
                     return None;
                 }
 
-                let guild_id = GuildId::new(captures.get(1)?.as_str().parse().ok()?);
-                let channel_id = ChannelId::new(captures.get(2)?.as_str().parse().ok()?);
-                let message_id = MessageId::new(captures.get(3)?.as_str().parse().ok()?);
+                let guild_id: u64 = captures.get(1)?.as_str().parse().ok()?;
+                let channel_id: u64 = captures.get(2)?.as_str().parse().ok()?;
+                let message_id: u64 = captures.get(3)?.as_str().parse().ok()?;
 
                 Some(MessageLinkIDs {
-                    guild_id,
-                    channel_id,
-                    message_id,
+                    guild_id: Id::new(guild_id),
+                    channel_id: Id::new(channel_id),
+                    message_id: Id::new(message_id),
                 })
             }
             _ => None,
@@ -68,15 +78,15 @@ impl MessageLinkIDs {
 }
 
 impl Preview {
-    pub async fn get(args: MessageLinkIDs, ctx: &Context) -> Result<Preview, PreviewError> {
+    pub async fn get(args: MessageLinkIDs, http: &HttpClient) -> Result<Preview, PreviewError> {
         let caches = CacheArgs {
             guild_id: args.guild_id,
             channel_id: args.channel_id,
         };
 
-        let channel = caches.get(ctx).await.map_err(|_| PreviewError::Cache)?;
+        let channel = caches.get(http).await.map_err(|_| PreviewError::Cache)?;
 
-        if channel.nsfw {
+        if channel.nsfw.unwrap_or(false) {
             return Err(PreviewError::Nsfw);
         }
 
@@ -87,7 +97,12 @@ impl Preview {
             return Err(PreviewError::Permission);
         }
 
-        let message = channel.message(&ctx.http, args.message_id).await?;
+        let message = http
+            .message(args.channel_id, args.message_id)
+            .await?
+            .model()
+            .await?;
+
         Ok(Preview { message, channel })
     }
 }
