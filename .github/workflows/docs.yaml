@@ -30,7 +30,7 @@ jobs:
           prefix-key: "babyrite/gh-actions-cache"
 
       - name: Build documentation
-        run: RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --document-private-items
+        run: RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly doc --no-deps --document-private-items
 
       - name: Upload artifact
         id: babyrite_doc
