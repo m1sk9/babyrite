@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.21.0...babyrite-v0.22.0) (2026-01-28)
+
+
+### Features
+
+* Update copylight year ([#497](https://github.com/m1sk9/babyrite/issues/497)) ([db3e946](https://github.com/m1sk9/babyrite/commit/db3e946ed6286e3491b389a8035a83956d01e46b))
+
 ## [0.21.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.20.0...babyrite-v0.21.0) (2025-12-02)
 
 
