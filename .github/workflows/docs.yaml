@@ -1,0 +1,50 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
+        with:
+          prefix-key: "babyrite/gh-actions-cache"
+
+      - name: Build documentation
+        run: cargo doc --no-deps --document-private-items
+
+      - name: Upload artifact
+        id: babyrite_doc
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: target/doc/babyrite
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: babyrite_doc
+        uses: actions/deploy-pages@v4
