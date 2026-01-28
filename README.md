@@ -19,6 +19,8 @@ docker pull ghcr.io/m1sk9/babyrite:v0.21.0
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
 
+- [babyrite API Documentation](https://babyrite.api.m1sk9.dev)
+
 ## Features
 
 - **Lightweight**: babyrite uses [distroless](https://github.com/GoogleContainerTools/distroless) as its base image and

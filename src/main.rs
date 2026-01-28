@@ -1,3 +1,8 @@
+//! Babyrite - A Discord bot for message link previews.
+//!
+//! This bot automatically generates previews for Discord message links
+//! shared within the same guild.
+
 #![deny(clippy::all)]
 
 mod cache;

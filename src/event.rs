@@ -1,3 +1,8 @@
+//! Event handling module for Discord events.
+//!
+//! This module implements the serenity [`EventHandler`] trait to handle
+//! Discord gateway events such as ready and message events.
+
 use crate::preview::{MessageLinkIDs, Preview};
 use serenity::all::{ActivityData, Context, EventHandler, Message, Ready};
 use serenity_builder::model::{
@@ -5,6 +10,7 @@ use serenity_builder::model::{
     message::{SerenityMessage, SerenityMessageMentionType},
 };
 
+/// Event handler for Babyrite bot.
 pub struct BabyriteEventHandler;
 
 #[serenity::async_trait]
