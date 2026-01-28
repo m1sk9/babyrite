@@ -14,7 +14,7 @@ docker pull ghcr.io/m1sk9/babyrite:latest
 docker pull ghcr.io/m1sk9/babyrite:v0
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v0.20.0
+docker pull ghcr.io/m1sk9/babyrite:v0.21.0
 ```
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
@@ -83,7 +83,7 @@ The environment variables used by babyrite are as follows. Note that the only en
 babyrite is published under [Apache License 2.0](./LICENSE).
 
 <sub>
-    ® 2023 - 2025 m1sk9
+    ® 2023 - 2026 m1sk9
     <br/>
     babyrite is not affiliated with Discord.
 </sub>
