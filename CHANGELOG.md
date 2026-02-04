@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.22.0...babyrite-v0.22.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* **deps:** Bump bytes from 1.10.1 to 1.11.1 ([#503](https://github.com/m1sk9/babyrite/issues/503)) ([7614199](https://github.com/m1sk9/babyrite/commit/7614199c10b62201fd1401e050c6bd098209296b))
+
 ## [0.22.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.21.0...babyrite-v0.22.0) (2026-01-28)
 
 
