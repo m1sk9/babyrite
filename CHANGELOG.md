@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.22.1...babyrite-v0.22.2) (2026-02-06)
+
+
+### Bug Fixes
+
+* **deps:** Bump time from 0.3.41 to 0.3.47 ([#505](https://github.com/m1sk9/babyrite/issues/505)) ([8df9887](https://github.com/m1sk9/babyrite/commit/8df98875798127044301acd030f9c04b6fa391a1))
+
 ## [0.22.1](https://github.com/m1sk9/babyrite/compare/babyrite-v0.22.0...babyrite-v0.22.1) (2026-02-04)
 
 
