@@ -77,7 +77,6 @@ dependencies = [
  "dotenvy",
  "envy",
  "moka",
- "once_cell",
  "regex",
  "serde",
  "serenity",

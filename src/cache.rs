@@ -9,10 +9,10 @@
 
 use anyhow::Context as _;
 use moka::future::{Cache, CacheBuilder};
-use once_cell::sync::Lazy;
 use serenity::all::{ChannelId, GuildChannel, GuildId};
 use serenity::client::Context;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// Arguments for cache operations.
 pub struct CacheArgs {
@@ -25,8 +25,8 @@ pub struct CacheArgs {
 /// Cache for guild channel lists.
 ///
 /// Maps guild IDs to their channel lists. TTL: 12 hours, TTI: 1 hour.
-pub static GUILD_CHANNEL_LIST_CACHE: Lazy<Cache<GuildId, HashMap<ChannelId, GuildChannel>>> = {
-    Lazy::new(|| {
+pub static GUILD_CHANNEL_LIST_CACHE: LazyLock<Cache<GuildId, HashMap<ChannelId, GuildChannel>>> = {
+    LazyLock::new(|| {
         CacheBuilder::new(500)
             .name("guild_channel_list_cache")
             .time_to_idle(std::time::Duration::from_secs(3600))
@@ -38,8 +38,8 @@ pub static GUILD_CHANNEL_LIST_CACHE: Lazy<Cache<GuildId, HashMap<ChannelId, Guil
 /// Cache for individual guild channels.
 ///
 /// Maps channel IDs to their channel data. TTL: 12 hours, TTI: 1 hour.
-pub static GUILD_CHANNEL_CACHE: Lazy<Cache<ChannelId, GuildChannel>> = {
-    Lazy::new(|| {
+pub static GUILD_CHANNEL_CACHE: LazyLock<Cache<ChannelId, GuildChannel>> = {
+    LazyLock::new(|| {
         CacheBuilder::new(500)
             .name("guild_channel_cache")
             .time_to_idle(std::time::Duration::from_secs(3600))
