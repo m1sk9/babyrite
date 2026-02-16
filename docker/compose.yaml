@@ -4,5 +4,5 @@ services:
     env_file:
       - .env
     volumes:
-      - ./config/config.yaml:/config/config.yaml
+      - ./config/config.toml:/config/config.toml
     restart: always
