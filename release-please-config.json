@@ -2,8 +2,7 @@
   "last-release-sha": "4b4c0dbf2e5041b02323b37ad2f9fe94ba357909",
   "packages": {
     ".": {
-      "release-type": "rust",
-      "package-name": "babyrite"
+      "release-type": "rust"
     }
   }
 }
