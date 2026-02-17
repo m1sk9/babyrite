@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.0.1...babyrite-v1.0.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* **cache:** fall through to active threads lookup when no cache ([#522](https://github.com/m1sk9/babyrite/issues/522)) ([edd45f0](https://github.com/m1sk9/babyrite/commit/edd45f090c254dc0def01412679bf3512f3c177c))
+* **ci:** migrate to actions/create-github-app-token ([#521](https://github.com/m1sk9/babyrite/issues/521)) ([2799f86](https://github.com/m1sk9/babyrite/commit/2799f86cd1beeb26fcb79fdd3c863d296dcb53ad))
+
+
+### Performance Improvements
+
+* Strengthen access permission checks ([#519](https://github.com/m1sk9/babyrite/issues/519)) ([6db1b67](https://github.com/m1sk9/babyrite/commit/6db1b6718e6e8bdb62f1b9075ba2c7e2c4f2fd22))
+
 ## [1.0.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.0.0...babyrite-v1.0.1) (2026-02-17)
 
 
