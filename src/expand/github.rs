@@ -157,7 +157,7 @@ impl GitHubPermalink {
                 let (code, truncated) = truncate_lines(&selected, max_lines);
                 let info = if truncated {
                     format!(
-                        "L{}-L{} (truncated to {} lines)",
+                        "L{}-L{}, truncated to {} lines",
                         range.start, range.end, max_lines
                     )
                 } else {
@@ -168,7 +168,7 @@ impl GitHubPermalink {
             None => {
                 let (code, truncated) = truncate_lines(&all_lines, max_lines);
                 let info = if truncated {
-                    format!("(truncated to {} lines)", max_lines)
+                    format!("truncated to {} lines", max_lines)
                 } else {
                     String::new()
                 };
