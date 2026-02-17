@@ -4,6 +4,7 @@
 //! and fetching raw file content to display as code blocks.
 
 use regex::Regex;
+use std::collections::HashSet;
 use std::sync::LazyLock;
 
 use super::{ExpandError, ExpandedContent};
@@ -61,9 +62,6 @@ pub enum GitHubExpandError {
     /// An HTTP error occurred.
     #[error(transparent)]
     Http(#[from] reqwest::Error),
-    /// Failed to parse the permalink URL.
-    #[error("Failed to parse permalink URL")]
-    Parse,
 }
 
 impl GitHubPermalink {
@@ -71,10 +69,18 @@ impl GitHubPermalink {
     ///
     /// Only matches URLs with a commit SHA (not branch names), ensuring
     /// only true permalinks are expanded.
+    ///
+    /// Note: Duplicate URLs are ignored, and a maximum of 3 links are returned.
     pub fn parse_all(text: &str) -> Vec<GitHubPermalink> {
+        let mut seen_urls = HashSet::new();
         GITHUB_PERMALINK_REGEX
             .captures_iter(text)
             .filter_map(|captures| {
+                let full_url = captures.get(0)?.as_str();
+                if !seen_urls.insert(full_url.to_string()) {
+                    return None;
+                }
+
                 let owner = captures.get(1)?.as_str().to_string();
                 let repo = captures.get(2)?.as_str().to_string();
                 let commit = captures.get(3)?.as_str().to_string();
@@ -101,6 +107,7 @@ impl GitHubPermalink {
                     line_range,
                 })
             })
+            .take(3) // Limit to maximum 3 links
             .collect()
     }
 
