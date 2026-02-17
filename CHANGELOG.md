@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.0](https://github.com/m1sk9/babyrite/compare/babyrite-v0.22.2...babyrite-v1.0.0) (2026-02-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* Release babyrite v1 ([#516](https://github.com/m1sk9/babyrite/issues/516))
+
+### Features
+
+* Add feature and github configuration ([#514](https://github.com/m1sk9/babyrite/issues/514)) ([e8e156f](https://github.com/m1sk9/babyrite/commit/e8e156f2f117ef38732ef172b2f08c3aa70158a5))
+* Added support for GitHub Permalinks ([#515](https://github.com/m1sk9/babyrite/issues/515)) ([d8fdf95](https://github.com/m1sk9/babyrite/commit/d8fdf95849eaa3ec2a52c7da7abd0cc17129692a))
+* Release babyrite v1 ([#516](https://github.com/m1sk9/babyrite/issues/516)) ([554de8a](https://github.com/m1sk9/babyrite/commit/554de8ab9461918c2cfc371355181a67f7ff182d))
+
+
+### Bug Fixes
+
+* **deps:** Remove once_cell dependencies ([#511](https://github.com/m1sk9/babyrite/issues/511)) ([15ed701](https://github.com/m1sk9/babyrite/commit/15ed70150ac7b6fa0fad14e40d7b1ddb65d3f27c))
+
 ## [0.22.2](https://github.com/m1sk9/babyrite/compare/babyrite-v0.22.1...babyrite-v0.22.2) (2026-02-06)
 
 
