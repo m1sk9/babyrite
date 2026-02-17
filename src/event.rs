@@ -3,12 +3,10 @@
 //! This module implements the serenity [`EventHandler`] trait to handle
 //! Discord gateway events such as ready and message events.
 
-use crate::preview::{MessageLinkIDs, Preview};
+use crate::expand::ExpandedContent;
+use crate::expand::discord::MessageLinkIDs;
 use serenity::all::{ActivityData, Context, EventHandler, Message, Ready};
-use serenity_builder::model::{
-    embed::SerenityEmbed,
-    message::{SerenityMessage, SerenityMessageMentionType},
-};
+use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
 
 /// Event handler for Babyrite bot.
 pub struct BabyriteEventHandler;
@@ -32,62 +30,69 @@ impl EventHandler for BabyriteEventHandler {
             None => return,
         };
 
-        let ids = match MessageLinkIDs::parse(&request.content) {
-            Some(ids) if ids.guild_id == request_guild_id => ids,
-            _ => return,
-        };
+        let text = &request.content;
+        let mut results = Vec::new();
 
-        tracing::info!(
-            "Begin generating the preview. (Requester: {})",
-            &request.author.name
-        );
-
-        let preview = match Preview::get(ids, &ctx).await {
-            Ok(p) => p,
-            Err(e) => {
-                tracing::error!("{}", e);
-                return;
+        // Discord link expansion
+        for ids in MessageLinkIDs::parse_all(text) {
+            if ids.guild_id != request_guild_id {
+                continue;
             }
-        };
 
-        let (message, channel) = (preview.message, preview.channel);
-        let embed = SerenityEmbed::builder()
-            .description(message.content)
-            .author_name(message.author.name.clone())
-            .author_icon_url(message.author.avatar_url().unwrap_or_default())
-            .footer_text(channel.name)
-            .timestamp(message.timestamp)
-            .color(0x7A4AFFu32)
-            .image_url(
-                message
-                    .attachments
-                    .first()
-                    .map(|a| a.url.clone())
-                    .unwrap_or_default(),
-            )
-            .build();
+            tracing::info!(
+                "Begin generating the preview. (Requester: {})",
+                &request.author.name
+            );
 
-        let request_channel_id = request.channel_id;
-        let message_builder = SerenityMessage::builder()
-            .embeds(vec![embed])
-            .mention_type(SerenityMessageMentionType::Reply(Box::new(request)))
-            .build();
-
-        let converted_message = match message_builder.convert() {
-            Ok(m) => m,
-            Err(e) => {
-                tracing::error!(?e);
-                return;
+            match ids.fetch(&ctx).await {
+                Ok(content) => results.push(content),
+                Err(e) => tracing::error!("{}", e),
             }
-        };
-
-        if let Err(e) = request_channel_id
-            .send_message(&ctx.http, converted_message)
-            .await
-        {
-            tracing::error!("Failed to send preview: {:?}", e);
         }
 
-        tracing::info!("Preview sent successfully.")
+        if results.is_empty() {
+            return;
+        }
+
+        send_expanded_contents(&ctx, &request, results).await;
     }
+}
+
+/// Sends expanded contents as a reply to the original message.
+async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<ExpandedContent>) {
+    let mut embeds = Vec::new();
+
+    for result in results {
+        match result {
+            ExpandedContent::Embed(embed) => embeds.push(*embed),
+        }
+    }
+
+    if embeds.is_empty() {
+        return;
+    }
+
+    let message_builder = SerenityMessage::builder()
+        .embeds(embeds)
+        .mention_type(SerenityMessageMentionType::Reply(Box::new(request.clone())))
+        .build();
+
+    let converted_message = match message_builder.convert() {
+        Ok(m) => m,
+        Err(e) => {
+            tracing::error!(?e);
+            return;
+        }
+    };
+
+    if let Err(e) = request
+        .channel_id
+        .send_message(&ctx.http, converted_message)
+        .await
+    {
+        tracing::error!("Failed to send preview: {:?}", e);
+        return;
+    }
+
+    tracing::info!("Preview sent successfully.");
 }
