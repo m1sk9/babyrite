@@ -7,3 +7,13 @@
 # JSON logging format (default is disabled)
 ## Output logs in JSON format. This is the recommended setting if you are using Grafana Loki or similar.
 json_logging = false
+
+# Feature flags
+[features]
+## Enable GitHub Permalink expansion (default: true)
+github_permalink = true
+
+# GitHub configuration
+[github]
+## Maximum number of lines to display without truncation (default: 50)
+max_lines = 50
