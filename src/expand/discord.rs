@@ -8,6 +8,7 @@
 use regex::Regex;
 use serenity::all::{ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId};
 use serenity_builder::model::embed::SerenityEmbed;
+use std::collections::HashSet;
 use std::sync::LazyLock;
 use url::Url;
 
@@ -63,11 +64,19 @@ impl MessageLinkIDs {
     /// Parses all Discord message links from the given text.
     ///
     /// Returns a `Vec<MessageLinkIDs>` containing all valid message links found.
+    ///
+    /// Note: Duplicate URLs are ignored, and a maximum of 3 links are returned.
     pub fn parse_all(text: &str) -> Vec<MessageLinkIDs> {
+        let mut seen_urls = HashSet::new();
         MESSAGE_LINK_REGEX
             .captures_iter(text)
             .filter_map(|captures| {
-                let url = Url::parse(captures.get(0)?.as_str()).ok()?;
+                let full_url = captures.get(0)?.as_str();
+                if !seen_urls.insert(full_url.to_string()) {
+                    return None;
+                }
+
+                let url = Url::parse(full_url).ok()?;
 
                 if !matches!(
                     url.domain(),
@@ -86,6 +95,7 @@ impl MessageLinkIDs {
                     message_id,
                 })
             })
+            .take(3) // Limit to maximum 3 links
             .collect()
     }
 

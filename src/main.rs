@@ -1,7 +1,8 @@
 //! Babyrite - A Discord bot for message link previews.
 //!
 //! This bot automatically generates previews for Discord message links
-//! shared within the same guild.
+//! shared within the same guild, and expands GitHub permalinks into
+//! code blocks.
 
 #![deny(clippy::all)]
 
@@ -9,10 +10,11 @@ mod cache;
 mod config;
 mod event;
 mod expand;
+mod utils;
 
 use crate::{
     config::{BabyriteConfig, EnvConfig},
-    event::BabyriteEventHandler,
+    event::{BabyriteEventHandler, HttpClient},
 };
 use serenity::all::GatewayIntents;
 
@@ -36,6 +38,12 @@ async fn main() -> anyhow::Result<()> {
     .event_handler(BabyriteEventHandler)
     .await
     .expect("Failed to initialize client.");
+
+    // Register the shared HTTP client for GitHub API requests
+    {
+        let mut data = client.data.write().await;
+        data.insert::<HttpClient>(reqwest::Client::new());
+    }
 
     if let Err(why) = client.start().await {
         return Err(anyhow::anyhow!(why));
