@@ -16,10 +16,15 @@ jobs:
 
       - name: Get token
         id: babyrite-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@v2
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          # Skip token revocation because the Docker image build (especially
+          # arm64 cross-compilation via QEMU) can exceed the 1-hour token lifetime,
+          # causing the post-step revoke to fail with "Bad credentials".
+          # Expired tokens are automatically invalidated by GitHub anyway.
+          skip-token-revoke: true
 
       - name: Run release-please-action
         uses: googleapis/release-please-action@v4
