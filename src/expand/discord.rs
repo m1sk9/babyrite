@@ -6,7 +6,10 @@
 //! Migrated from `preview.rs` with support for multiple link expansion.
 
 use regex::Regex;
-use serenity::all::{ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId};
+use serenity::all::{
+    ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId,
+    PermissionOverwriteType, Permissions, RoleId,
+};
 use serenity_builder::model::embed::SerenityEmbed;
 use std::collections::HashSet;
 use std::sync::LazyLock;
@@ -145,6 +148,18 @@ impl Preview {
             channel.kind,
             ChannelType::Private | ChannelType::PrivateThread
         ) {
+            return Err(PreviewError::Permission);
+        }
+
+        let everyone_role_id = RoleId::new(args.guild_id.get());
+        if channel
+            .permission_overwrites
+            .iter()
+            .any(|overwrite| {
+                matches!(overwrite.kind, PermissionOverwriteType::Role(role_id) if role_id == everyone_role_id)
+                    && overwrite.deny.contains(Permissions::VIEW_CHANNEL)
+            })
+        {
             return Err(PreviewError::Permission);
         }
 
