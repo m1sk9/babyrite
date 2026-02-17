@@ -11,18 +11,20 @@
 docker pull ghcr.io/m1sk9/babyrite:latest
 
 # Minor Release
-docker pull ghcr.io/m1sk9/babyrite:v0
+docker pull ghcr.io/m1sk9/babyrite:v1
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v0.30.0
+docker pull ghcr.io/m1sk9/babyrite:v1.0.0
 ```
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
 
-- [babyrite API Documentation](https://babyrite.api.m1sk9.dev)
+[babyrite API Documentation](https://babyrite.api.m1sk9.dev)
 
 ## Features
 
+- **Message Previews**: babyrite parses Discord message links and displays messages as embedded content.
+- **GitHub Permalink Expansion**: babyrite can expand GitHub permalinks and display the content of the linked file.
 - **Lightweight**: babyrite uses [distroless](https://github.com/GoogleContainerTools/distroless) as its base image and
   consists of a very lightweight Docker Image.
 - **Fast**: babyrite is developed in Rust and is very fast!
@@ -35,7 +37,7 @@ docker pull ghcr.io/m1sk9/babyrite:v0.30.0
 You can install babyrite using Docker. The following command will pull the latest version of babyrite.
 
 ```shell
-docker pull ghcr.io/m1sk9/babyrite:v0
+docker pull ghcr.io/m1sk9/babyrite:v1
 ```
 
 - babyrite is tested on macOS and Linux (major distributions) as recommended environment.
@@ -49,7 +51,7 @@ It is recommended to use Docker Compose when setting up babyrite. Direct startup
 ```yaml
 services:
   app:
-    image: ghcr.io/m1sk9/babyrite:v0
+    image: ghcr.io/m1sk9/babyrite:v1
     env_file:
       - .env
     restart: always
