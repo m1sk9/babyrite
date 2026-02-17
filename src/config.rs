@@ -3,9 +3,10 @@
 //! This module handles both environment variables and file-based configuration.
 
 use serde::Deserialize;
+use std::sync::OnceLock;
 
 /// Global configuration instance.
-pub static CONFIG: once_cell::sync::OnceCell<BabyriteConfig> = once_cell::sync::OnceCell::new();
+pub static CONFIG: OnceLock<BabyriteConfig> = OnceLock::new();
 
 /// Environment variable configuration.
 #[derive(Deserialize, Debug)]

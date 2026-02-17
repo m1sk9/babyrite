@@ -3,9 +3,9 @@
 //! This module provides functionality for parsing Discord message links
 //! and generating previews of the linked messages.
 
-use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::all::{ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId};
+use std::sync::LazyLock;
 use url::Url;
 
 use crate::cache::CacheArgs;
@@ -13,7 +13,7 @@ use crate::cache::CacheArgs;
 /// Regex pattern for matching Discord message links.
 ///
 /// Supports production, PTB, and Canary Discord URLs.
-pub static MESSAGE_LINK_REGEX: Lazy<Regex> = Lazy::new(|| {
+pub static MESSAGE_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"https://(?:ptb\.|canary\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)").unwrap()
 });
 
