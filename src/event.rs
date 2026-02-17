@@ -24,10 +24,9 @@ pub struct BabyriteEventHandler;
 #[serenity::async_trait]
 impl EventHandler for BabyriteEventHandler {
     async fn ready(&self, ctx: Context, bot: Ready) {
-        ctx.set_activity(
-            ActivityData::custom(format!("Running v{}", env!("CARGO_PKG_VERSION"))).into(),
-        );
-        tracing::info!("{} is connected!", bot.user.name);
+        let version = format!("v{}", env!("CARGO_PKG_VERSION"));
+        ctx.set_activity(ActivityData::custom(format!("Running {}", version)).into());
+        tracing::info!("Running {}, {} is connected!", version, bot.user.name);
     }
 
     async fn message(&self, ctx: Context, request: Message) {
