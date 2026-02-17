@@ -24,7 +24,7 @@ impl EnvConfig {
     ///
     /// Initializes the configuration from environment variables on first call.
     pub fn get() -> &'static EnvConfig {
-        static ENV_CONFIG: std::sync::OnceLock<EnvConfig> = std::sync::OnceLock::new();
+        static ENV_CONFIG: OnceLock<EnvConfig> = OnceLock::new();
         ENV_CONFIG
             .get_or_init(|| envy::from_env().expect("Failed to load environment configuration."))
     }
@@ -32,12 +32,65 @@ impl EnvConfig {
 
 /// Babyrite configuration.
 ///
-/// All configuration default values are `false`.
+/// Loaded from `config.toml`. All fields have default values, so existing
+/// configuration files without the new sections will continue to work.
 #[derive(Deserialize, Debug, Default)]
 pub struct BabyriteConfig {
     /// If enabled, logs are output in JSON format.
     #[serde(default)]
     pub json_logging: bool,
+    /// Feature flags for enabling/disabling specific functionality.
+    #[serde(default)]
+    pub features: FeatureConfig,
+    /// GitHub-related configuration.
+    #[serde(default)]
+    pub github: GitHubConfig,
+}
+
+/// Feature flags configuration.
+///
+/// Controls which link expansion features are enabled.
+#[derive(Deserialize, Debug)]
+pub struct FeatureConfig {
+    /// Whether GitHub Permalink expansion is enabled.
+    ///
+    /// Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub github_permalink: bool,
+}
+
+impl Default for FeatureConfig {
+    fn default() -> Self {
+        Self {
+            github_permalink: default_true(),
+        }
+    }
+}
+
+/// GitHub-related configuration.
+#[derive(Deserialize, Debug)]
+pub struct GitHubConfig {
+    /// Maximum number of lines to display without truncation.
+    ///
+    /// Defaults to `50`.
+    #[serde(default = "default_max_lines")]
+    pub max_lines: usize,
+}
+
+impl Default for GitHubConfig {
+    fn default() -> Self {
+        Self {
+            max_lines: default_max_lines(),
+        }
+    }
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_max_lines() -> usize {
+    50
 }
 
 /// Errors that can occur when loading configuration.

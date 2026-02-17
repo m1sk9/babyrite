@@ -65,11 +65,19 @@ You can also start with the default settings without configuring. The following 
 
 ```toml
 json_logging = false
+
+[features]
+github_permalink = true
+
+[github]
+max_lines = 50
 ```
 
-| Key             | Description                                                                    | Default Value |
-| --------------- | ------------------------------------------------------------------------------ | ------------- |
-| `json_logging`  | Sets whether to output logs in JSON format.                                    | `false`       |
+| Key                          | Description                                                 | Default Value |
+| ---------------------------- | ----------------------------------------------------------- | ------------- |
+| `json_logging`               | Sets whether to output logs in JSON format.                 | `false`       |
+| `features.github_permalink`  | Enable or disable GitHub Permalink expansion.               | `true`        |
+| `github.max_lines`           | Maximum number of lines to display without truncation.      | `50`          |
 
 ## Environment Variables
 
