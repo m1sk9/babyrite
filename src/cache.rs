@@ -59,14 +59,13 @@ impl CacheArgs {
         match GUILD_CHANNEL_CACHE.get(&self.channel_id).await {
             Some(channel) => Ok(channel),
             None => {
-                if let Some(channels) = GUILD_CHANNEL_LIST_CACHE.get(&self.guild_id).await {
-                    return channels
-                        .get(&self.channel_id)
-                        .cloned()
-                        .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"));
-                }
+                let channel_list =
+                    if let Some(channels) = GUILD_CHANNEL_LIST_CACHE.get(&self.guild_id).await {
+                        channels
+                    } else {
+                        self.get_channel_list_from_api(ctx).await?
+                    };
 
-                let channel_list = self.get_channel_list_from_api(ctx).await?;
                 let channel = match channel_list.get(&self.channel_id).cloned() {
                     Some(c) => c,
                     None => {
