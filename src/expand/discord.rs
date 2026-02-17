@@ -1,13 +1,17 @@
-//! Message preview module.
+//! Discord message link expansion.
 //!
 //! This module provides functionality for parsing Discord message links
-//! and generating previews of the linked messages.
+//! and generating embed previews of the linked messages.
+//!
+//! Migrated from `preview.rs` with support for multiple link expansion.
 
 use regex::Regex;
 use serenity::all::{ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId};
+use serenity_builder::model::embed::SerenityEmbed;
 use std::sync::LazyLock;
 use url::Url;
 
+use super::{ExpandError, ExpandedContent};
 use crate::cache::CacheArgs;
 
 /// Regex pattern for matching Discord message links.
@@ -18,7 +22,7 @@ pub static MESSAGE_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// Parsed IDs from a Discord message link.
-#[derive(serde::Deserialize, Debug)]
+#[derive(Debug)]
 pub struct MessageLinkIDs {
     /// The guild ID from the message link.
     pub guild_id: GuildId,
@@ -37,7 +41,7 @@ pub struct Preview {
     pub channel: GuildChannel,
 }
 
-/// Errors that can occur when generating a preview.
+/// Errors that can occur when generating a Discord message preview.
 #[derive(thiserror::Error, Debug)]
 pub enum PreviewError {
     /// Failed to retrieve channel information from cache.
@@ -56,17 +60,13 @@ pub enum PreviewError {
 }
 
 impl MessageLinkIDs {
-    /// Parses a Discord message link from text.
+    /// Parses all Discord message links from the given text.
     ///
-    /// Returns `Some(MessageLinkIDs)` if a valid message link is found,
-    /// otherwise returns `None`.
-    pub fn parse(text: &str) -> Option<MessageLinkIDs> {
-        if !MESSAGE_LINK_REGEX.is_match(text) {
-            return None;
-        }
-
-        match MESSAGE_LINK_REGEX.captures(text) {
-            Some(captures) => {
+    /// Returns a `Vec<MessageLinkIDs>` containing all valid message links found.
+    pub fn parse_all(text: &str) -> Vec<MessageLinkIDs> {
+        MESSAGE_LINK_REGEX
+            .captures_iter(text)
+            .filter_map(|captures| {
                 let url = Url::parse(captures.get(0)?.as_str()).ok()?;
 
                 if !matches!(
@@ -85,9 +85,32 @@ impl MessageLinkIDs {
                     channel_id,
                     message_id,
                 })
-            }
-            _ => None,
-        }
+            })
+            .collect()
+    }
+
+    /// Fetches the linked message and returns an embed preview.
+    pub async fn fetch(&self, ctx: &Context) -> Result<ExpandedContent, ExpandError> {
+        let preview = Preview::get(self, ctx).await?;
+        let (message, channel) = (preview.message, preview.channel);
+
+        let embed = SerenityEmbed::builder()
+            .description(message.content)
+            .author_name(message.author.name.clone())
+            .author_icon_url(message.author.avatar_url().unwrap_or_default())
+            .footer_text(channel.name)
+            .timestamp(message.timestamp)
+            .color(0x7A4AFFu32)
+            .image_url(
+                message
+                    .attachments
+                    .first()
+                    .map(|a| a.url.clone())
+                    .unwrap_or_default(),
+            )
+            .build();
+
+        Ok(ExpandedContent::Embed(Box::new(embed)))
     }
 }
 
@@ -96,7 +119,7 @@ impl Preview {
     ///
     /// Fetches the message and channel information, validating that
     /// the channel is not NSFW and is publicly accessible.
-    pub async fn get(args: MessageLinkIDs, ctx: &Context) -> Result<Preview, PreviewError> {
+    async fn get(args: &MessageLinkIDs, ctx: &Context) -> Result<Preview, PreviewError> {
         let caches = CacheArgs {
             guild_id: args.guild_id,
             channel_id: args.channel_id,

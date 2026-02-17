@@ -8,7 +8,7 @@
 mod cache;
 mod config;
 mod event;
-mod preview;
+mod expand;
 
 use crate::{
     config::{BabyriteConfig, EnvConfig},
