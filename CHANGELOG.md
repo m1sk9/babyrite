@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.0.2...babyrite-v1.1.0) (2026-02-25)
+
+
+### Features
+
+* add code coverage with Codecov and initial unit tests ([#525](https://github.com/m1sk9/babyrite/issues/525)) ([0da2e15](https://github.com/m1sk9/babyrite/commit/0da2e15ba97e05e82ae7ea4fe8bcca02bf0212e8))
+
 ## [1.0.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.0.1...babyrite-v1.0.2) (2026-02-17)
 
 
