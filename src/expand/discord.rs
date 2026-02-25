@@ -167,3 +167,84 @@ impl Preview {
         Ok(Preview { message, channel })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_standard_link() {
+        let text = "https://discord.com/channels/123456789/987654321/111111111";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].guild_id, GuildId::new(123456789));
+        assert_eq!(results[0].channel_id, ChannelId::new(987654321));
+        assert_eq!(results[0].message_id, MessageId::new(111111111));
+    }
+
+    #[test]
+    fn parse_ptb_link() {
+        let text = "https://ptb.discord.com/channels/123/456/789";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].guild_id, GuildId::new(123));
+    }
+
+    #[test]
+    fn parse_canary_link() {
+        let text = "https://canary.discord.com/channels/123/456/789";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].guild_id, GuildId::new(123));
+    }
+
+    #[test]
+    fn parse_multiple_links() {
+        let text = "https://discord.com/channels/1/2/3 and https://discord.com/channels/4/5/6";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].guild_id, GuildId::new(1));
+        assert_eq!(results[1].guild_id, GuildId::new(4));
+    }
+
+    #[test]
+    fn parse_deduplicates() {
+        let text = "https://discord.com/channels/1/2/3 https://discord.com/channels/1/2/3";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn parse_limits_to_three() {
+        let text = "\
+            https://discord.com/channels/1/2/3 \
+            https://discord.com/channels/4/5/6 \
+            https://discord.com/channels/7/8/9 \
+            https://discord.com/channels/10/11/12";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 3);
+    }
+
+    #[test]
+    fn parse_no_match() {
+        let text = "Just some regular text";
+        let results = MessageLinkIDs::parse_all(text);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_ignores_invalid_url() {
+        // Non-discord domain should not match (regex anchors to discord.com)
+        let text = "https://notdiscord.com/channels/1/2/3";
+        let results = MessageLinkIDs::parse_all(text);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_mixed_with_text() {
+        let text = "Hey check this out https://discord.com/channels/1/2/3 pretty cool right?";
+        let results = MessageLinkIDs::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].message_id, MessageId::new(3));
+    }
+}

@@ -213,3 +213,146 @@ fn truncate_lines(lines: &[&str], max: usize) -> (String, bool) {
         (lines.join("\n"), false)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- truncate_lines ---
+
+    #[test]
+    fn truncate_lines_under_limit() {
+        let lines = vec!["a", "b", "c"];
+        let (result, truncated) = truncate_lines(&lines, 5);
+        assert_eq!(result, "a\nb\nc");
+        assert!(!truncated);
+    }
+
+    #[test]
+    fn truncate_lines_at_limit() {
+        let lines = vec!["a", "b", "c"];
+        let (result, truncated) = truncate_lines(&lines, 3);
+        assert_eq!(result, "a\nb\nc");
+        assert!(!truncated);
+    }
+
+    #[test]
+    fn truncate_lines_over_limit() {
+        let lines = vec!["a", "b", "c", "d", "e"];
+        let (result, truncated) = truncate_lines(&lines, 2);
+        assert_eq!(result, "a\nb");
+        assert!(truncated);
+    }
+
+    #[test]
+    fn truncate_lines_empty() {
+        let lines: Vec<&str> = vec![];
+        let (result, truncated) = truncate_lines(&lines, 5);
+        assert_eq!(result, "");
+        assert!(!truncated);
+    }
+
+    // --- GitHubPermalink::parse_all ---
+
+    #[test]
+    fn parse_basic_permalink() {
+        let text = "https://github.com/owner/repo/blob/abcdef1234567890abcdef1234567890abcdef12/src/main.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].owner, "owner");
+        assert_eq!(results[0].repo, "repo");
+        assert_eq!(results[0].commit, "abcdef1234567890abcdef1234567890abcdef12");
+        assert_eq!(results[0].path, "src/main.rs");
+        assert!(results[0].line_range.is_none());
+    }
+
+    #[test]
+    fn parse_permalink_with_single_line() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L42";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 42);
+        assert_eq!(range.end, 42);
+    }
+
+    #[test]
+    fn parse_permalink_with_line_range() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L10-L20";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 10);
+        assert_eq!(range.end, 20);
+    }
+
+    #[test]
+    fn parse_rejects_branch_name() {
+        // Branch names (non-hex) should not match
+        let text = "https://github.com/owner/repo/blob/main/src/lib.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_rejects_short_sha() {
+        // SHA must be at least 4 hex characters
+        let text = "https://github.com/owner/repo/blob/abc/src/lib.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_deduplicates_urls() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/lib.rs \
+                    https://github.com/owner/repo/blob/abcd1234/src/lib.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn parse_limits_to_three() {
+        let text = "\
+            https://github.com/o/r/blob/aaaa1111/a.rs \
+            https://github.com/o/r/blob/bbbb2222/b.rs \
+            https://github.com/o/r/blob/cccc3333/c.rs \
+            https://github.com/o/r/blob/dddd4444/d.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 3);
+    }
+
+    #[test]
+    fn parse_multiple_different_urls() {
+        let text = "Check https://github.com/a/b/blob/1111aaaa/x.rs#L1 and \
+                    https://github.com/c/d/blob/2222bbbb/y.py#L5-L10";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].owner, "a");
+        assert_eq!(results[1].owner, "c");
+        assert_eq!(results[1].path, "y.py");
+    }
+
+    #[test]
+    fn parse_no_match() {
+        let text = "Hello, no links here!";
+        let results = GitHubPermalink::parse_all(text);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_nested_path() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/deeply/nested/path/file.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].path, "src/deeply/nested/path/file.rs");
+    }
+
+    #[test]
+    fn parse_short_commit_sha() {
+        // 4-character SHA is the minimum
+        let text = "https://github.com/owner/repo/blob/abcd/file.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].commit, "abcd");
+    }
+}
