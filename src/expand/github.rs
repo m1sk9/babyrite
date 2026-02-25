@@ -261,7 +261,10 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].owner, "owner");
         assert_eq!(results[0].repo, "repo");
-        assert_eq!(results[0].commit, "abcdef1234567890abcdef1234567890abcdef12");
+        assert_eq!(
+            results[0].commit,
+            "abcdef1234567890abcdef1234567890abcdef12"
+        );
         assert_eq!(results[0].path, "src/main.rs");
         assert!(results[0].line_range.is_none());
     }
