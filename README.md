@@ -3,6 +3,7 @@
 [![CI](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/ci.yaml)
 [![Release babyrite](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml/badge.svg)](https://github.com/m1sk9/babyrite/actions/workflows/release.yaml)
 [![Apache License 2.0](https://img.shields.io/github/license/m1sk9/babyrite?color=%239944ee)](https://github.com/m1sk9/babyrite/blob/main/LICENSE)
+[![codecov](https://codecov.io/github/m1sk9/babyrite/graph/badge.svg?token=QA075J11S8)](https://codecov.io/github/m1sk9/babyrite)
 
 **babyrite** is a lightweight, fast citation message Discord bot.
 
