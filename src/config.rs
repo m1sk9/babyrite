@@ -145,3 +145,89 @@ where
     let opt = Option::<String>::deserialize(deserializer)?;
     Ok(opt.filter(|s| !s.is_empty()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_config() {
+        let config = BabyriteConfig::default();
+        assert!(!config.json_logging);
+        assert!(config.features.github_permalink);
+        assert_eq!(config.github.max_lines, 50);
+    }
+
+    #[test]
+    fn deserialize_empty_config() {
+        let config: BabyriteConfig = toml::from_str("").unwrap();
+        assert!(!config.json_logging);
+        assert!(config.features.github_permalink);
+        assert_eq!(config.github.max_lines, 50);
+    }
+
+    #[test]
+    fn deserialize_full_config() {
+        let toml_str = r#"
+            json_logging = true
+
+            [features]
+            github_permalink = false
+
+            [github]
+            max_lines = 100
+        "#;
+        let config: BabyriteConfig = toml::from_str(toml_str).unwrap();
+        assert!(config.json_logging);
+        assert!(!config.features.github_permalink);
+        assert_eq!(config.github.max_lines, 100);
+    }
+
+    #[test]
+    fn deserialize_partial_config() {
+        let toml_str = r#"
+            json_logging = true
+        "#;
+        let config: BabyriteConfig = toml::from_str(toml_str).unwrap();
+        assert!(config.json_logging);
+        // defaults
+        assert!(config.features.github_permalink);
+        assert_eq!(config.github.max_lines, 50);
+    }
+
+    #[test]
+    fn empty_string_as_none_with_empty() {
+        #[derive(Deserialize)]
+        struct Test {
+            #[serde(default, deserialize_with = "empty_string_as_none")]
+            value: Option<String>,
+        }
+
+        let t: Test = toml::from_str(r#"value = """#).unwrap();
+        assert!(t.value.is_none());
+    }
+
+    #[test]
+    fn empty_string_as_none_with_value() {
+        #[derive(Deserialize)]
+        struct Test {
+            #[serde(default, deserialize_with = "empty_string_as_none")]
+            value: Option<String>,
+        }
+
+        let t: Test = toml::from_str(r#"value = "hello""#).unwrap();
+        assert_eq!(t.value.as_deref(), Some("hello"));
+    }
+
+    #[test]
+    fn empty_string_as_none_absent() {
+        #[derive(Deserialize)]
+        struct Test {
+            #[serde(default, deserialize_with = "empty_string_as_none")]
+            value: Option<String>,
+        }
+
+        let t: Test = toml::from_str("").unwrap();
+        assert!(t.value.is_none());
+    }
+}
