@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.0...babyrite-v1.1.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **deps:** update aws-lc-sys to 0.38.0 ([#538](https://github.com/m1sk9/babyrite/issues/538)) ([3fa337e](https://github.com/m1sk9/babyrite/commit/3fa337ea7f8405022fb6cfe9e7bba6bc2042b47f))
+
 ## [1.1.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.0.2...babyrite-v1.1.0) (2026-02-25)
 
 
