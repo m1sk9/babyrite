@@ -33,6 +33,80 @@ docker pull ghcr.io/m1sk9/babyrite:v1.0.0
   well as publish it as OSS.
 - **Easy to Use**: babyrite is very easy to use and can be deployed in seconds.
 
+### Message Previews
+
+Detects Discord message links (`https://discord.com/channels/...`) and expands them as embedded content.
+
+- Supports Production, PTB, and Canary client URLs
+- Expands up to 3 links per message
+- Validates NSFW channels, permissions, and privacy
+
+### GitHub Permalink Expansion
+
+Detects GitHub permalinks (blob URLs containing a commit SHA) and expands file content as code blocks.
+
+- Supports line range specifications (`#L10-L20`)
+- Expands up to 3 links per message
+- 1MB file size limit; display truncated to 50 lines by default (configurable)
+
+<details>
+<summary>Supported languages</summary>
+
+| Extension | Language |
+| --- | --- |
+| `.rs` | Rust |
+| `.py` | Python |
+| `.js` | JavaScript |
+| `.ts` | TypeScript |
+| `.jsx` | JSX |
+| `.tsx` | TSX |
+| `.rb` | Ruby |
+| `.go` | Go |
+| `.java` | Java |
+| `.kt`, `.kts` | Kotlin |
+| `.c`, `.h` | C |
+| `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx` | C++ |
+| `.cs` | C# |
+| `.swift` | Swift |
+| `.php` | PHP |
+| `.scala` | Scala |
+| `.sh`, `.bash`, `.zsh`, `.fish` | Bash |
+| `.ps1` | PowerShell |
+| `.html`, `.htm` | HTML |
+| `.css` | CSS |
+| `.scss` | SCSS |
+| `.sass` | Sass |
+| `.less` | Less |
+| `.json` | JSON |
+| `.yaml`, `.yml` | YAML |
+| `.toml` | TOML |
+| `.xml` | XML |
+| `.sql` | SQL |
+| `.md`, `.markdown` | Markdown |
+| `.lua` | Lua |
+| `.r` | R |
+| `.dart` | Dart |
+| `.zig` | Zig |
+| `.nim` | Nim |
+| `.ex`, `.exs` | Elixir |
+| `.erl`, `.hrl` | Erlang |
+| `.hs` | Haskell |
+| `.ml`, `.mli` | OCaml |
+| `.clj`, `.cljs` | Clojure |
+| `.tf` | HCL |
+| `.vue` | Vue |
+| `.svelte` | Svelte |
+| `.graphql`, `.gql` | GraphQL |
+| `.proto` | Protobuf |
+| `.mk`, `Makefile` | Makefile |
+| `Dockerfile` | Dockerfile |
+
+For extensions not listed above, the extension name is used as-is for the language hint. 
+
+Note that Discord code blocks use [highlight.js](https://highlightjs.org/) for syntax highlighting, so languages not supported by highlight.js cannot be highlighted regardless of babyrite's configuration. If syntax highlighting does not work correctly for a supported language, please [open an issue](https://github.com/m1sk9/babyrite/issues/new).
+
+</details>
+
 ## Installation
 
 You can install babyrite using Docker. The following command will pull the latest version of babyrite.
