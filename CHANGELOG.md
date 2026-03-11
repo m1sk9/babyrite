@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.1...babyrite-v1.1.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* **deps:** bump quinn-proto from 0.11.13 to 0.11.14 ([#550](https://github.com/m1sk9/babyrite/issues/550)) ([8c74a2c](https://github.com/m1sk9/babyrite/commit/8c74a2c144fc6a418d13eec39d8cf0590e473a07))
+
 ## [1.1.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.0...babyrite-v1.1.1) (2026-03-05)
 
 
