@@ -147,6 +147,11 @@ impl GitHubPermalink {
 
         let body = response.text().await.map_err(GitHubExpandError::Http)?;
 
+        Ok(self.build_code_block(&body, max_lines))
+    }
+
+    /// Builds an `ExpandedContent::CodeBlock` from raw file content.
+    fn build_code_block(&self, body: &str, max_lines: usize) -> ExpandedContent {
         let all_lines: Vec<&str> = body.lines().collect();
         let (code, line_info) = match self.line_range {
             Some(range) => {
@@ -191,11 +196,11 @@ impl GitHubPermalink {
             )
         };
 
-        Ok(ExpandedContent::CodeBlock {
+        ExpandedContent::CodeBlock {
             language: language.to_string(),
             code,
             metadata,
-        })
+        }
     }
 }
 
@@ -393,5 +398,121 @@ mod tests {
     #[test]
     fn language_for_path_dotfile() {
         assert_eq!(language_for_path(".gitignore"), "gitignore");
+    }
+
+    // --- build_code_block ---
+
+    fn make_permalink(path: &str, line_range: Option<LineRange>) -> GitHubPermalink {
+        GitHubPermalink {
+            owner: "owner".to_string(),
+            repo: "repo".to_string(),
+            commit: "abcdef1234567".to_string(),
+            path: path.to_string(),
+            line_range,
+        }
+    }
+
+    #[test]
+    fn build_code_block_full_file() {
+        let permalink = make_permalink("src/main.rs", None);
+        let body = "fn main() {\n    println!(\"hello\");\n}";
+        let result = permalink.build_code_block(body, 50);
+
+        match result {
+            ExpandedContent::CodeBlock {
+                language,
+                code,
+                metadata,
+            } => {
+                assert_eq!(language, "rust");
+                assert_eq!(code, body);
+                assert_eq!(metadata, "`src/main.rs` - owner/repo@abcdef1");
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    #[test]
+    fn build_code_block_with_line_range() {
+        let permalink = make_permalink("src/lib.rs", Some(LineRange { start: 2, end: 3 }));
+        let body = "line1\nline2\nline3\nline4";
+        let result = permalink.build_code_block(body, 50);
+
+        match result {
+            ExpandedContent::CodeBlock {
+                language,
+                code,
+                metadata,
+            } => {
+                assert_eq!(language, "rust");
+                assert_eq!(code, "line2\nline3");
+                assert!(metadata.contains("L2-L3"));
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    #[test]
+    fn build_code_block_truncated() {
+        let permalink = make_permalink("app.py", None);
+        let body = "a\nb\nc\nd\ne";
+        let result = permalink.build_code_block(body, 2);
+
+        match result {
+            ExpandedContent::CodeBlock { code, metadata, .. } => {
+                assert_eq!(code, "a\nb");
+                assert!(metadata.contains("truncated to 2 lines"));
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    #[test]
+    fn build_code_block_line_range_truncated() {
+        let permalink = make_permalink("app.py", Some(LineRange { start: 1, end: 5 }));
+        let body = "a\nb\nc\nd\ne";
+        let result = permalink.build_code_block(body, 3);
+
+        match result {
+            ExpandedContent::CodeBlock { code, metadata, .. } => {
+                assert_eq!(code, "a\nb\nc");
+                assert!(metadata.contains("L1-L5"));
+                assert!(metadata.contains("truncated to 3 lines"));
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    #[test]
+    fn build_code_block_dockerfile_language() {
+        let permalink = make_permalink("docker/Dockerfile", None);
+        let body = "FROM rust:latest";
+        let result = permalink.build_code_block(body, 50);
+
+        match result {
+            ExpandedContent::CodeBlock { language, .. } => {
+                assert_eq!(language, "dockerfile");
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    #[test]
+    fn build_code_block_short_commit() {
+        let permalink = GitHubPermalink {
+            owner: "o".to_string(),
+            repo: "r".to_string(),
+            commit: "abcd".to_string(),
+            path: "f.rs".to_string(),
+            line_range: None,
+        };
+        let result = permalink.build_code_block("x", 50);
+
+        match result {
+            ExpandedContent::CodeBlock { metadata, .. } => {
+                assert!(metadata.contains("o/r@abcd"));
+            }
+            _ => panic!("expected CodeBlock"),
+        }
     }
 }
