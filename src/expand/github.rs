@@ -177,12 +177,7 @@ impl GitHubPermalink {
         };
 
         let short_commit = &self.commit[..7.min(self.commit.len())];
-        let language = self
-            .path
-            .rsplit('.')
-            .next()
-            .map(language_from_extension)
-            .unwrap_or("");
+        let language = language_for_path(&self.path);
 
         let metadata = if line_info.is_empty() {
             format!(
@@ -201,6 +196,15 @@ impl GitHubPermalink {
             code,
             metadata,
         })
+    }
+}
+
+/// Extracts the filename from a path and returns the appropriate language identifier.
+fn language_for_path(path: &str) -> &str {
+    let filename = path.rsplit('/').next().unwrap_or(path);
+    match filename.rsplit_once('.') {
+        Some((_, ext)) => language_from_extension(ext),
+        None => language_from_extension(filename),
     }
 }
 
@@ -357,5 +361,37 @@ mod tests {
         let results = GitHubPermalink::parse_all(text);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].commit, "abcd");
+    }
+
+    // --- language_for_path ---
+
+    #[test]
+    fn language_for_path_basic_extension() {
+        assert_eq!(language_for_path("src/main.rs"), "rust");
+    }
+
+    #[test]
+    fn language_for_path_dockerfile_in_subdir() {
+        assert_eq!(language_for_path("docker/Dockerfile"), "dockerfile");
+    }
+
+    #[test]
+    fn language_for_path_dotted_directory() {
+        assert_eq!(language_for_path("some.config/Dockerfile"), "dockerfile");
+    }
+
+    #[test]
+    fn language_for_path_makefile_in_subdir() {
+        assert_eq!(language_for_path("build/Makefile"), "makefile");
+    }
+
+    #[test]
+    fn language_for_path_multiple_dots() {
+        assert_eq!(language_for_path("file.test.ts"), "typescript");
+    }
+
+    #[test]
+    fn language_for_path_dotfile() {
+        assert_eq!(language_for_path(".gitignore"), "gitignore");
     }
 }

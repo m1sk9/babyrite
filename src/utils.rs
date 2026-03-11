@@ -110,4 +110,12 @@ mod tests {
         assert_eq!(language_from_extension("xyz"), "xyz");
         assert_eq!(language_from_extension("foo"), "foo");
     }
+
+    #[test]
+    fn extensionless_filenames() {
+        assert_eq!(language_from_extension("Dockerfile"), "dockerfile");
+        assert_eq!(language_from_extension("dockerfile"), "dockerfile");
+        assert_eq!(language_from_extension("Makefile"), "makefile");
+        assert_eq!(language_from_extension("makefile"), "makefile");
+    }
 }
