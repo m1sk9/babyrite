@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.2...babyrite-v1.1.3) (2026-03-11)
+
+
+### Bug Fixes
+
+* Extract filename from path before language detection ([#552](https://github.com/m1sk9/babyrite/issues/552)) ([2e8c6e3](https://github.com/m1sk9/babyrite/commit/2e8c6e32c258f895729a7501aa33e93dd15da514))
+
 ## [1.1.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.1...babyrite-v1.1.2) (2026-03-11)
 
 
