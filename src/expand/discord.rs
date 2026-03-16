@@ -74,7 +74,12 @@ impl MessageLinkIDs {
         MESSAGE_LINK_REGEX
             .captures_iter(text)
             .filter_map(|captures| {
-                let full_url = captures.get(0)?.as_str();
+                let m = captures.get(0)?;
+                let full_url = m.as_str();
+                // Skip URLs wrapped in angle brackets (e.g., <https://...>)
+                if m.start() > 0 && text.as_bytes()[m.start() - 1] == b'<' {
+                    return None;
+                }
                 if !seen_urls.insert(full_url.to_string()) {
                     return None;
                 }
@@ -236,6 +241,13 @@ mod tests {
     fn parse_ignores_invalid_url() {
         // Non-discord domain should not match (regex anchors to discord.com)
         let text = "https://notdiscord.com/channels/1/2/3";
+        let results = MessageLinkIDs::parse_all(text);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_ignores_angle_bracket_link() {
+        let text = "<https://discord.com/channels/123/456/789>";
         let results = MessageLinkIDs::parse_all(text);
         assert!(results.is_empty());
     }
