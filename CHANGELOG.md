@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.3...babyrite-v1.1.4) (2026-03-16)
+
+
+### Bug Fixes
+
+* **expand:** skip links wrapped in angle brackets ([#559](https://github.com/m1sk9/babyrite/issues/559)) ([ee824ba](https://github.com/m1sk9/babyrite/commit/ee824ba0cd047af821cb50fac41a3c79f98f137c))
+
 ## [1.1.3](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.2...babyrite-v1.1.3) (2026-03-11)
 
 
