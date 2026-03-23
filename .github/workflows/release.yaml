@@ -11,6 +11,10 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-24.04
+    env:
+      # googleapis/release-please-action@v4 still uses node20.
+      # Force Node.js 24 until upstream ships a node24-native version.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       major: ${{ steps.release.outputs.major }}
@@ -25,7 +29,7 @@ jobs:
 
       - name: Get token
         id: babyrite-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
