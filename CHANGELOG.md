@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.4...babyrite-v1.1.5) (2026-03-23)
+
+
+### Bug Fixes
+
+* **deps:** update aws-lc-sys and rustls-webpki ([#566](https://github.com/m1sk9/babyrite/issues/566)) ([7b5439b](https://github.com/m1sk9/babyrite/commit/7b5439b20f6cbdbbb68b54b07ad3d01238cdc7cb))
+
 ## [1.1.4](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.3...babyrite-v1.1.4) (2026-03-16)
 
 
