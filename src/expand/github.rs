@@ -11,17 +11,19 @@ use super::{ExpandError, ExpandedContent};
 use crate::config::BabyriteConfig;
 use crate::utils::language_from_extension;
 
-/// Regex pattern for matching GitHub permalink URLs.
+/// Regex pattern for matching GitHub blob URLs.
 ///
-/// Captures: owner, repo, commit, path, and optional line range fragment.
+/// Captures: owner, repo, git_ref (commit SHA or branch name), path, and optional line range fragment.
 ///
 /// Supported patterns:
-/// - `https://github.com/{owner}/{repo}/blob/{commit}/{path}`
-/// - `https://github.com/{owner}/{repo}/blob/{commit}/{path}#L{line}`
-/// - `https://github.com/{owner}/{repo}/blob/{commit}/{path}#L{start}-L{end}`
+/// - `https://github.com/{owner}/{repo}/blob/{ref}/{path}`
+/// - `https://github.com/{owner}/{repo}/blob/{ref}/{path}#L{line}`
+/// - `https://github.com/{owner}/{repo}/blob/{ref}/{path}#L{start}-L{end}`
+///
+/// The `{ref}` can be a commit SHA (e.g., `abcdef1234567`) or a branch/tag name (e.g., `main`, `feature/foo`).
 static GITHUB_PERMALINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"https://github\.com/([^/]+)/([^/]+)/blob/([0-9a-f]{4,40})/([^#\s]+)(?:#L(\d+)(?:-L(\d+))?)?"
+        r"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^#\s]+)(?:#L(\d+)(?:-L(\d+))?)?",
     )
     .unwrap()
 });
@@ -33,8 +35,8 @@ pub struct GitHubPermalink {
     pub owner: String,
     /// Repository name.
     pub repo: String,
-    /// Commit SHA.
-    pub commit: String,
+    /// Git ref (commit SHA or branch/tag name).
+    pub git_ref: String,
     /// File path within the repository.
     pub path: String,
     /// Optional line range specification.
@@ -67,8 +69,7 @@ pub enum GitHubExpandError {
 impl GitHubPermalink {
     /// Parses all GitHub permalink URLs from the given text.
     ///
-    /// Only matches URLs with a commit SHA (not branch names), ensuring
-    /// only true permalinks are expanded.
+    /// Matches URLs with commit SHAs, branch names, or tag names.
     ///
     /// Note: Duplicate URLs are ignored, and a maximum of 3 links are returned.
     pub fn parse_all(text: &str) -> Vec<GitHubPermalink> {
@@ -88,7 +89,7 @@ impl GitHubPermalink {
 
                 let owner = captures.get(1)?.as_str().to_string();
                 let repo = captures.get(2)?.as_str().to_string();
-                let commit = captures.get(3)?.as_str().to_string();
+                let git_ref = captures.get(3)?.as_str().to_string();
                 let path = captures.get(4)?.as_str().to_string();
 
                 let line_range = match (captures.get(5), captures.get(6)) {
@@ -107,7 +108,7 @@ impl GitHubPermalink {
                 Some(GitHubPermalink {
                     owner,
                     repo,
-                    commit,
+                    git_ref,
                     path,
                     line_range,
                 })
@@ -117,6 +118,7 @@ impl GitHubPermalink {
     }
 
     /// Fetches the raw file content from GitHub and returns a code block.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub async fn fetch(
         &self,
         http_client: &reqwest::Client,
@@ -126,7 +128,7 @@ impl GitHubPermalink {
 
         let raw_url = format!(
             "https://raw.githubusercontent.com/{}/{}/{}/{}",
-            self.owner, self.repo, self.commit, self.path
+            self.owner, self.repo, self.git_ref, self.path
         );
 
         let response = http_client
@@ -186,18 +188,18 @@ impl GitHubPermalink {
             }
         };
 
-        let short_commit = &self.commit[..7.min(self.commit.len())];
+        let display_ref = shorten_ref(&self.git_ref);
         let language = language_for_path(&self.path);
 
         let metadata = if line_info.is_empty() {
             format!(
                 "`{}` - {}/{}@{}",
-                self.path, self.owner, self.repo, short_commit
+                self.path, self.owner, self.repo, display_ref
             )
         } else {
             format!(
                 "`{}` ({}) - {}/{}@{}",
-                self.path, line_info, self.owner, self.repo, short_commit
+                self.path, line_info, self.owner, self.repo, display_ref
             )
         };
 
@@ -206,6 +208,21 @@ impl GitHubPermalink {
             code,
             metadata,
         }
+    }
+}
+
+/// Returns true if the given string looks like a commit SHA (4-40 hex characters).
+fn is_commit_sha(s: &str) -> bool {
+    (4..=40).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+/// Shortens a git ref for display. Commit SHAs are truncated to 7 characters;
+/// branch/tag names are returned as-is.
+fn shorten_ref(git_ref: &str) -> &str {
+    if is_commit_sha(git_ref) {
+        &git_ref[..7.min(git_ref.len())]
+    } else {
+        git_ref
     }
 }
 
@@ -276,7 +293,7 @@ mod tests {
         assert_eq!(results[0].owner, "owner");
         assert_eq!(results[0].repo, "repo");
         assert_eq!(
-            results[0].commit,
+            results[0].git_ref,
             "abcdef1234567890abcdef1234567890abcdef12"
         );
         assert_eq!(results[0].path, "src/main.rs");
@@ -304,19 +321,84 @@ mod tests {
     }
 
     #[test]
-    fn parse_rejects_branch_name() {
-        // Branch names (non-hex) should not match
+    fn parse_branch_name() {
         let text = "https://github.com/owner/repo/blob/main/src/lib.rs";
         let results = GitHubPermalink::parse_all(text);
-        assert!(results.is_empty());
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].git_ref, "main");
+        assert_eq!(results[0].path, "src/lib.rs");
     }
 
     #[test]
-    fn parse_rejects_short_sha() {
-        // SHA must be at least 4 hex characters
+    fn parse_branch_name_with_line_range() {
+        let text = "https://github.com/owner/repo/blob/develop/src/main.rs#L5-L10";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].git_ref, "develop");
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 5);
+        assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    fn parse_branch_name_with_single_line() {
+        let text = "https://github.com/owner/repo/blob/main/src/lib.rs#L5";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].git_ref, "main");
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 5);
+        assert_eq!(range.end, 5);
+    }
+
+    #[test]
+    fn parse_branch_with_special_characters() {
+        let cases = [
+            (
+                "https://github.com/o/r/blob/release-v1.0/f.rs",
+                "release-v1.0",
+            ),
+            (
+                "https://github.com/o/r/blob/feat_something/f.rs",
+                "feat_something",
+            ),
+            ("https://github.com/o/r/blob/v2.0.0/f.rs", "v2.0.0"),
+        ];
+        for (text, expected_ref) in cases {
+            let results = GitHubPermalink::parse_all(text);
+            assert_eq!(results.len(), 1, "failed for: {text}");
+            assert_eq!(results[0].git_ref, expected_ref);
+        }
+    }
+
+    #[test]
+    fn parse_tag_name() {
+        let text = "https://github.com/owner/repo/blob/v1.0.0/src/main.rs#L1-L10";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].git_ref, "v1.0.0");
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 1);
+        assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    fn parse_mixed_sha_and_branch() {
+        let text = "https://github.com/o/r/blob/abcd1234/a.rs \
+                    https://github.com/o/r/blob/main/b.rs";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].git_ref, "abcd1234");
+        assert_eq!(results[1].git_ref, "main");
+    }
+
+    #[test]
+    fn parse_accepts_short_ref() {
+        // Short refs (e.g., short branch names) should still match
         let text = "https://github.com/owner/repo/blob/abc/src/lib.rs";
         let results = GitHubPermalink::parse_all(text);
-        assert!(results.is_empty());
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].git_ref, "abc");
     }
 
     #[test]
@@ -377,7 +459,7 @@ mod tests {
         let text = "https://github.com/owner/repo/blob/abcd/file.rs";
         let results = GitHubPermalink::parse_all(text);
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0].commit, "abcd");
+        assert_eq!(results[0].git_ref, "abcd");
     }
 
     // --- language_for_path ---
@@ -418,7 +500,7 @@ mod tests {
         GitHubPermalink {
             owner: "owner".to_string(),
             repo: "repo".to_string(),
-            commit: "abcdef1234567".to_string(),
+            git_ref: "abcdef1234567".to_string(),
             path: path.to_string(),
             line_range,
         }
@@ -514,7 +596,7 @@ mod tests {
         let permalink = GitHubPermalink {
             owner: "o".to_string(),
             repo: "r".to_string(),
-            commit: "abcd".to_string(),
+            git_ref: "abcd".to_string(),
             path: "f.rs".to_string(),
             line_range: None,
         };
@@ -526,5 +608,93 @@ mod tests {
             }
             _ => panic!("expected CodeBlock"),
         }
+    }
+
+    #[test]
+    fn build_code_block_branch_ref() {
+        let permalink = GitHubPermalink {
+            owner: "o".to_string(),
+            repo: "r".to_string(),
+            git_ref: "main".to_string(),
+            path: "f.rs".to_string(),
+            line_range: None,
+        };
+        let result = permalink.build_code_block("x", 50);
+
+        match result {
+            ExpandedContent::CodeBlock { metadata, .. } => {
+                // Branch names should not be truncated
+                assert!(metadata.contains("o/r@main"));
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    #[test]
+    fn build_code_block_branch_ref_with_line_range() {
+        let permalink = GitHubPermalink {
+            owner: "o".to_string(),
+            repo: "r".to_string(),
+            git_ref: "develop".to_string(),
+            path: "src/lib.rs".to_string(),
+            line_range: Some(LineRange { start: 3, end: 5 }),
+        };
+        let body = "a\nb\nc\nd\ne\nf";
+        let result = permalink.build_code_block(body, 50);
+
+        match result {
+            ExpandedContent::CodeBlock { code, metadata, .. } => {
+                assert_eq!(code, "c\nd\ne");
+                assert!(metadata.contains("L3-L5"));
+                assert!(metadata.contains("o/r@develop"));
+            }
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    // --- is_commit_sha / shorten_ref ---
+
+    #[test]
+    fn is_commit_sha_valid() {
+        assert!(is_commit_sha("abcd1234"));
+        assert!(is_commit_sha("abcdef1234567890abcdef1234567890abcdef12"));
+    }
+
+    #[test]
+    fn is_commit_sha_boundary() {
+        // Exactly 4 hex chars (minimum)
+        assert!(is_commit_sha("abcd"));
+        // Exactly 40 hex chars (full SHA-1)
+        assert!(is_commit_sha("abcdef1234567890abcdef1234567890abcdef12"));
+    }
+
+    #[test]
+    fn is_commit_sha_invalid() {
+        assert!(!is_commit_sha("main"));
+        assert!(!is_commit_sha("develop"));
+        assert!(!is_commit_sha("abc")); // too short
+        assert!(!is_commit_sha("abcdef1234567890abcdef1234567890abcdef123")); // too long (41)
+        assert!(!is_commit_sha("ghijkl")); // non-hex
+        assert!(!is_commit_sha("")); // empty
+        assert!(is_commit_sha("ABCD1234")); // uppercase hex is still valid hex
+    }
+
+    #[test]
+    fn shorten_ref_commit() {
+        assert_eq!(shorten_ref("abcdef1234567890"), "abcdef1");
+    }
+
+    #[test]
+    fn shorten_ref_short_sha() {
+        // 4-char SHA should not be truncated further
+        assert_eq!(shorten_ref("abcd"), "abcd");
+    }
+
+    #[test]
+    fn shorten_ref_branch() {
+        assert_eq!(shorten_ref("main"), "main");
+        assert_eq!(shorten_ref("feature-branch"), "feature-branch");
+        assert_eq!(shorten_ref("release-v1.0"), "release-v1.0");
+        assert_eq!(shorten_ref("v2.0.0"), "v2.0.0");
     }
 }

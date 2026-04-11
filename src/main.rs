@@ -5,6 +5,7 @@
 //! code blocks.
 
 #![deny(clippy::all)]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod cache;
 mod config;
