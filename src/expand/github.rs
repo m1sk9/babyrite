@@ -118,6 +118,7 @@ impl GitHubPermalink {
     }
 
     /// Fetches the raw file content from GitHub and returns a code block.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     pub async fn fetch(
         &self,
         http_client: &reqwest::Client,
