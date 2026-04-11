@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.2.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.5...babyrite-v1.2.0) (2026-04-11)
+
+
+### Features
+
+* **github:** support branch and tag names in GitHub permalink regex ([#577](https://github.com/m1sk9/babyrite/issues/577)) ([1805bb3](https://github.com/m1sk9/babyrite/commit/1805bb3078a7555422a46abce9e1a5436b538894))
+
+
+### Miscellaneous
+
+* add chore and ci prefixes to release-please changelog sections ([#579](https://github.com/m1sk9/babyrite/issues/579)) ([75387db](https://github.com/m1sk9/babyrite/commit/75387db8dd5dea085df230291236041ccb656065))
+* **deps:** update codecov/codecov-action digest to 75cd116 ([#572](https://github.com/m1sk9/babyrite/issues/572)) ([9a13fa8](https://github.com/m1sk9/babyrite/commit/9a13fa8b5757fcaaf441004bf88f165f5a2f796c))
+* **deps:** update rust crate tokio to v1.51.0 ([#575](https://github.com/m1sk9/babyrite/issues/575)) ([223ce7d](https://github.com/m1sk9/babyrite/commit/223ce7d3396038d7f77c2ea1ad0e73600c665c0c))
+* **deps:** update rust crate tokio to v1.51.1 ([#576](https://github.com/m1sk9/babyrite/issues/576)) ([bc3f248](https://github.com/m1sk9/babyrite/commit/bc3f248625aad66f86c787bebda53ed7371772ff))
+* **deps:** update rust crate toml to v1.1.0 ([#570](https://github.com/m1sk9/babyrite/issues/570)) ([57634fc](https://github.com/m1sk9/babyrite/commit/57634fc1630b896b9442f63d15e6d29e60ba425f))
+* **deps:** update rust crate toml to v1.1.1 ([#573](https://github.com/m1sk9/babyrite/issues/573)) ([b9be5d2](https://github.com/m1sk9/babyrite/commit/b9be5d2e77255e2552540a7bce33e90b79073eb7))
+* **deps:** update rust crate toml to v1.1.2 ([#574](https://github.com/m1sk9/babyrite/issues/574)) ([102dd5b](https://github.com/m1sk9/babyrite/commit/102dd5bd9713f9d1321f863b6a48064139be161c))
+* **deps:** update taiki-e/install-action digest to 0d865d5 ([#569](https://github.com/m1sk9/babyrite/issues/569)) ([3bf3bdd](https://github.com/m1sk9/babyrite/commit/3bf3bdd6f1aea81f6e08ef53f4146926a7a59453))
+* **deps:** update taiki-e/install-action digest to 7a4939c ([#571](https://github.com/m1sk9/babyrite/issues/571)) ([6bcb6b5](https://github.com/m1sk9/babyrite/commit/6bcb6b5a3cdb1dd3b0cfccda260c8dd0cf2184c4))
+
+
+### CI
+
+* **release:** avoid Node.js 20 deprecation in release workflow ([#568](https://github.com/m1sk9/babyrite/issues/568)) ([b1daf78](https://github.com/m1sk9/babyrite/commit/b1daf7894c910250d66d0c604c21d7f6bdccecdc))
+
 ## [1.1.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.4...babyrite-v1.1.5) (2026-03-23)
 
 
