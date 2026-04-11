@@ -2,7 +2,13 @@
   "last-release-sha": "4b4c0dbf2e5041b02323b37ad2f9fe94ba357909",
   "packages": {
     ".": {
-      "release-type": "rust"
+      "release-type": "rust",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "chore", "section": "Miscellaneous" },
+        { "type": "ci", "section": "CI" }
+      ]
     }
   }
 }
