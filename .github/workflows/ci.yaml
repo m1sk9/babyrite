@@ -47,7 +47,7 @@ jobs:
           prefix-key: "babyrite/gh-actions-cache"
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@7a4939c09608b2a1986b484eca1d16fd0db8ebef # v2
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2
         with:
           tool: cargo-llvm-cov
 
