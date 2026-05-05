@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.0...babyrite-v1.2.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* **deps:** bump rand to address Dependabot alerts ([#587](https://github.com/m1sk9/babyrite/issues/587)) ([2bb22f5](https://github.com/m1sk9/babyrite/commit/2bb22f577ae6bc4cd1c5c12b30011c1d85b8130f))
+
+
+### Miscellaneous
+
+* **deps:** update rust crate reqwest to v0.13.3 ([#585](https://github.com/m1sk9/babyrite/issues/585)) ([16017d0](https://github.com/m1sk9/babyrite/commit/16017d0f437a6a6b9aecddb2e5dbc16c6fb95ea2))
+* **deps:** update rust crate tokio to v1.52.0 ([#581](https://github.com/m1sk9/babyrite/issues/581)) ([a3b260b](https://github.com/m1sk9/babyrite/commit/a3b260b87efbf3da8ca938e1820fb47f3866a6e5))
+* **deps:** update rust crate tokio to v1.52.1 ([#583](https://github.com/m1sk9/babyrite/issues/583)) ([d27400e](https://github.com/m1sk9/babyrite/commit/d27400e8c5b735c7833c2f56baddae773e811185))
+* **deps:** update rust crate tokio to v1.52.2 ([#586](https://github.com/m1sk9/babyrite/issues/586)) ([6e080c3](https://github.com/m1sk9/babyrite/commit/6e080c35bb029b0dc447ed9f2dd08cd9de9e9b49))
+* **deps:** update taiki-e/install-action digest to cca35ed ([#580](https://github.com/m1sk9/babyrite/issues/580)) ([cfa81f4](https://github.com/m1sk9/babyrite/commit/cfa81f4540a3478d727aec1e35bc2d804f399e5a))
+
 ## [1.2.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.1.5...babyrite-v1.2.0) (2026-04-11)
 
 
