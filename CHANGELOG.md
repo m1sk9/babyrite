@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.2...babyrite-v1.2.3) (2026-05-25)
+
+
+### Miscellaneous
+
+* **deps:** update rust crate reqwest to v0.13.4 ([#591](https://github.com/m1sk9/babyrite/issues/591)) ([9613a5c](https://github.com/m1sk9/babyrite/commit/9613a5c2e3173799e273dcbaf498be01c904edf6))
+
 ## [1.2.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.1...babyrite-v1.2.2) (2026-05-08)
 
 
