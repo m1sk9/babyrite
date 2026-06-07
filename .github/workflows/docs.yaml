@@ -34,7 +34,7 @@ jobs:
 
       - name: Upload artifact
         id: babyrite_doc
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: target/doc
 
@@ -47,4 +47,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: babyrite_doc
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
