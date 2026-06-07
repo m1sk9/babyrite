@@ -21,9 +21,13 @@ use crate::utils::language_from_extension;
 /// - `https://github.com/{owner}/{repo}/blob/{ref}/{path}#L{start}-L{end}`
 ///
 /// The `{ref}` can be a commit SHA (e.g., `abcdef1234567`) or a branch/tag name (e.g., `main`, `feature/foo`).
+///
+/// An optional query string (e.g., `?plain=1`) is consumed but discarded — GitHub's blob query
+/// parameters control browser rendering only and do not affect the raw content served by
+/// `raw.githubusercontent.com`.
 static GITHUB_PERMALINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^#\s]+)(?:#L(\d+)(?:-L(\d+))?)?",
+        r"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^#\s?]+)(?:\?[^#\s]*)?(?:#L(\d+)(?:-L(\d+))?)?",
     )
     .unwrap()
 });
@@ -436,6 +440,55 @@ mod tests {
         let text = "Hello, no links here!";
         let results = GitHubPermalink::parse_all(text);
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_permalink_with_query() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/README.md?plain=1";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].path, "README.md");
+        assert!(results[0].line_range.is_none());
+    }
+
+    #[test]
+    fn parse_permalink_with_query_and_line_range() {
+        // Regression test for issue #593: the URL reported in the issue.
+        let text = "https://github.com/m1sk9/dotfiles/blob/02962edfa2d9f5e1ed3f9a7cded1055b1a64b03d/private_dot_claude/CLAUDE.md?plain=1#L21-L46";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].owner, "m1sk9");
+        assert_eq!(results[0].repo, "dotfiles");
+        assert_eq!(
+            results[0].git_ref,
+            "02962edfa2d9f5e1ed3f9a7cded1055b1a64b03d"
+        );
+        assert_eq!(results[0].path, "private_dot_claude/CLAUDE.md");
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 21);
+        assert_eq!(range.end, 46);
+    }
+
+    #[test]
+    fn parse_permalink_with_query_and_single_line() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/lib.rs?plain=1#L10";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].path, "src/lib.rs");
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 10);
+        assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    fn parse_permalink_with_multiple_query_params() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/lib.rs?foo=bar&baz=qux#L1-L2";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].path, "src/lib.rs");
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 1);
+        assert_eq!(range.end, 2);
     }
 
     #[test]
