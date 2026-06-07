@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.4](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.3...babyrite-v1.2.4) (2026-06-07)
+
+
+### Bug Fixes
+
+* **github:** ignore query string in permalink URLs ([#594](https://github.com/m1sk9/babyrite/issues/594)) ([fbfa9c3](https://github.com/m1sk9/babyrite/commit/fbfa9c3eef9f3f3938ee9c813e8ad11cb7f8e2d4))
+
+
+### CI
+
+* resolve Node.js 20 deprecation and app-id warnings ([#595](https://github.com/m1sk9/babyrite/issues/595)) ([9f30d14](https://github.com/m1sk9/babyrite/commit/9f30d1475cbbc3279cab2c8c82998e5463149420))
+
 ## [1.2.3](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.2...babyrite-v1.2.3) (2026-05-25)
 
 
