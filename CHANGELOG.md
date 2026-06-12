@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.4...babyrite-v1.2.5) (2026-06-09)
+
+
+### Miscellaneous
+
+* **deps:** update rust crate regex to v1.12.4 ([#598](https://github.com/m1sk9/babyrite/issues/598)) ([108689b](https://github.com/m1sk9/babyrite/commit/108689b8b68edd90b7e3ecc0913d31ea0c525eb2))
+
 ## [1.2.4](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.3...babyrite-v1.2.4) (2026-06-07)
 
 
