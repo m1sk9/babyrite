@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
-        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES,
+        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILDS,
     )
     .event_handler(BabyriteEventHandler)
     .await
