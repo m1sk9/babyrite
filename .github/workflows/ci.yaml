@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -86,7 +86,7 @@ jobs:
             use-cross: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@stable
