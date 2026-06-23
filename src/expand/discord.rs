@@ -171,6 +171,17 @@ fn has_member_view_deny(overwrites: &[PermissionOverwrite]) -> bool {
     })
 }
 
+/// Returns `true` when the link's visibility must be validated against the
+/// request's source channel.
+///
+/// A link pointing back into the same channel the request came from is always
+/// safe to expand: the reply lands in that very channel, so it cannot expose
+/// anything its readers cannot already see. Such links need no visibility
+/// checks, while links to any other channel do.
+fn requires_visibility_check(target: ChannelId, source: ChannelId) -> bool {
+    target != source
+}
+
 /// Computes the set of roles that can effectively `VIEW_CHANNEL` a channel.
 ///
 /// `@everyone` (role id == guild id) is treated as a normal role and included in
@@ -286,7 +297,7 @@ impl Preview {
         // nothing to leak and all visibility checks below can be skipped. This
         // notably covers quoting within a private channel, which would otherwise
         // be rejected by the per-member deny guard.
-        if args.channel_id != source_channel.id {
+        if requires_visibility_check(args.channel_id, source_channel.id) {
             // Private threads cannot be represented by the role-set comparison
             // (membership is per-user), and DMs are outside the guild context, so
             // both are rejected. Public/news threads fall through and are judged via
@@ -346,8 +357,6 @@ impl Preview {
                 );
                 return Err(PreviewError::Permission);
             }
-        } else {
-            tracing::debug!("target channel is the source channel; skipping visibility checks");
         }
 
         let started = std::time::Instant::now();
@@ -503,6 +512,15 @@ mod tests {
         // member allow (not deny) does not trigger
         assert!(!has_member_view_deny(&[member_ow(5, false)]));
         assert!(!has_member_view_deny(&[]));
+    }
+
+    #[test]
+    fn same_channel_skips_visibility_check() {
+        let chan = ChannelId::new(42);
+        // Quoting within the same channel needs no visibility check.
+        assert!(!requires_visibility_check(chan, chan));
+        // A link to a different channel still requires validation.
+        assert!(requires_visibility_check(chan, ChannelId::new(99)));
     }
 
     #[test]
