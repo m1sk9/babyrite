@@ -510,4 +510,20 @@ mod tests {
         assert!(viewing.contains(&MEMBER));
         assert!(!viewing.contains(&SPECIAL));
     }
+
+    #[test]
+    fn missing_everyone_role_defaults_to_no_base() {
+        // @everyone absent from the role map -> base falls back to empty,
+        // so a role with no view permission and no overwrite cannot view.
+        let mut roles = HashMap::new();
+        roles.insert(MEMBER, Permissions::empty());
+
+        let viewing = viewing_roles(&[], &roles, EVERYONE);
+        assert!(!viewing.contains(&MEMBER));
+
+        // The same role gains access once an overwrite allows it.
+        let ow = [role_ow(MEMBER.get(), true, false)];
+        let viewing = viewing_roles(&ow, &roles, EVERYONE);
+        assert!(viewing.contains(&MEMBER));
+    }
 }
