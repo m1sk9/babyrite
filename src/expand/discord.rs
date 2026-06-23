@@ -171,6 +171,17 @@ fn has_member_view_deny(overwrites: &[PermissionOverwrite]) -> bool {
     })
 }
 
+/// Returns `true` when the link's visibility must be validated against the
+/// request's source channel.
+///
+/// A link pointing back into the same channel the request came from is always
+/// safe to expand: the reply lands in that very channel, so it cannot expose
+/// anything its readers cannot already see. Such links need no visibility
+/// checks, while links to any other channel do.
+fn requires_visibility_check(target: ChannelId, source: ChannelId) -> bool {
+    target != source
+}
+
 /// Computes the set of roles that can effectively `VIEW_CHANNEL` a channel.
 ///
 /// `@everyone` (role id == guild id) is treated as a normal role and included in
@@ -250,6 +261,10 @@ impl Preview {
     /// channel must be at least as visible as the source channel to avoid leaking
     /// restricted content. Public and news threads are judged by their parent
     /// channel's permissions, since threads do not carry their own overwrites.
+    ///
+    /// When the link target is the same channel as `source_channel`, the
+    /// visibility checks are skipped entirely: the reply lands in that same
+    /// channel, so it cannot expose anything its readers cannot already see.
     #[tracing::instrument(
         skip(args, ctx, source_channel),
         fields(
@@ -276,64 +291,72 @@ impl Preview {
             return Err(PreviewError::Nsfw);
         }
 
-        // Private threads cannot be represented by the role-set comparison
-        // (membership is per-user), and DMs are outside the guild context, so
-        // both are rejected. Public/news threads fall through and are judged via
-        // their parent channel.
-        if matches!(
-            channel.kind,
-            ChannelType::PrivateThread | ChannelType::Private
-        ) {
-            tracing::debug!(kind = ?channel.kind, "rejected: private channel or thread");
-            return Err(PreviewError::Permission);
-        }
+        // When the link points to the same channel the request came from, the
+        // expansion is posted back into that very channel. Every member who can
+        // read the reply can already read the original message, so there is
+        // nothing to leak and all visibility checks below can be skipped. This
+        // notably covers quoting within a private channel, which would otherwise
+        // be rejected by the per-member deny guard.
+        if requires_visibility_check(args.channel_id, source_channel.id) {
+            // Private threads cannot be represented by the role-set comparison
+            // (membership is per-user), and DMs are outside the guild context, so
+            // both are rejected. Public/news threads fall through and are judged via
+            // their parent channel.
+            if matches!(
+                channel.kind,
+                ChannelType::PrivateThread | ChannelType::Private
+            ) {
+                tracing::debug!(kind = ?channel.kind, "rejected: private channel or thread");
+                return Err(PreviewError::Permission);
+            }
 
-        // Threads follow their parent channel's permissions, so resolve both the
-        // link target and the request source to the channel that actually
-        // defines visibility before comparing.
-        let dest_perm = permission_channel(&channel, ctx).await?;
-        let source_perm = permission_channel(source_channel, ctx).await?;
+            // Threads follow their parent channel's permissions, so resolve both the
+            // link target and the request source to the channel that actually
+            // defines visibility before comparing.
+            let dest_perm = permission_channel(&channel, ctx).await?;
+            let source_perm = permission_channel(source_channel, ctx).await?;
 
-        // A per-member deny on the target cannot be represented in the role-set
-        // comparison below, so reject conservatively.
-        if has_member_view_deny(&dest_perm.permission_overwrites) {
-            tracing::debug!("rejected: target has a per-member VIEW_CHANNEL deny");
-            return Err(PreviewError::Permission);
-        }
+            // A per-member deny on the target cannot be represented in the role-set
+            // comparison below, so reject conservatively.
+            if has_member_view_deny(&dest_perm.permission_overwrites) {
+                tracing::debug!("rejected: target has a per-member VIEW_CHANNEL deny");
+                return Err(PreviewError::Permission);
+            }
 
-        let everyone_role_id = RoleId::new(args.guild_id.get());
-        // Clone the role permission map out of the cache so the `GuildRef` is
-        // dropped before the `await` below (holding it across `await` would make
-        // the future `!Send` and fail to compile in the event handler).
-        let role_perms: HashMap<RoleId, Permissions> = {
-            let guild = ctx
-                .cache
-                .guild(args.guild_id)
-                .ok_or(PreviewError::Permission)?;
-            guild
-                .roles
-                .iter()
-                .map(|(&id, role)| (id, role.permissions))
-                .collect()
-        };
+            let everyone_role_id = RoleId::new(args.guild_id.get());
+            // Clone the role permission map out of the cache so the `GuildRef` is
+            // dropped before the `await` below (holding it across `await` would make
+            // the future `!Send` and fail to compile in the event handler).
+            let role_perms: HashMap<RoleId, Permissions> = {
+                let guild = ctx
+                    .cache
+                    .guild(args.guild_id)
+                    .ok_or(PreviewError::Permission)?;
+                guild
+                    .roles
+                    .iter()
+                    .map(|(&id, role)| (id, role.permissions))
+                    .collect()
+            };
 
-        let dest_roles = viewing_roles(
-            &dest_perm.permission_overwrites,
-            &role_perms,
-            everyone_role_id,
-        );
-        let source_roles = viewing_roles(
-            &source_perm.permission_overwrites,
-            &role_perms,
-            everyone_role_id,
-        );
-        if !source_roles.is_subset(&dest_roles) {
-            tracing::debug!(
-                source_roles = source_roles.len(),
-                dest_roles = dest_roles.len(),
-                "rejected: source channel is more visible than the target"
+            let dest_roles = viewing_roles(
+                &dest_perm.permission_overwrites,
+                &role_perms,
+                everyone_role_id,
             );
-            return Err(PreviewError::Permission);
+            let source_roles = viewing_roles(
+                &source_perm.permission_overwrites,
+                &role_perms,
+                everyone_role_id,
+            );
+            if !source_roles.is_subset(&dest_roles) {
+                tracing::debug!(
+                    source_roles = source_roles.len(),
+                    dest_roles = dest_roles.len(),
+                    "rejected: source channel is more visible than the target"
+                );
+                return Err(PreviewError::Permission);
+            }
         }
 
         let started = std::time::Instant::now();
@@ -489,6 +512,15 @@ mod tests {
         // member allow (not deny) does not trigger
         assert!(!has_member_view_deny(&[member_ow(5, false)]));
         assert!(!has_member_view_deny(&[]));
+    }
+
+    #[test]
+    fn same_channel_skips_visibility_check() {
+        let chan = ChannelId::new(42);
+        // Quoting within the same channel needs no visibility check.
+        assert!(!requires_visibility_check(chan, chan));
+        // A link to a different channel still requires validation.
+        assert!(requires_visibility_check(chan, ChannelId::new(99)));
     }
 
     #[test]
