@@ -11,6 +11,7 @@ use crate::expand::github::GitHubPermalink;
 use serenity::all::{ActivityData, Context, EventHandler, Message, Ready};
 use serenity::prelude::TypeMapKey;
 use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
+use tracing::Instrument;
 
 /// TypeMap key for the shared reqwest HTTP client.
 pub struct HttpClient;
@@ -40,75 +41,92 @@ impl EventHandler for BabyriteEventHandler {
             None => return,
         };
 
-        let text = &request.content;
-        let config = BabyriteConfig::get();
-        let mut results = Vec::new();
+        // Correlation span: every log emitted while handling this message
+        // carries these fields, so a single request can be traced end-to-end
+        // (e.g. via Grafana Loki). `request.id` is the unique Discord message
+        // ID and serves as the correlation key.
+        let span = tracing::info_span!(
+            "message",
+            message_id = %request.id,
+            guild_id = %request_guild_id,
+            channel_id = %request.channel_id,
+            author = %request.author.name,
+        );
 
-        // Discord link expansion
-        let discord_links = MessageLinkIDs::parse_all(text);
-        if !discord_links.is_empty() {
-            // Resolve the source channel once. The expanded preview is posted here,
-            // so it is needed to verify the link target is at least as visible as
-            // this channel. If it cannot be resolved, skip Discord expansion (but
-            // still allow GitHub expansion below).
-            match (CacheArgs {
-                guild_id: request_guild_id,
-                channel_id: request.channel_id,
-            })
-            .get(&ctx)
-            .await
-            {
-                Ok(source_channel) => {
-                    for ids in discord_links {
-                        if ids.guild_id != request_guild_id {
-                            continue;
-                        }
+        async {
+            let text = &request.content;
+            let config = BabyriteConfig::get();
+            let mut results = Vec::new();
 
-                        tracing::info!(
-                            "Begin generating the preview. (Requester: {})",
-                            &request.author.name
-                        );
+            // Discord link expansion
+            let discord_links = MessageLinkIDs::parse_all(text);
+            if !discord_links.is_empty() {
+                tracing::debug!(count = discord_links.len(), "parsed Discord links");
+                // Resolve the source channel once. The expanded preview is posted here,
+                // so it is needed to verify the link target is at least as visible as
+                // this channel. If it cannot be resolved, skip Discord expansion (but
+                // still allow GitHub expansion below).
+                match (CacheArgs {
+                    guild_id: request_guild_id,
+                    channel_id: request.channel_id,
+                })
+                .get(&ctx)
+                .await
+                {
+                    Ok(source_channel) => {
+                        for ids in discord_links {
+                            if ids.guild_id != request_guild_id {
+                                tracing::debug!(
+                                    link_guild_id = %ids.guild_id,
+                                    "skipping cross-guild Discord link"
+                                );
+                                continue;
+                            }
 
-                        match ids.fetch(&ctx, &source_channel).await {
-                            Ok(content) => results.push(content),
-                            Err(e) => tracing::error!("{}", e),
-                        }
-                    }
-                }
-                Err(e) => {
-                    tracing::error!("Failed to resolve source channel: {}", e);
-                }
-            }
-        }
-
-        // GitHub Permalink expansion (can be disabled via config)
-        if config.features.github_permalink {
-            let permalinks = GitHubPermalink::parse_all(text);
-            if !permalinks.is_empty() {
-                let data = ctx.data.read().await;
-                if let Some(http_client) = data.get::<HttpClient>() {
-                    for permalink in permalinks {
-                        tracing::info!(
-                            "Begin expanding GitHub permalink. (Requester: {})",
-                            &request.author.name
-                        );
-
-                        match permalink.fetch(http_client).await {
-                            Ok(content) => results.push(content),
-                            Err(e) => tracing::error!("{}", e),
+                            match ids.fetch(&ctx, &source_channel).await {
+                                Ok(content) => results.push(content),
+                                Err(e) => {
+                                    tracing::error!(error = %e, "failed to expand Discord link")
+                                }
+                            }
                         }
                     }
-                } else {
-                    tracing::error!("HTTP client not found in TypeMap");
+                    Err(e) => {
+                        tracing::error!(error = %e, "failed to resolve source channel");
+                    }
                 }
             }
-        }
 
-        if results.is_empty() {
-            return;
-        }
+            // GitHub Permalink expansion (can be disabled via config)
+            if config.features.github_permalink {
+                let permalinks = GitHubPermalink::parse_all(text);
+                if !permalinks.is_empty() {
+                    tracing::debug!(count = permalinks.len(), "parsed GitHub permalinks");
+                    let data = ctx.data.read().await;
+                    if let Some(http_client) = data.get::<HttpClient>() {
+                        for permalink in permalinks {
+                            match permalink.fetch(http_client).await {
+                                Ok(content) => results.push(content),
+                                Err(e) => {
+                                    tracing::error!(error = %e, "failed to expand GitHub permalink")
+                                }
+                            }
+                        }
+                    } else {
+                        tracing::error!("HTTP client not found in TypeMap");
+                    }
+                }
+            }
 
-        send_expanded_contents(&ctx, &request, results).await;
+            if results.is_empty() {
+                tracing::debug!("no expandable content found");
+                return;
+            }
+
+            send_expanded_contents(&ctx, &request, results).await;
+        }
+        .instrument(span)
+        .await;
     }
 }
 
@@ -130,6 +148,9 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
         }
     }
 
+    let embed_count = embeds.len();
+    let code_block_count = code_blocks.len();
+
     // Send embeds if any
     if !embeds.is_empty() {
         let message_builder = SerenityMessage::builder()
@@ -140,7 +161,7 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
         let converted_message = match message_builder.convert() {
             Ok(m) => m,
             Err(e) => {
-                tracing::error!(?e);
+                tracing::error!(error = ?e, "failed to convert embed message");
                 return;
             }
         };
@@ -150,7 +171,7 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
             .send_message(&ctx.http, converted_message)
             .await
         {
-            tracing::error!("Failed to send preview: {:?}", e);
+            tracing::error!(error = ?e, "failed to send preview");
             return;
         }
     }
@@ -158,9 +179,13 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
     // Send code blocks as plain messages
     for block in code_blocks {
         if let Err(e) = request.channel_id.say(&ctx.http, &block).await {
-            tracing::error!("Failed to send code block: {:?}", e);
+            tracing::error!(error = ?e, "failed to send code block");
         }
     }
 
-    tracing::info!("Preview sent successfully.");
+    tracing::info!(
+        embeds = embed_count,
+        code_blocks = code_block_count,
+        "preview sent"
+    );
 }

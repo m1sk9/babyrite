@@ -123,6 +123,15 @@ impl GitHubPermalink {
 
     /// Fetches the raw file content from GitHub and returns a code block.
     #[cfg_attr(coverage_nightly, coverage(off))]
+    #[tracing::instrument(
+        skip(self, http_client),
+        fields(
+            owner = %self.owner,
+            repo = %self.repo,
+            git_ref = %self.git_ref,
+            path = %self.path,
+        )
+    )]
     pub async fn fetch(
         &self,
         http_client: &reqwest::Client,
@@ -135,13 +144,24 @@ impl GitHubPermalink {
             self.owner, self.repo, self.git_ref, self.path
         );
 
+        tracing::debug!(url = %raw_url, "fetching raw content");
+        let started = std::time::Instant::now();
         let response = http_client
             .get(&raw_url)
             .send()
             .await
             .map_err(GitHubExpandError::Http)?;
 
+        let content_length = response.content_length().unwrap_or(0);
+        tracing::debug!(
+            status = %response.status(),
+            content_length,
+            elapsed_ms = started.elapsed().as_millis(),
+            "received response"
+        );
+
         if !response.status().is_success() {
+            tracing::warn!(status = %response.status(), "non-success status fetching raw content");
             return Err(GitHubExpandError::Fetch(format!(
                 "HTTP {} for {}",
                 response.status(),
@@ -150,15 +170,17 @@ impl GitHubPermalink {
             .into());
         }
 
-        let content_length = response.content_length().unwrap_or(0);
         // 1 MB limit to avoid fetching huge files
         if content_length > 1_048_576 {
+            tracing::warn!(content_length, "content exceeds size limit");
             return Err(GitHubExpandError::ContentTooLarge.into());
         }
 
         let body = response.text().await.map_err(GitHubExpandError::Http)?;
 
-        Ok(self.build_code_block(&body, max_lines))
+        let content = self.build_code_block(&body, max_lines);
+        tracing::debug!("code block built");
+        Ok(content)
     }
 
     /// Builds an `ExpandedContent::CodeBlock` from raw file content.

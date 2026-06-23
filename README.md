@@ -141,7 +141,9 @@ You can customize the behavior of babyrite by using a dedicated configuration fi
 You can also start with the default settings without configuring. The following are the default settings used in that case.
 
 ```toml
-json_logging = false
+[log]
+level = "babyrite=info"
+format = "compact"
 
 [features]
 github_permalink = true
@@ -150,20 +152,30 @@ github_permalink = true
 max_lines = 50
 ```
 
-| Key                          | Description                                                 | Default Value |
-| ---------------------------- | ----------------------------------------------------------- | ------------- |
-| `json_logging`               | Sets whether to output logs in JSON format.                 | `false`       |
-| `features.github_permalink`  | Enable or disable GitHub Permalink expansion.               | `true`        |
-| `github.max_lines`           | Maximum number of lines to display without truncation.      | `50`          |
+| Key                          | Description                                                                     | Default Value     |
+| ---------------------------- | ------------------------------------------------------------------------------ | ----------------- |
+| `log.level`                  | Log level filter (same syntax as `RUST_LOG`). Overridden by `RUST_LOG` if set. | `"babyrite=info"` |
+| `log.format`                 | Log output format: `"compact"` or `"json"`.                                    | `"compact"`       |
+| `json_logging`               | **Deprecated.** Use `log.format = "json"`. Only used when `log.format` is unset. | `false`           |
+| `features.github_permalink`  | Enable or disable GitHub Permalink expansion.                                  | `true`            |
+| `github.max_lines`           | Maximum number of lines to display without truncation.                         | `50`              |
+
+### Logging
+
+babyrite uses [`tracing`](https://docs.rs/tracing) and emits logs to standard output.
+
+- **Log level** is resolved in this order: the `RUST_LOG` environment variable (if set) takes precedence, otherwise the `log.level` setting in `config.toml` is used (default `babyrite=info`). For development, set `RUST_LOG=babyrite=debug` or `log.level = "babyrite=debug"` to surface detailed debug logs (cache hit/miss, external API timings, permission-check decisions).
+- **Structured output for Grafana Loki and similar.** Set `log.format = "json"` to emit one JSON object per line. Each line carries structured fields — including `message_id`, `guild_id`, and `channel_id` from the per-request span — so a single request can be correlated end-to-end. Scrape the container's stdout with Promtail or Grafana Alloy and query the fields in LogQL with the `| json` parser.
 
 ## Environment Variables
 
 The environment variables used by babyrite are as follows. Note that the only environment variable required for startup is `DISCORD_API_TOKEN`.
 
-| Key                 | Description                                     |
-| ------------------- | ----------------------------------------------- |
-| `DISCORD_API_TOKEN` | Discord API token                               |
-| `CONFIG_FILE`       | Path to the configuration file (recursive path) |
+| Key                 | Description                                                                  |
+| ------------------- | --------------------------------------------------------------------------- |
+| `DISCORD_API_TOKEN` | Discord API token                                                           |
+| `CONFIG_FILE`       | Path to the configuration file (recursive path)                             |
+| `RUST_LOG`          | Log level filter. Overrides `log.level` in the configuration file when set. |
 
 ## LICENSE
 

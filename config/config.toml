@@ -5,8 +5,20 @@
 # Note that babyrite will run with default settings if not configured.
 
 # JSON logging format (default is disabled)
-## Output logs in JSON format. This is the recommended setting if you are using Grafana Loki or similar.
+## Deprecated: use the [log] section below ("format = \"json\"") instead.
+## Kept for backward compatibility; it is only used when [log] format is unset.
 json_logging = false
+
+# Logging configuration
+[log]
+## Log level filter. Accepts the same syntax as the RUST_LOG environment variable
+## (e.g. "babyrite=debug"). The RUST_LOG environment variable, if set, takes
+## precedence over this value. (default: "babyrite=info")
+level = "babyrite=info"
+## Output format: "compact" (human-readable) or "json".
+## "json" is recommended when using Grafana Loki or similar log aggregation.
+## (default: "compact")
+format = "compact"
 
 # Feature flags
 [features]

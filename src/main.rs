@@ -14,10 +14,11 @@ mod expand;
 mod utils;
 
 use crate::{
-    config::{BabyriteConfig, EnvConfig},
+    config::{BabyriteConfig, EnvConfig, LogFormat},
     event::{BabyriteEventHandler, HttpClient},
 };
 use serenity::all::GatewayIntents;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -25,12 +26,18 @@ async fn main() -> anyhow::Result<()> {
 
     BabyriteConfig::init()?;
     let envs = EnvConfig::get();
+    let config = BabyriteConfig::get();
 
-    match BabyriteConfig::get().json_logging {
-        true => tracing_subscriber::fmt().json().init(),
-        false => tracing_subscriber::fmt().compact().init(),
+    // `RUST_LOG` takes precedence; otherwise fall back to the `[log] level`
+    // configured in `config.toml` (defaults to `babyrite=info`).
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new(config.log.level.clone()));
+    let builder = tracing_subscriber::fmt().with_env_filter(filter);
+    match config.resolved_log_format() {
+        LogFormat::Json => builder.json().init(),
+        LogFormat::Compact => builder.compact().init(),
     }
-    tracing::debug!("Config: {:?}", BabyriteConfig::get());
+    tracing::debug!("Config: {:?}", config);
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
