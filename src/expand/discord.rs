@@ -140,10 +140,11 @@ impl MessageLinkIDs {
     }
 }
 
-/// Returns `true` for thread channel types, which are always rejected.
+/// Returns `true` for thread channel types.
 ///
-/// Threads inherit permissions from their parent channel, which this module does
-/// not resolve, so they are never expanded.
+/// Threads do not carry their own permission overwrites; their visibility
+/// follows the parent channel. This is used to decide whether visibility must be
+/// resolved against the parent (see [`permission_channel`]).
 fn is_thread(kind: ChannelType) -> bool {
     matches!(
         kind,
@@ -208,14 +209,39 @@ fn viewing_roles(
     set
 }
 
+/// Resolves the channel whose permission overwrites determine visibility.
+///
+/// Threads inherit visibility from their parent channel, so for any thread the
+/// parent channel is fetched and returned. Non-thread channels are returned
+/// unchanged. A thread without a `parent_id` is treated as an error.
+async fn permission_channel(
+    channel: &GuildChannel,
+    ctx: &Context,
+) -> Result<GuildChannel, PreviewError> {
+    if !is_thread(channel.kind) {
+        return Ok(channel.clone());
+    }
+
+    let parent_id = channel.parent_id.ok_or(PreviewError::Permission)?;
+    CacheArgs {
+        guild_id: channel.guild_id,
+        channel_id: parent_id,
+    }
+    .get(ctx)
+    .await
+    .map_err(|_| PreviewError::Cache)
+}
+
 impl Preview {
     /// Retrieves a preview for the given message link.
     ///
-    /// Validates that the linked channel is not NSFW, is not a thread, and that
-    /// everyone who can view the request's `source_channel` could also view the
-    /// linked channel. The expanded content is posted as a single message that all
-    /// members of `source_channel` can read, so the linked channel must be at least
-    /// as visible as the source channel to avoid leaking restricted content.
+    /// Validates that the linked channel is not NSFW, is not a private thread or
+    /// DM, and that everyone who can view the request's `source_channel` could
+    /// also view the linked channel. The expanded content is posted as a single
+    /// message that all members of `source_channel` can read, so the linked
+    /// channel must be at least as visible as the source channel to avoid leaking
+    /// restricted content. Public and news threads are judged by their parent
+    /// channel's permissions, since threads do not carry their own overwrites.
     async fn get(
         args: &MessageLinkIDs,
         ctx: &Context,
@@ -232,13 +258,26 @@ impl Preview {
             return Err(PreviewError::Nsfw);
         }
 
-        if is_thread(channel.kind) || matches!(channel.kind, ChannelType::Private) {
+        // Private threads cannot be represented by the role-set comparison
+        // (membership is per-user), and DMs are outside the guild context, so
+        // both are rejected. Public/news threads fall through and are judged via
+        // their parent channel.
+        if matches!(
+            channel.kind,
+            ChannelType::PrivateThread | ChannelType::Private
+        ) {
             return Err(PreviewError::Permission);
         }
 
-        // A per-member deny on the linked channel cannot be represented in the
-        // role-set comparison below, so reject conservatively.
-        if has_member_view_deny(&channel.permission_overwrites) {
+        // Threads follow their parent channel's permissions, so resolve both the
+        // link target and the request source to the channel that actually
+        // defines visibility before comparing.
+        let dest_perm = permission_channel(&channel, ctx).await?;
+        let source_perm = permission_channel(source_channel, ctx).await?;
+
+        // A per-member deny on the target cannot be represented in the role-set
+        // comparison below, so reject conservatively.
+        if has_member_view_deny(&dest_perm.permission_overwrites) {
             return Err(PreviewError::Permission);
         }
 
@@ -259,12 +298,12 @@ impl Preview {
         };
 
         let dest_roles = viewing_roles(
-            &channel.permission_overwrites,
+            &dest_perm.permission_overwrites,
             &role_perms,
             everyone_role_id,
         );
         let source_roles = viewing_roles(
-            &source_channel.permission_overwrites,
+            &source_perm.permission_overwrites,
             &role_perms,
             everyone_role_id,
         );
