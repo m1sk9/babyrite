@@ -1,0 +1,10 @@
+# Codecov configuration for babyrite.
+#
+# The following files are runtime glue that requires a live Discord gateway
+# connection (Serenity client / Tokio runtime) to execute, so they cannot be
+# exercised by the unit tests. They are excluded from coverage to keep the
+# reported numbers focused on testable logic.
+ignore:
+  - "src/main.rs"
+  - "src/event.rs"
+  - "src/cache.rs"
