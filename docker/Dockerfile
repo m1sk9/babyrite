@@ -19,7 +19,8 @@ COPY --from=builder --chown=root:root /root/app/target/release/babyrite /
 
 LABEL org.opencontainers.image.source=https://github.com/m1sk9/babyrite
 
-# https://github.com/m1sk9/babyrite/pull/208
-ENV RUST_LOG=babyrite=info
+# Log level is controlled by the `[log] level` setting in config.toml
+# (defaults to `babyrite=info`). Set the RUST_LOG environment variable to
+# override it at runtime, e.g. `RUST_LOG=babyrite=debug`.
 
 CMD ["./babyrite"]

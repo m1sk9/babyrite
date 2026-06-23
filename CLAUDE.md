@@ -46,4 +46,4 @@ The bot listens for Discord messages containing links and expands them into embe
 
 - `DISCORD_API_TOKEN` (required) — Bot authentication token
 - `CONFIG_FILE_PATH` (optional) — Path to `config.toml`
-- `RUST_LOG` — Log level filter (default in Docker: `babyrite=info`)
+- `RUST_LOG` (optional) — Log level filter. Takes precedence over the `[log] level` config setting when set. If unset, the config value (default `babyrite=info`) is used. A correlation span (`message_id`/`guild_id`/`channel_id`) wraps each request; `[log] format = "json"` emits structured JSON for Loki etc.

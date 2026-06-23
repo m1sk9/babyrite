@@ -55,20 +55,33 @@ impl CacheArgs {
     /// 1. Individual channel cache
     /// 2. Guild channel list cache
     /// 3. Discord API (with cache update)
+    #[tracing::instrument(
+        skip(self, ctx),
+        fields(guild_id = %self.guild_id, channel_id = %self.channel_id)
+    )]
     pub async fn get(&self, ctx: &Context) -> anyhow::Result<GuildChannel> {
         match GUILD_CHANNEL_CACHE.get(&self.channel_id).await {
-            Some(channel) => Ok(channel),
+            Some(channel) => {
+                tracing::debug!("channel cache hit");
+                Ok(channel)
+            }
             None => {
+                tracing::debug!("channel cache miss");
                 let channel_list =
                     if let Some(channels) = GUILD_CHANNEL_LIST_CACHE.get(&self.guild_id).await {
+                        tracing::debug!("guild channel list cache hit");
                         channels
                     } else {
+                        tracing::debug!("guild channel list cache miss");
                         self.get_channel_list_from_api(ctx).await?
                     };
 
                 let channel = match channel_list.get(&self.channel_id).cloned() {
                     Some(c) => c,
                     None => {
+                        // Not in the channel list — it may be an active thread,
+                        // which is not returned by the guild channels endpoint.
+                        tracing::debug!("channel not in list, searching active threads");
                         let data = self
                             .guild_id
                             .get_active_threads(&ctx.http)
@@ -78,23 +91,30 @@ impl CacheArgs {
                             .iter()
                             .find(|t| t.id == self.channel_id)
                             .cloned()
-                            .ok_or_else(|| anyhow::anyhow!("Channel not found in cache"))?
+                            .ok_or_else(|| {
+                                tracing::debug!("channel not found in guild or active threads");
+                                anyhow::anyhow!("Channel not found in cache")
+                            })?
                     }
                 };
 
                 GUILD_CHANNEL_CACHE
                     .insert(self.channel_id, channel.clone())
                     .await;
+                tracing::trace!("inserted channel into cache");
                 Ok(channel)
             }
         }
     }
 
     /// Fetches the channel list from the Discord API and updates the cache.
+    #[tracing::instrument(skip(self, ctx), fields(guild_id = %self.guild_id))]
     async fn get_channel_list_from_api(
         &self,
         ctx: &Context,
     ) -> anyhow::Result<HashMap<ChannelId, GuildChannel>> {
+        tracing::debug!("fetching channel list from Discord API");
+        let started = std::time::Instant::now();
         let guild = ctx
             .http
             .get_guild(self.guild_id)
@@ -108,6 +128,11 @@ impl CacheArgs {
         GUILD_CHANNEL_LIST_CACHE
             .insert(self.guild_id, channels.clone())
             .await;
+        tracing::debug!(
+            channels = channels.len(),
+            elapsed_ms = started.elapsed().as_millis(),
+            "fetched channel list from Discord API"
+        );
 
         Ok(channels)
     }

@@ -112,6 +112,14 @@ impl MessageLinkIDs {
     /// `source_channel` is the channel where the request originated. It is used to
     /// ensure the linked content is not exposed to members who could not otherwise
     /// view it (see [`Preview::get`]).
+    #[tracing::instrument(
+        skip(self, ctx, source_channel),
+        fields(
+            guild_id = %self.guild_id,
+            channel_id = %self.channel_id,
+            message_id = %self.message_id,
+        )
+    )]
     pub async fn fetch(
         &self,
         ctx: &Context,
@@ -242,6 +250,14 @@ impl Preview {
     /// channel must be at least as visible as the source channel to avoid leaking
     /// restricted content. Public and news threads are judged by their parent
     /// channel's permissions, since threads do not carry their own overwrites.
+    #[tracing::instrument(
+        skip(args, ctx, source_channel),
+        fields(
+            guild_id = %args.guild_id,
+            channel_id = %args.channel_id,
+            message_id = %args.message_id,
+        )
+    )]
     async fn get(
         args: &MessageLinkIDs,
         ctx: &Context,
@@ -253,8 +269,10 @@ impl Preview {
         };
 
         let channel = caches.get(ctx).await.map_err(|_| PreviewError::Cache)?;
+        tracing::debug!(kind = ?channel.kind, nsfw = channel.nsfw, "resolved target channel");
 
         if channel.nsfw {
+            tracing::debug!("rejected: target channel is NSFW");
             return Err(PreviewError::Nsfw);
         }
 
@@ -266,6 +284,7 @@ impl Preview {
             channel.kind,
             ChannelType::PrivateThread | ChannelType::Private
         ) {
+            tracing::debug!(kind = ?channel.kind, "rejected: private channel or thread");
             return Err(PreviewError::Permission);
         }
 
@@ -278,6 +297,7 @@ impl Preview {
         // A per-member deny on the target cannot be represented in the role-set
         // comparison below, so reject conservatively.
         if has_member_view_deny(&dest_perm.permission_overwrites) {
+            tracing::debug!("rejected: target has a per-member VIEW_CHANNEL deny");
             return Err(PreviewError::Permission);
         }
 
@@ -308,10 +328,20 @@ impl Preview {
             everyone_role_id,
         );
         if !source_roles.is_subset(&dest_roles) {
+            tracing::debug!(
+                source_roles = source_roles.len(),
+                dest_roles = dest_roles.len(),
+                "rejected: source channel is more visible than the target"
+            );
             return Err(PreviewError::Permission);
         }
 
+        let started = std::time::Instant::now();
         let message = channel.message(&ctx.http, args.message_id).await?;
+        tracing::debug!(
+            elapsed_ms = started.elapsed().as_millis(),
+            "fetched linked message"
+        );
         Ok(Preview { message, channel })
     }
 }
