@@ -3,6 +3,7 @@
 //! This module implements the serenity [`EventHandler`] trait to handle
 //! Discord gateway events such as ready and message events.
 
+use crate::cache::CacheArgs;
 use crate::config::BabyriteConfig;
 use crate::expand::ExpandedContent;
 use crate::expand::discord::MessageLinkIDs;
@@ -44,19 +45,39 @@ impl EventHandler for BabyriteEventHandler {
         let mut results = Vec::new();
 
         // Discord link expansion
-        for ids in MessageLinkIDs::parse_all(text) {
-            if ids.guild_id != request_guild_id {
-                continue;
-            }
+        let discord_links = MessageLinkIDs::parse_all(text);
+        if !discord_links.is_empty() {
+            // Resolve the source channel once. The expanded preview is posted here,
+            // so it is needed to verify the link target is at least as visible as
+            // this channel. If it cannot be resolved, skip Discord expansion (but
+            // still allow GitHub expansion below).
+            match (CacheArgs {
+                guild_id: request_guild_id,
+                channel_id: request.channel_id,
+            })
+            .get(&ctx)
+            .await
+            {
+                Ok(source_channel) => {
+                    for ids in discord_links {
+                        if ids.guild_id != request_guild_id {
+                            continue;
+                        }
 
-            tracing::info!(
-                "Begin generating the preview. (Requester: {})",
-                &request.author.name
-            );
+                        tracing::info!(
+                            "Begin generating the preview. (Requester: {})",
+                            &request.author.name
+                        );
 
-            match ids.fetch(&ctx).await {
-                Ok(content) => results.push(content),
-                Err(e) => tracing::error!("{}", e),
+                        match ids.fetch(&ctx, &source_channel).await {
+                            Ok(content) => results.push(content),
+                            Err(e) => tracing::error!("{}", e),
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to resolve source channel: {}", e);
+                }
             }
         }
 
