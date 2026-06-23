@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.5...babyrite-v1.3.0) (2026-06-23)
+
+
+### Features
+
+* **discord:** Redesigning Channel View Permission Verification ([#600](https://github.com/m1sk9/babyrite/issues/600)) ([6c4789e](https://github.com/m1sk9/babyrite/commit/6c4789e9d3c93a16f584a2e2e4b952f5cd884ae7))
+* **log:** Enhancing the Logging System ([#602](https://github.com/m1sk9/babyrite/issues/602)) ([87b4a00](https://github.com/m1sk9/babyrite/commit/87b4a00f3ecd55e7af9179e7021c7812531814d9))
+
+
+### Bug Fixes
+
+* **discord:** Allow quoting messages within the same private channel ([#603](https://github.com/m1sk9/babyrite/issues/603)) ([926b110](https://github.com/m1sk9/babyrite/commit/926b11030e544240f01992225ac6afead52698b8))
+
+
+### Miscellaneous
+
+* **deps:** update actions/checkout action to v7 ([#604](https://github.com/m1sk9/babyrite/issues/604)) ([2600986](https://github.com/m1sk9/babyrite/commit/260098677dbddb45716946f842509080993cc07b))
+* **deps:** update taiki-e/install-action digest to 9e1e580 ([#590](https://github.com/m1sk9/babyrite/issues/590)) ([07d7d4a](https://github.com/m1sk9/babyrite/commit/07d7d4a4a5a53d836c91fbddc45ff5d6ea4c7d11))
+
 ## [1.2.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.4...babyrite-v1.2.5) (2026-06-09)
 
 
