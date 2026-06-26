@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.0...babyrite-v1.3.1) (2026-06-26)
+
+
+### Miscellaneous
+
+* **deps:** update rust crate anyhow to v1.0.103 ([#606](https://github.com/m1sk9/babyrite/issues/606)) ([351b40d](https://github.com/m1sk9/babyrite/commit/351b40d4262ad75126f27f3e4608c44a636c36e7))
+
 ## [1.3.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.5...babyrite-v1.3.0) (2026-06-23)
 
 
