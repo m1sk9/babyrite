@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.0...babyrite-v1.3.1) (2026-07-14)
+
+
+### Miscellaneous
+
+* **deps:** update rust crate anyhow to v1.0.103 ([#606](https://github.com/m1sk9/babyrite/issues/606)) ([351b40d](https://github.com/m1sk9/babyrite/commit/351b40d4262ad75126f27f3e4608c44a636c36e7))
+* **deps:** update rust crate regex to v1.13.0 ([#608](https://github.com/m1sk9/babyrite/issues/608)) ([692b600](https://github.com/m1sk9/babyrite/commit/692b600f3cef6b8a049c1b44dc298f3c9466fe6f))
+* **deps:** update rust crate toml to v1.1.3 ([#609](https://github.com/m1sk9/babyrite/issues/609)) ([b5a0a6c](https://github.com/m1sk9/babyrite/commit/b5a0a6ccb8efca5e808cfcec5f70a785cf7e2fa3))
+
 ## [1.3.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.2.5...babyrite-v1.3.0) (2026-06-23)
 
 
