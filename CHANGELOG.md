@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.1...babyrite-v1.3.2) (2026-07-17)
+
+
+### Miscellaneous
+
+* **deps:** update rust crate regex to v1.13.1 ([#610](https://github.com/m1sk9/babyrite/issues/610)) ([855ab76](https://github.com/m1sk9/babyrite/commit/855ab765b39d35873286c696fd4ad1d1b8e3013c))
+* **deps:** update rust crate tokio to v1.52.4 ([#612](https://github.com/m1sk9/babyrite/issues/612)) ([a378400](https://github.com/m1sk9/babyrite/commit/a3784004544e443415f11c34a0f51653534f2898))
+* **deps:** update rust crate tokio to v1.53.0 ([#613](https://github.com/m1sk9/babyrite/issues/613)) ([9e3ae18](https://github.com/m1sk9/babyrite/commit/9e3ae180c40e399322614d638c41851844149524))
+
 ## [1.3.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.0...babyrite-v1.3.1) (2026-07-14)
 
 
