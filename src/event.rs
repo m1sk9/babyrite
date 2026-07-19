@@ -56,6 +56,19 @@ impl EventHandler for BabyriteEventHandler {
         async {
             let text = &request.content;
             let config = BabyriteConfig::get();
+
+            // Mention-prefixed commands (e.g. `@babyrite ping`) are handled
+            // separately from, and take priority over, link expansion below —
+            // a message can't be both a command and something to expand.
+            if config.features.commands {
+                let bot_id = ctx.cache.current_user().id;
+                if let Some(command) = crate::command::parse(text, bot_id) {
+                    tracing::debug!(?command, "handling mention command");
+                    crate::command::execute(&ctx, &request, command).await;
+                    return;
+                }
+            }
+
             let mut results = Vec::new();
 
             // Discord link expansion

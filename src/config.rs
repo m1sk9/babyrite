@@ -100,12 +100,18 @@ pub struct FeatureConfig {
     /// Defaults to `true`.
     #[serde(default = "default_true")]
     pub github_permalink: bool,
+    /// Whether the mention-prefixed command system (`version`, `ping`, etc.) is enabled.
+    ///
+    /// Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub commands: bool,
 }
 
 impl Default for FeatureConfig {
     fn default() -> Self {
         Self {
             github_permalink: default_true(),
+            commands: default_true(),
         }
     }
 }
@@ -220,6 +226,7 @@ mod tests {
         assert_eq!(config.log.format, None);
         assert_eq!(config.resolved_log_format(), LogFormat::Compact);
         assert!(config.features.github_permalink);
+        assert!(config.features.commands);
         assert_eq!(config.github.max_lines, 50);
     }
 
@@ -231,6 +238,7 @@ mod tests {
         assert_eq!(config.log.format, None);
         assert_eq!(config.resolved_log_format(), LogFormat::Compact);
         assert!(config.features.github_permalink);
+        assert!(config.features.commands);
         assert_eq!(config.github.max_lines, 50);
     }
 
