@@ -105,6 +105,7 @@ fn sanitize_code_block(s: &str) -> String {
 }
 
 /// Executes a parsed command, replying on the channel the request came from.
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub async fn execute(ctx: &Context, request: &Message, command: Command) {
     // `ping` measures its own reply's round-trip and then edits the latency
     // in, so it needs the sent `Message` handle rather than a fixed string.
@@ -216,6 +217,7 @@ fn render_unknown(word: &str) -> String {
 ///
 /// Returns the sent message so callers (namely `ping`) can edit it afterwards.
 /// Returns `None` (after logging) if the send fails.
+#[cfg_attr(coverage_nightly, coverage(off))]
 async fn send_reply(ctx: &Context, request: &Message, content: &str) -> Option<Message> {
     // `debug` echoes back arbitrary text (typed or quoted from another
     // message), which can contain `@everyone`/`@here`/role/user mentions.
@@ -236,6 +238,7 @@ async fn send_reply(ctx: &Context, request: &Message, content: &str) -> Option<M
     }
 }
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 async fn execute_ping(ctx: &Context, request: &Message) {
     let gateway_latency = current_gateway_latency(ctx).await;
     let gateway_text = format_latency(gateway_latency);
@@ -278,6 +281,7 @@ fn format_latency(latency: Option<Duration>) -> String {
 ///
 /// `None` if the shard manager isn't registered in `ctx.data`, or if no
 /// heartbeat acknowledgement has been received yet for this shard.
+#[cfg_attr(coverage_nightly, coverage(off))]
 async fn current_gateway_latency(ctx: &Context) -> Option<Duration> {
     // Clone the `Arc` and drop the `ctx.data` read guard before awaiting the
     // shard-runner mutex below, so this never holds one lock while waiting
