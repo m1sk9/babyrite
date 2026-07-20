@@ -8,7 +8,8 @@
 
 use crate::config::{BabyriteConfig, LogFormat};
 use serenity::all::{
-    Context, CreateMessage, EditMessage, Message, MessageFlags, ShardManager, UserId,
+    Context, CreateAllowedMentions, CreateMessage, EditMessage, Message, MessageFlags,
+    ShardManager, UserId,
 };
 use serenity::prelude::TypeMapKey;
 use std::sync::Arc;
@@ -81,14 +82,16 @@ pub fn parse(content: &str, bot_id: UserId) -> Option<Command> {
 /// Strips a leading `<@ID>` or `<@!ID>` mention of `bot_id` from `content`.
 ///
 /// Returns `None` if the content (after leading whitespace) doesn't start
-/// with either mention form.
+/// with either mention form. This runs on every message the bot sees, so it
+/// parses the mention's ID and compares it numerically instead of formatting
+/// `bot_id` into a `String` to match against — the latter would allocate on
+/// every message regardless of whether it turns out to be a command.
 fn strip_bot_mention_prefix(content: &str, bot_id: UserId) -> Option<&str> {
     let trimmed = content.trim_start();
-    let nickname_mention = format!("<@!{bot_id}>");
-    let plain_mention = format!("<@{bot_id}>");
-    trimmed
-        .strip_prefix(nickname_mention.as_str())
-        .or_else(|| trimmed.strip_prefix(plain_mention.as_str()))
+    let rest = trimmed.strip_prefix("<@")?;
+    let rest = rest.strip_prefix('!').unwrap_or(rest);
+    let (id, rest) = rest.split_once('>')?;
+    (id.parse::<u64>().ok()? == bot_id.get()).then_some(rest)
 }
 
 /// Builds the URL for a tagged GitHub release.
@@ -103,34 +106,24 @@ fn sanitize_code_block(s: &str) -> String {
 
 /// Executes a parsed command, replying on the channel the request came from.
 pub async fn execute(ctx: &Context, request: &Message, command: Command) {
-    match command {
-        // Measures its own reply's round-trip and then edits the latency in,
-        // so it needs the sent `Message` handle rather than a fixed string.
-        Command::Ping => execute_ping(ctx, request).await,
+    // `ping` measures its own reply's round-trip and then edits the latency
+    // in, so it needs the sent `Message` handle rather than a fixed string.
+    let content = match command {
+        Command::Ping => {
+            execute_ping(ctx, request).await;
+            return;
+        }
         // Needs `request` itself to see whether it's a reply to another
-        // message, which a plain string return from `render` can't carry.
-        Command::Debug { payload } => {
-            let content = render_debug(request, &payload);
-            send_reply(ctx, request, &content).await;
-        }
-        other => {
-            let content = render(other);
-            send_reply(ctx, request, &content).await;
-        }
-    }
-}
-
-/// Renders the plain-text reply body for a command that only needs its own data.
-fn render(command: Command) -> String {
-    match command {
+        // message, which a plain string return from the other `render_*`
+        // functions can't carry.
+        Command::Debug { payload } => render_debug(request, &payload),
         Command::Version => render_version(),
         Command::Help => render_help(),
         Command::Config => render_config(BabyriteConfig::get()),
         Command::Unknown(word) => render_unknown(&word),
-        Command::Ping | Command::Debug { .. } => {
-            unreachable!("ping and debug are handled in execute() before render() is called")
-        }
-    }
+    };
+
+    send_reply(ctx, request, &content).await;
 }
 
 fn render_version() -> String {
@@ -224,10 +217,15 @@ fn render_unknown(word: &str) -> String {
 /// Returns the sent message so callers (namely `ping`) can edit it afterwards.
 /// Returns `None` (after logging) if the send fails.
 async fn send_reply(ctx: &Context, request: &Message, content: &str) -> Option<Message> {
+    // `debug` echoes back arbitrary text (typed or quoted from another
+    // message), which can contain `@everyone`/`@here`/role/user mentions.
+    // Discord parses mentions from raw content regardless of code-block
+    // formatting, so every reply explicitly allows none of them.
     let message = CreateMessage::new()
         .content(content)
         .reference_message(request)
-        .flags(MessageFlags::SUPPRESS_EMBEDS);
+        .flags(MessageFlags::SUPPRESS_EMBEDS)
+        .allowed_mentions(CreateAllowedMentions::new());
 
     match request.channel_id.send_message(&ctx.http, message).await {
         Ok(sent) => Some(sent),
@@ -270,8 +268,8 @@ async fn execute_ping(ctx: &Context, request: &Message) {
 
 fn format_latency(latency: Option<Duration>) -> String {
     match latency {
-        // No heartbeat ACK has been received yet (e.g. right after connecting).
         Some(d) => format!("{}ms", d.as_millis()),
+        // No heartbeat ACK has been received yet (e.g. right after connecting).
         None => "measuring…".to_string(),
     }
 }
@@ -281,8 +279,13 @@ fn format_latency(latency: Option<Duration>) -> String {
 /// `None` if the shard manager isn't registered in `ctx.data`, or if no
 /// heartbeat acknowledgement has been received yet for this shard.
 async fn current_gateway_latency(ctx: &Context) -> Option<Duration> {
-    let data = ctx.data.read().await;
-    let manager = data.get::<ShardManagerContainer>()?;
+    // Clone the `Arc` and drop the `ctx.data` read guard before awaiting the
+    // shard-runner mutex below, so this never holds one lock while waiting
+    // on another.
+    let manager = {
+        let data = ctx.data.read().await;
+        data.get::<ShardManagerContainer>()?.clone()
+    };
     let runners = manager.runners.lock().await;
     runners.get(&ctx.shard_id)?.latency
 }
@@ -314,6 +317,13 @@ mod tests {
     #[test]
     fn ignores_mention_of_a_different_user() {
         assert_eq!(parse("<@999> ping", bot_id()), None);
+    }
+
+    #[test]
+    fn ignores_malformed_mention_syntax() {
+        assert_eq!(parse("<@abc> ping", bot_id()), None);
+        assert_eq!(parse("<@> ping", bot_id()), None);
+        assert_eq!(parse("<@123 ping", bot_id()), None);
     }
 
     #[test]

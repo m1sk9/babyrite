@@ -147,6 +147,7 @@ format = "compact"
 
 [features]
 github_permalink = true
+commands = true
 
 [github]
 max_lines = 50
@@ -158,6 +159,7 @@ max_lines = 50
 | `log.format`                 | Log output format: `"compact"` or `"json"`.                                    | `"compact"`       |
 | `json_logging`               | **Deprecated.** Use `log.format = "json"`. Only used when `log.format` is unset. | `false`           |
 | `features.github_permalink`  | Enable or disable GitHub Permalink expansion.                                  | `true`            |
+| `features.commands`          | Enable or disable the mention-prefixed command system (e.g. `@babyrite ping`). | `true`            |
 | `github.max_lines`           | Maximum number of lines to display without truncation.                         | `50`              |
 
 ### Logging
