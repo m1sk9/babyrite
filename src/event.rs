@@ -56,6 +56,28 @@ impl EventHandler for BabyriteEventHandler {
         async {
             let text = &request.content;
             let config = BabyriteConfig::get();
+
+            // Mention-prefixed commands (e.g. `@babyrite ping`) take priority
+            // over link expansion below. A message starting with the bot's
+            // mention followed by an unrecognized word isn't necessarily a
+            // command attempt, though — e.g. "@babyrite check this out:
+            // <link>" — so an unrecognized command only gets its "Unknown
+            // command" hint if the message has no expandable links either;
+            // otherwise the links are expanded as normal.
+            let mut unknown_command = None;
+            if config.features.commands {
+                let bot_id = ctx.cache.current_user().id;
+                match crate::command::parse(text, bot_id) {
+                    Some(crate::command::Command::Unknown(word)) => unknown_command = Some(word),
+                    Some(command) => {
+                        tracing::debug!(?command, "handling mention command");
+                        crate::command::execute(&ctx, &request, command).await;
+                        return;
+                    }
+                    None => {}
+                }
+            }
+
             let mut results = Vec::new();
 
             // Discord link expansion
@@ -119,7 +141,13 @@ impl EventHandler for BabyriteEventHandler {
             }
 
             if results.is_empty() {
-                tracing::debug!("no expandable content found");
+                if let Some(word) = unknown_command {
+                    let command = crate::command::Command::Unknown(word);
+                    tracing::debug!(?command, "handling mention command");
+                    crate::command::execute(&ctx, &request, command).await;
+                } else {
+                    tracing::debug!("no expandable content found");
+                }
                 return;
             }
 
