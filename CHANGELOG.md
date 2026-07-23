@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.2...babyrite-v1.4.0) (2026-07-23)
+
+
+### Features
+
+* **command:** add mention-prefixed lightweight command system ([#618](https://github.com/m1sk9/babyrite/issues/618)) ([df5793d](https://github.com/m1sk9/babyrite/commit/df5793d88293f32fffb121044d02a2a3d7db95d6))
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.114.0 ([#622](https://github.com/m1sk9/babyrite/issues/622)) ([b6cd7fb](https://github.com/m1sk9/babyrite/commit/b6cd7fbff5ca659a475a48b56847b9fe048fc982))
+* **deps:** update rust crate anyhow to v1.0.104 ([#614](https://github.com/m1sk9/babyrite/issues/614)) ([d23d54f](https://github.com/m1sk9/babyrite/commit/d23d54f8cce6a0015296031e685d917e5af327ff))
+* **deps:** update rust crate serde to v1.0.229 ([#616](https://github.com/m1sk9/babyrite/issues/616)) ([f275a64](https://github.com/m1sk9/babyrite/commit/f275a6482ddb0c17305293a0eb641a0e00c10ba9))
+* **deps:** update rust crate thiserror to v2.0.19 ([#617](https://github.com/m1sk9/babyrite/issues/617)) ([7f76d75](https://github.com/m1sk9/babyrite/commit/7f76d75a9f17331afaad008eb0f510579ea70763))
+* **deps:** update rust crate tokio to v1.53.1 ([#619](https://github.com/m1sk9/babyrite/issues/619)) ([52731e2](https://github.com/m1sk9/babyrite/commit/52731e2a66c5647b3bd30b429af87c5e181e3434))
+
 ## [1.3.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.1...babyrite-v1.3.2) (2026-07-17)
 
 
