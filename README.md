@@ -29,7 +29,7 @@ docker pull ghcr.io/m1sk9/babyrite:v1.0.0
 - **Lightweight**: babyrite uses [distroless](https://github.com/GoogleContainerTools/distroless) as its base image and
   consists of a very lightweight Docker Image.
 - **Fast**: babyrite is developed in Rust and is very fast!
-- **OSS**: babyrite is open-source and licensed under the MIT License. It also provides a way to host it yourself as
+- **OSS**: babyrite is open-source and licensed under the Apache License 2.0. It also provides a way to host it yourself as
   well as publish it as OSS.
 - **Easy to Use**: babyrite is very easy to use and can be deployed in seconds.
 
