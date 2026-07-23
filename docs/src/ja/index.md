@@ -7,11 +7,11 @@ hero:
   tagline: A lightweight, fast citation message Discord bot.
   actions:
     - theme: brand
-      text: Documentation
-      link: /docs/getting-started
+      text: ドキュメント
+      link: /ja/docs/getting-started
     - theme: alt
       text: GitHub
-      link: https://github.com/m1sk9/LunaticChat
+      link: https://github.com/m1sk9/babyrite
 
 features:
   - title: 軽量
