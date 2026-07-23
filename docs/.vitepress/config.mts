@@ -1,8 +1,9 @@
 import { execSync } from 'node:child_process';
-import { defineConfig } from 'vitepress'
-import { ja } from './config/ja'
-import { en } from './config/en'
-import llmstxt from 'vitepress-plugin-llms'
+import { defineConfig } from 'vitepress';
+import llmstxt from 'vitepress-plugin-llms';
+import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs';
+import { en } from './config/en';
+import { ja } from './config/ja';
 
 const gitRoot = execSync('git rev-parse --show-toplevel').toString().trim();
 const commitHash = execSync(`git log -1 --format=%H -- ${gitRoot}/docs/`)
@@ -39,11 +40,16 @@ export default defineConfig({
           message: `<a href="https://github.com/m1sk9/babyrite/commit/${commitHash}">babyrite/docs@${commitHash}</a>`,
         },
       },
-    }
+    },
   },
   title: 'babyrite',
   titleTemplate: 'babyrite',
   vite: {
-    plugins: [llmstxt()]
-  }
+    plugins: [llmstxt()],
+  },
+  markdown: {
+    config(md) {
+      md.use(tabsMarkdownPlugin);
+    },
+  },
 });

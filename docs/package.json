@@ -15,7 +15,8 @@
     "@types/bun": "^1.3.11",
     "husky": "^9.1.7",
     "vitepress": "^1.6.4",
-    "vitepress-plugin-llms": "^1.13.3"
+    "vitepress-plugin-llms": "^1.13.3",
+    "vitepress-plugin-tabs": "^0.9.1"
   },
   "dependencies": {
     "wrangler": "^4.69.0"
