@@ -12,6 +12,7 @@ mod command;
 mod config;
 mod event;
 mod expand;
+mod reaction;
 mod utils;
 
 use crate::{
@@ -43,7 +44,10 @@ async fn main() -> anyhow::Result<()> {
 
     let mut client = serenity::Client::builder(
         &envs.discord_api_token,
-        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILDS,
+        GatewayIntents::MESSAGE_CONTENT
+            | GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::GUILDS
+            | GatewayIntents::GUILD_MESSAGE_REACTIONS,
     )
     .event_handler(BabyriteEventHandler)
     .await

@@ -105,6 +105,11 @@ pub struct FeatureConfig {
     /// Defaults to `true`.
     #[serde(default = "default_true")]
     pub commands: bool,
+    /// Whether reaction-driven preview actions (e.g. deleting a preview via `🗑️`) are enabled.
+    ///
+    /// Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub reactions: bool,
 }
 
 impl Default for FeatureConfig {
@@ -112,6 +117,7 @@ impl Default for FeatureConfig {
         Self {
             github_permalink: default_true(),
             commands: default_true(),
+            reactions: default_true(),
         }
     }
 }
@@ -227,6 +233,7 @@ mod tests {
         assert_eq!(config.resolved_log_format(), LogFormat::Compact);
         assert!(config.features.github_permalink);
         assert!(config.features.commands);
+        assert!(config.features.reactions);
         assert_eq!(config.github.max_lines, 50);
     }
 
@@ -239,6 +246,7 @@ mod tests {
         assert_eq!(config.resolved_log_format(), LogFormat::Compact);
         assert!(config.features.github_permalink);
         assert!(config.features.commands);
+        assert!(config.features.reactions);
         assert_eq!(config.github.max_lines, 50);
     }
 

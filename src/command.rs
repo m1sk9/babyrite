@@ -155,10 +155,12 @@ fn render_config(config: &BabyriteConfig) -> String {
          log.format: `{log_format}`\n\
          features.github_permalink: `{}`\n\
          features.commands: `{}`\n\
+         features.reactions: `{}`\n\
          github.max_lines: `{}`",
         config.log.level,
         config.features.github_permalink,
         config.features.commands,
+        config.features.reactions,
         config.github.max_lines,
     )
 }
@@ -421,6 +423,7 @@ mod tests {
         assert!(rendered.contains("log.format: `compact`"));
         assert!(rendered.contains("features.github_permalink: `true`"));
         assert!(rendered.contains("features.commands: `true`"));
+        assert!(rendered.contains("features.reactions: `true`"));
         assert!(rendered.contains("github.max_lines: `50`"));
     }
 

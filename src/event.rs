@@ -8,7 +8,11 @@ use crate::config::BabyriteConfig;
 use crate::expand::ExpandedContent;
 use crate::expand::discord::MessageLinkIDs;
 use crate::expand::github::GitHubPermalink;
-use serenity::all::{ActivityData, Context, EventHandler, Message, Ready};
+use crate::reaction;
+use serenity::all::{
+    ActivityData, Context, CreateAllowedMentions, CreateMessage, EventHandler, Message,
+    Permissions, Reaction, ReactionType, Ready,
+};
 use serenity::prelude::TypeMapKey;
 use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
 use tracing::Instrument;
@@ -156,10 +160,101 @@ impl EventHandler for BabyriteEventHandler {
         .instrument(span)
         .await;
     }
+
+    async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        let config = BabyriteConfig::get();
+        if !config.features.reactions {
+            return;
+        }
+
+        let bot_id = ctx.cache.current_user().id;
+
+        // The bot's own delete reaction (attached right after sending a preview,
+        // see `attach_delete_reaction`) would otherwise re-trigger this handler.
+        if reaction.user_id == Some(bot_id) {
+            return;
+        }
+
+        // Unrecognized emoji are ignored outright — this is the entire
+        // enforcement of "every reaction except the recognized ones is ignored".
+        let Some(action) = reaction::from_emoji(&reaction.emoji) else {
+            return;
+        };
+
+        // Only previews the bot itself sent are valid action targets. Checking
+        // via the gateway payload's `message_author_id` (present on ReactionAdd)
+        // avoids fetching the message for the common case of a reaction on
+        // someone else's message.
+        if reaction.message_author_id != Some(bot_id) {
+            return;
+        }
+
+        let (Some(guild_id), Some(reactor_id)) = (reaction.guild_id, reaction.user_id) else {
+            return;
+        };
+
+        let span = tracing::info_span!(
+            "reaction_add",
+            guild_id = %guild_id,
+            channel_id = %reaction.channel_id,
+            message_id = %reaction.message_id,
+            reactor = %reactor_id,
+        );
+
+        async {
+            let preview = match reaction.message(&ctx.http).await {
+                Ok(m) => m,
+                Err(e) => {
+                    tracing::error!(error = ?e, "failed to fetch reacted-to preview");
+                    return;
+                }
+            };
+
+            // Previews are sent as replies to their request (see
+            // `send_expanded_contents`), so the requester is read back from
+            // `referenced_message` rather than kept in separate state — this
+            // is what lets a preview stay actionable across a bot restart.
+            let requester = preview.referenced_message.as_deref().map(|m| m.author.id);
+
+            // `member` is only needed for the MANAGE_MESSAGES check below, not
+            // for the requester-self-delete path — so its absence must not
+            // block a requester from deleting their own preview.
+            let can_manage_messages = match reaction.member.as_ref() {
+                Some(member) => match (CacheArgs {
+                    guild_id,
+                    channel_id: reaction.channel_id,
+                })
+                .get(&ctx)
+                .await
+                {
+                    Ok(channel) => ctx.cache.guild(guild_id).is_some_and(|guild| {
+                        guild
+                            .user_permissions_in(&channel, member)
+                            .contains(Permissions::MANAGE_MESSAGES)
+                    }),
+                    Err(e) => {
+                        tracing::error!(error = %e, "failed to resolve channel for permission check");
+                        false
+                    }
+                },
+                None => false,
+            };
+
+            if !reaction::is_authorized(requester, reactor_id, can_manage_messages) {
+                tracing::debug!("reactor is not authorized to trigger this action");
+                return;
+            }
+
+            reaction::execute(&ctx, &preview, action).await;
+        }
+        .instrument(span)
+        .await;
+    }
 }
 
 /// Sends expanded contents as a reply to the original message.
 async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<ExpandedContent>) {
+    let config = BabyriteConfig::get();
     let mut embeds = Vec::new();
     let mut code_blocks = Vec::new();
 
@@ -194,20 +289,33 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
             }
         };
 
-        if let Err(e) = request
+        match request
             .channel_id
             .send_message(&ctx.http, converted_message)
             .await
         {
-            tracing::error!(error = ?e, "failed to send preview");
-            return;
+            Ok(sent) => attach_delete_reaction(ctx, &sent, config).await,
+            Err(e) => {
+                tracing::error!(error = ?e, "failed to send preview");
+                return;
+            }
         }
     }
 
-    // Send code blocks as plain messages
+    // Code blocks are sent as replies rather than plain messages (as `.say`
+    // would) so that, like the embed path above, a reaction on the sent
+    // preview can look up its `referenced_message` to find who requested it
+    // — see `EventHandler::reaction_add`. `allowed_mentions` is left empty so
+    // this doesn't newly ping the requester on every reply.
     for block in code_blocks {
-        if let Err(e) = request.channel_id.say(&ctx.http, &block).await {
-            tracing::error!(error = ?e, "failed to send code block");
+        let message = CreateMessage::new()
+            .content(&block)
+            .reference_message(request)
+            .allowed_mentions(CreateAllowedMentions::new());
+
+        match request.channel_id.send_message(&ctx.http, message).await {
+            Ok(sent) => attach_delete_reaction(ctx, &sent, config).await,
+            Err(e) => tracing::error!(error = ?e, "failed to send code block"),
         }
     }
 
@@ -216,4 +324,24 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
         code_blocks = code_block_count,
         "preview sent"
     );
+}
+
+/// Attaches the delete-preview reaction to a freshly-sent preview message.
+///
+/// A no-op when the reactions feature is disabled, so a disabled feature
+/// doesn't leave stray reactions that then do nothing when pressed.
+async fn attach_delete_reaction(ctx: &Context, preview: &Message, config: &BabyriteConfig) {
+    if !config.features.reactions {
+        return;
+    }
+
+    if let Err(e) = preview
+        .react(
+            &ctx.http,
+            ReactionType::Unicode(reaction::DELETE_PREVIEW_EMOJI.to_string()),
+        )
+        .await
+    {
+        tracing::error!(error = ?e, "failed to attach delete reaction to preview");
+    }
 }
