@@ -6,12 +6,9 @@
     "enabled": true
   },
   "assets": {
-    "directory": "dist"
+    "directory": "dist",
+    "not_found_handling": "404-page"
   },
-  "routes": [
-    { "pattern": "babyrite.m1sk9.dev", "custom_domain": true }
-  ],
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+  "routes": [{ "pattern": "babyrite.m1sk9.dev", "custom_domain": true }],
+  "compatibility_flags": ["nodejs_compat"]
 }
