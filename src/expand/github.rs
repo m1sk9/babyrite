@@ -4,12 +4,20 @@
 //! and fetching raw file content to display as code blocks.
 
 use regex::Regex;
-use std::collections::HashSet;
+use serenity::futures::future::join_all;
+use serenity::prelude::TypeMapKey;
 use std::sync::LazyLock;
 
-use super::{ExpandError, ExpandedContent};
+use super::{ExpandContext, ExpandError, ExpandedContent, LinkExpander};
 use crate::config::BabyriteConfig;
-use crate::utils::language_from_extension;
+use crate::utils::language_for_path;
+
+/// TypeMap key for the shared reqwest HTTP client used to fetch raw content.
+pub struct HttpClient;
+
+impl TypeMapKey for HttpClient {
+    type Value = reqwest::Client;
+}
 
 /// Regex pattern for matching GitHub blob URLs.
 ///
@@ -56,6 +64,48 @@ pub struct LineRange {
     pub end: usize,
 }
 
+/// GitHub permalink expander.
+pub struct GitHubExpander;
+
+#[serenity::async_trait]
+impl LinkExpander for GitHubExpander {
+    fn enabled(&self, config: &BabyriteConfig) -> bool {
+        config.features.github_permalink
+    }
+
+    /// Expands GitHub permalinks into code blocks.
+    async fn expand_all(&self, cx: &ExpandContext<'_>) -> Vec<ExpandedContent> {
+        let permalinks = GitHubPermalink::parse_all(&cx.message.content);
+        if permalinks.is_empty() {
+            return Vec::new();
+        }
+        tracing::debug!(count = permalinks.len(), "parsed GitHub permalinks");
+
+        // `reqwest::Client` is internally reference-counted, so clone it out of
+        // the TypeMap instead of holding the read guard across the fetches below.
+        let http_client = {
+            let data = cx.ctx.data.read().await;
+            data.get::<HttpClient>().cloned()
+        };
+        let Some(http_client) = http_client else {
+            tracing::error!("HTTP client not found in TypeMap");
+            return Vec::new();
+        };
+
+        join_all(permalinks.iter().map(|p| p.fetch(&http_client)))
+            .await
+            .into_iter()
+            .filter_map(|result| match result {
+                Ok(content) => Some(content),
+                Err(e) => {
+                    tracing::error!(error = %e, "failed to expand GitHub permalink");
+                    None
+                }
+            })
+            .collect()
+    }
+}
+
 /// Errors that can occur when expanding a GitHub permalink.
 #[derive(thiserror::Error, Debug)]
 pub enum GitHubExpandError {
@@ -74,51 +124,31 @@ impl GitHubPermalink {
     /// Parses all GitHub permalink URLs from the given text.
     ///
     /// Matches URLs with commit SHAs, branch names, or tag names.
-    ///
-    /// Note: Duplicate URLs are ignored, and a maximum of 3 links are returned.
+    /// The shared link policy applies (see [`super::parse_links`]): angle-bracket
+    /// wrapped and duplicate URLs are ignored, and at most 3 links are returned.
     pub fn parse_all(text: &str) -> Vec<GitHubPermalink> {
-        let mut seen_urls = HashSet::new();
-        GITHUB_PERMALINK_REGEX
-            .captures_iter(text)
-            .filter_map(|captures| {
-                let m = captures.get(0)?;
-                let full_url = m.as_str();
-                // Skip URLs wrapped in angle brackets (e.g., <https://...>)
-                if m.start() > 0 && text.as_bytes()[m.start() - 1] == b'<' {
-                    return None;
+        super::parse_links(text, &GITHUB_PERMALINK_REGEX, |captures| {
+            let line_range = match captures.get(5) {
+                Some(start) => {
+                    let start = start.as_str().parse().ok()?;
+                    // A missing end (e.g. `#L42`) means a single-line reference.
+                    let end = match captures.get(6) {
+                        Some(end) => end.as_str().parse().ok()?,
+                        None => start,
+                    };
+                    Some(LineRange { start, end })
                 }
-                if !seen_urls.insert(full_url.to_string()) {
-                    return None;
-                }
+                None => None,
+            };
 
-                let owner = captures.get(1)?.as_str().to_string();
-                let repo = captures.get(2)?.as_str().to_string();
-                let git_ref = captures.get(3)?.as_str().to_string();
-                let path = captures.get(4)?.as_str().to_string();
-
-                let line_range = match (captures.get(5), captures.get(6)) {
-                    (Some(start), Some(end)) => {
-                        let s = start.as_str().parse().ok()?;
-                        let e = end.as_str().parse().ok()?;
-                        Some(LineRange { start: s, end: e })
-                    }
-                    (Some(start), None) => {
-                        let s = start.as_str().parse().ok()?;
-                        Some(LineRange { start: s, end: s })
-                    }
-                    _ => None,
-                };
-
-                Some(GitHubPermalink {
-                    owner,
-                    repo,
-                    git_ref,
-                    path,
-                    line_range,
-                })
+            Some(GitHubPermalink {
+                owner: captures.get(1)?.as_str().to_string(),
+                repo: captures.get(2)?.as_str().to_string(),
+                git_ref: captures.get(3)?.as_str().to_string(),
+                path: captures.get(4)?.as_str().to_string(),
+                line_range,
             })
-            .take(3) // Limit to maximum 3 links
-            .collect()
+        })
     }
 
     /// Fetches the raw file content from GitHub and returns a code block.
@@ -190,9 +220,9 @@ impl GitHubPermalink {
             Some(range) => {
                 let start = range.start.saturating_sub(1); // 0-indexed
                 let end = range.end.min(all_lines.len());
-                let selected: Vec<&str> = all_lines.get(start..end).unwrap_or_default().to_vec();
+                let selected = all_lines.get(start..end).unwrap_or_default();
 
-                let (code, truncated) = truncate_lines(&selected, max_lines);
+                let (code, truncated) = truncate_lines(selected, max_lines);
                 let info = if truncated {
                     format!(
                         "L{}-L{}, truncated to {} lines",
@@ -217,17 +247,15 @@ impl GitHubPermalink {
         let display_ref = shorten_ref(&self.git_ref);
         let language = language_for_path(&self.path);
 
-        let metadata = if line_info.is_empty() {
-            format!(
-                "`{}` - {}/{}@{}",
-                self.path, self.owner, self.repo, display_ref
-            )
+        let line_part = if line_info.is_empty() {
+            String::new()
         } else {
-            format!(
-                "`{}` ({}) - {}/{}@{}",
-                self.path, line_info, self.owner, self.repo, display_ref
-            )
+            format!(" ({line_info})")
         };
+        let metadata = format!(
+            "`{}`{} - {}/{}@{}",
+            self.path, line_part, self.owner, self.repo, display_ref
+        );
 
         ExpandedContent::CodeBlock {
             language: language.to_string(),
@@ -252,23 +280,10 @@ fn shorten_ref(git_ref: &str) -> &str {
     }
 }
 
-/// Extracts the filename from a path and returns the appropriate language identifier.
-fn language_for_path(path: &str) -> &str {
-    let filename = path.rsplit('/').next().unwrap_or(path);
-    match filename.rsplit_once('.') {
-        Some((_, ext)) => language_from_extension(ext),
-        None => language_from_extension(filename),
-    }
-}
-
 /// Truncates lines to the given maximum, returning the joined string and whether truncation occurred.
 fn truncate_lines(lines: &[&str], max: usize) -> (String, bool) {
-    if lines.len() > max {
-        let truncated: Vec<&str> = lines[..max].to_vec();
-        (truncated.join("\n"), true)
-    } else {
-        (lines.join("\n"), false)
-    }
+    let kept = &lines[..lines.len().min(max)];
+    (kept.join("\n"), lines.len() > max)
 }
 
 #[cfg(test)]
@@ -535,38 +550,6 @@ mod tests {
         let results = GitHubPermalink::parse_all(text);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].git_ref, "abcd");
-    }
-
-    // --- language_for_path ---
-
-    #[test]
-    fn language_for_path_basic_extension() {
-        assert_eq!(language_for_path("src/main.rs"), "rust");
-    }
-
-    #[test]
-    fn language_for_path_dockerfile_in_subdir() {
-        assert_eq!(language_for_path("docker/Dockerfile"), "dockerfile");
-    }
-
-    #[test]
-    fn language_for_path_dotted_directory() {
-        assert_eq!(language_for_path("some.config/Dockerfile"), "dockerfile");
-    }
-
-    #[test]
-    fn language_for_path_makefile_in_subdir() {
-        assert_eq!(language_for_path("build/Makefile"), "makefile");
-    }
-
-    #[test]
-    fn language_for_path_multiple_dots() {
-        assert_eq!(language_for_path("file.test.ts"), "typescript");
-    }
-
-    #[test]
-    fn language_for_path_dotfile() {
-        assert_eq!(language_for_path(".gitignore"), "gitignore");
     }
 
     // --- build_code_block ---

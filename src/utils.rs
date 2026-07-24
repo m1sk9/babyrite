@@ -15,10 +15,8 @@ pub fn language_from_extension(extension: &str) -> &str {
         "go" => "go",
         "java" => "java",
         "kt" | "kts" => "kotlin",
-        "c" => "c",
-        "h" => "c",
-        "cpp" | "cc" | "cxx" => "cpp",
-        "hpp" | "hxx" => "cpp",
+        "c" | "h" => "c",
+        "cpp" | "cc" | "cxx" | "hpp" | "hxx" => "cpp",
         "cs" => "csharp",
         "swift" => "swift",
         "php" => "php",
@@ -54,6 +52,18 @@ pub fn language_from_extension(extension: &str) -> &str {
         "proto" => "protobuf",
         "makefile" | "mk" => "makefile",
         _ => extension,
+    }
+}
+
+/// Returns the language identifier for syntax highlighting based on a file path.
+///
+/// Uses the file extension when present; extensionless filenames
+/// (e.g. `Dockerfile`, `Makefile`) are looked up by name.
+pub fn language_for_path(path: &str) -> &str {
+    let filename = path.rsplit('/').next().unwrap_or(path);
+    match filename.rsplit_once('.') {
+        Some((_, ext)) => language_from_extension(ext),
+        None => language_from_extension(filename),
     }
 }
 
@@ -117,5 +127,35 @@ mod tests {
         assert_eq!(language_from_extension("dockerfile"), "dockerfile");
         assert_eq!(language_from_extension("Makefile"), "makefile");
         assert_eq!(language_from_extension("makefile"), "makefile");
+    }
+
+    #[test]
+    fn language_for_path_basic_extension() {
+        assert_eq!(language_for_path("src/main.rs"), "rust");
+    }
+
+    #[test]
+    fn language_for_path_dockerfile_in_subdir() {
+        assert_eq!(language_for_path("docker/Dockerfile"), "dockerfile");
+    }
+
+    #[test]
+    fn language_for_path_dotted_directory() {
+        assert_eq!(language_for_path("some.config/Dockerfile"), "dockerfile");
+    }
+
+    #[test]
+    fn language_for_path_makefile_in_subdir() {
+        assert_eq!(language_for_path("build/Makefile"), "makefile");
+    }
+
+    #[test]
+    fn language_for_path_multiple_dots() {
+        assert_eq!(language_for_path("file.test.ts"), "typescript");
+    }
+
+    #[test]
+    fn language_for_path_dotfile() {
+        assert_eq!(language_for_path(".gitignore"), "gitignore");
     }
 }

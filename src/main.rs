@@ -17,7 +17,8 @@ mod utils;
 use crate::{
     command::ShardManagerContainer,
     config::{BabyriteConfig, EnvConfig, LogFormat},
-    event::{BabyriteEventHandler, HttpClient},
+    event::BabyriteEventHandler,
+    expand::github::HttpClient,
 };
 use serenity::all::GatewayIntents;
 use tracing_subscriber::EnvFilter;
@@ -57,9 +58,7 @@ async fn main() -> anyhow::Result<()> {
         data.insert::<ShardManagerContainer>(client.shard_manager.clone());
     }
 
-    if let Err(why) = client.start().await {
-        return Err(anyhow::anyhow!(why));
-    }
+    client.start().await?;
 
     Ok(())
 }

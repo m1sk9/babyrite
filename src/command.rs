@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 
 /// TypeMap key for the shared shard manager.
 ///
-/// Registered alongside [`crate::event::HttpClient`] so the `ping` command
+/// Registered alongside [`crate::expand::github::HttpClient`] so the `ping` command
 /// can read the gateway heartbeat latency for the shard handling this event.
 pub struct ShardManagerContainer;
 
@@ -58,8 +58,11 @@ pub fn parse(content: &str, bot_id: UserId) -> Option<Command> {
         return Some(Command::Help);
     }
 
-    let head_end = rest.find(char::is_whitespace).unwrap_or(rest.len());
-    let head = rest[..head_end].to_ascii_lowercase();
+    let head = rest
+        .split_whitespace()
+        .next()
+        .unwrap_or(rest)
+        .to_ascii_lowercase();
 
     match head.as_str() {
         "version" => Some(Command::Version),
@@ -244,12 +247,7 @@ async fn execute_ping(ctx: &Context, request: &Message) {
     let gateway_text = format_latency(gateway_latency);
 
     let start = Instant::now();
-    let Some(mut sent) = send_reply(
-        ctx,
-        request,
-        &format!("🏓 Pong!\nGateway latency: {gateway_text}\nAPI latency: measuring…"),
-    )
-    .await
+    let Some(mut sent) = send_reply(ctx, request, &render_pong(&gateway_text, "measuring…")).await
     else {
         return;
     };
@@ -258,15 +256,21 @@ async fn execute_ping(ctx: &Context, request: &Message) {
     if let Err(e) = sent
         .edit(
             ctx,
-            EditMessage::new().content(format!(
-                "🏓 Pong!\nGateway latency: {gateway_text}\nAPI latency: {}ms",
-                api_latency.as_millis()
+            EditMessage::new().content(render_pong(
+                &gateway_text,
+                &format_latency(Some(api_latency)),
             )),
         )
         .await
     {
         tracing::error!(error = ?e, "failed to update ping latency");
     }
+}
+
+/// Renders the `ping` reply body; used for both the initial send and the
+/// latency edit so the two stay in sync.
+fn render_pong(gateway_text: &str, api_text: &str) -> String {
+    format!("🏓 Pong!\nGateway latency: {gateway_text}\nAPI latency: {api_text}")
 }
 
 fn format_latency(latency: Option<Duration>) -> String {
