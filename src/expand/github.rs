@@ -74,6 +74,7 @@ impl LinkExpander for GitHubExpander {
     }
 
     /// Expands GitHub permalinks into code blocks.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     async fn expand_all(&self, cx: &ExpandContext<'_>) -> Vec<ExpandedContent> {
         let permalinks = GitHubPermalink::parse_all(&cx.message.content);
         if permalinks.is_empty() {
