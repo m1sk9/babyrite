@@ -62,6 +62,7 @@ impl LinkExpander for DiscordExpander {
     /// expanded preview is posted there, so it is needed to verify each link
     /// target is at least as visible as that channel. If it cannot be resolved,
     /// Discord expansion is skipped entirely (other expanders are unaffected).
+    #[cfg_attr(coverage_nightly, coverage(off))]
     async fn expand_all(&self, cx: &ExpandContext<'_>) -> Vec<ExpandedContent> {
         let links = MessageLinkIDs::parse_all(&cx.message.content);
         if links.is_empty() {
@@ -153,6 +154,7 @@ impl MessageLinkIDs {
     /// `source_channel` is the channel where the request originated. It is used to
     /// ensure the linked content is not exposed to members who could not otherwise
     /// view it (see [`Preview::get`]).
+    #[cfg_attr(coverage_nightly, coverage(off))]
     #[tracing::instrument(
         skip(self, ctx, source_channel),
         fields(
@@ -280,6 +282,7 @@ fn viewing_roles(
 /// Threads inherit visibility from their parent channel, so for any thread the
 /// parent channel is fetched and returned. Non-thread channels are returned
 /// unchanged. A thread without a `parent_id` is treated as an error.
+#[cfg_attr(coverage_nightly, coverage(off))]
 async fn permission_channel(
     channel: &GuildChannel,
     ctx: &Context,
@@ -303,6 +306,7 @@ async fn permission_channel(
 /// The expanded content is posted as a single message that all members of
 /// `source_channel` can read, so the linked channel must be at least as visible
 /// as the source channel to avoid leaking restricted content.
+#[cfg_attr(coverage_nightly, coverage(off))]
 async fn check_visibility(
     channel: &GuildChannel,
     source_channel: &GuildChannel,
@@ -385,6 +389,7 @@ impl Preview {
     /// When the link target is the same channel as `source_channel`, the
     /// visibility checks are skipped entirely: the reply lands in that same
     /// channel, so it cannot expose anything its readers cannot already see.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     #[tracing::instrument(
         skip(args, ctx, source_channel),
         fields(
