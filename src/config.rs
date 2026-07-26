@@ -57,24 +57,24 @@ pub struct BabyriteConfig {
 /// Logging configuration.
 ///
 /// Controls the log level filter and output format.
+/// Missing fields fall back to [`LogConfig::default`].
 #[derive(Deserialize, Debug)]
+#[serde(default)]
 pub struct LogConfig {
     /// Tracing filter directive used when `RUST_LOG` is not set.
     ///
     /// Accepts the same syntax as `RUST_LOG` (e.g. `babyrite=debug`).
     /// Defaults to `babyrite=info`.
-    #[serde(default = "default_log_level")]
     pub level: String,
     /// Output format. When unset, falls back to the deprecated `json_logging`
     /// flag (see [`BabyriteConfig::resolved_log_format`]).
-    #[serde(default)]
     pub format: Option<LogFormat>,
 }
 
 impl Default for LogConfig {
     fn default() -> Self {
         Self {
-            level: default_log_level(),
+            level: "babyrite=info".to_string(),
             format: None,
         }
     }
@@ -93,57 +93,45 @@ pub enum LogFormat {
 /// Feature flags configuration.
 ///
 /// Controls which link expansion features are enabled.
+/// Missing fields fall back to [`FeatureConfig::default`].
 #[derive(Deserialize, Debug)]
+#[serde(default)]
 pub struct FeatureConfig {
     /// Whether GitHub Permalink expansion is enabled.
     ///
     /// Defaults to `true`.
-    #[serde(default = "default_true")]
     pub github_permalink: bool,
     /// Whether the mention-prefixed command system (`version`, `ping`, etc.) is enabled.
     ///
     /// Defaults to `true`.
-    #[serde(default = "default_true")]
     pub commands: bool,
 }
 
 impl Default for FeatureConfig {
     fn default() -> Self {
         Self {
-            github_permalink: default_true(),
-            commands: default_true(),
+            github_permalink: true,
+            commands: true,
         }
     }
 }
 
 /// GitHub-related configuration.
+///
+/// Missing fields fall back to [`GitHubConfig::default`].
 #[derive(Deserialize, Debug)]
+#[serde(default)]
 pub struct GitHubConfig {
     /// Maximum number of lines to display without truncation.
     ///
     /// Defaults to `50`.
-    #[serde(default = "default_max_lines")]
     pub max_lines: usize,
 }
 
 impl Default for GitHubConfig {
     fn default() -> Self {
-        Self {
-            max_lines: default_max_lines(),
-        }
+        Self { max_lines: 50 }
     }
-}
-
-fn default_true() -> bool {
-    true
-}
-
-fn default_max_lines() -> usize {
-    50
-}
-
-fn default_log_level() -> String {
-    "babyrite=info".to_string()
 }
 
 /// Errors that can occur when loading configuration.
@@ -165,19 +153,15 @@ impl BabyriteConfig {
     ///
     /// Loads configuration from a file if `CONFIG_FILE_PATH` is set,
     /// otherwise uses default values.
-    pub fn init() -> anyhow::Result<(), BabyriteConfigError> {
-        let envs = EnvConfig::get();
-        match &envs.config_file_path {
+    pub fn init() -> Result<(), BabyriteConfigError> {
+        let config = match &EnvConfig::get().config_file_path {
             Some(p) => {
-                let buffer = &std::fs::read_to_string(p).map_err(|_| BabyriteConfigError::Read)?;
-                let config: BabyriteConfig =
-                    toml::from_str(buffer).map_err(|_| BabyriteConfigError::Parse)?;
-                Ok(CONFIG.set(config).map_err(|_| BabyriteConfigError::Parse)?)
+                let buffer = std::fs::read_to_string(p).map_err(|_| BabyriteConfigError::Read)?;
+                toml::from_str(&buffer).map_err(|_| BabyriteConfigError::Parse)?
             }
-            None => Ok(CONFIG
-                .set(BabyriteConfig::default())
-                .map_err(|_| BabyriteConfigError::Set)?),
-        }
+            None => BabyriteConfig::default(),
+        };
+        CONFIG.set(config).map_err(|_| BabyriteConfigError::Set)
     }
 
     /// Returns a reference to the global configuration.
@@ -309,39 +293,27 @@ mod tests {
         assert_eq!(config.github.max_lines, 50);
     }
 
+    #[derive(Deserialize)]
+    struct EmptyStringAsNone {
+        #[serde(default, deserialize_with = "empty_string_as_none")]
+        value: Option<String>,
+    }
+
     #[test]
     fn empty_string_as_none_with_empty() {
-        #[derive(Deserialize)]
-        struct Test {
-            #[serde(default, deserialize_with = "empty_string_as_none")]
-            value: Option<String>,
-        }
-
-        let t: Test = toml::from_str(r#"value = """#).unwrap();
+        let t: EmptyStringAsNone = toml::from_str(r#"value = """#).unwrap();
         assert!(t.value.is_none());
     }
 
     #[test]
     fn empty_string_as_none_with_value() {
-        #[derive(Deserialize)]
-        struct Test {
-            #[serde(default, deserialize_with = "empty_string_as_none")]
-            value: Option<String>,
-        }
-
-        let t: Test = toml::from_str(r#"value = "hello""#).unwrap();
+        let t: EmptyStringAsNone = toml::from_str(r#"value = "hello""#).unwrap();
         assert_eq!(t.value.as_deref(), Some("hello"));
     }
 
     #[test]
     fn empty_string_as_none_absent() {
-        #[derive(Deserialize)]
-        struct Test {
-            #[serde(default, deserialize_with = "empty_string_as_none")]
-            value: Option<String>,
-        }
-
-        let t: Test = toml::from_str("").unwrap();
+        let t: EmptyStringAsNone = toml::from_str("").unwrap();
         assert!(t.value.is_none());
     }
 }

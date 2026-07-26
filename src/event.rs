@@ -3,22 +3,12 @@
 //! This module implements the serenity [`EventHandler`] trait to handle
 //! Discord gateway events such as ready and message events.
 
-use crate::cache::CacheArgs;
 use crate::config::BabyriteConfig;
-use crate::expand::ExpandedContent;
-use crate::expand::discord::MessageLinkIDs;
-use crate::expand::github::GitHubPermalink;
+use crate::expand::{EXPANDERS, ExpandContext, ExpandedContent};
 use serenity::all::{ActivityData, Context, EventHandler, Message, Ready};
-use serenity::prelude::TypeMapKey;
+use serenity::futures::future::join_all;
 use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
 use tracing::Instrument;
-
-/// TypeMap key for the shared reqwest HTTP client.
-pub struct HttpClient;
-
-impl TypeMapKey for HttpClient {
-    type Value = reqwest::Client;
-}
 
 /// Event handler for Babyrite bot.
 pub struct BabyriteEventHandler;
@@ -36,9 +26,8 @@ impl EventHandler for BabyriteEventHandler {
             return;
         }
 
-        let request_guild_id = match request.guild_id {
-            Some(id) => id,
-            None => return,
+        let Some(request_guild_id) = request.guild_id else {
+            return;
         };
 
         // Correlation span: every log emitted while handling this message
@@ -70,81 +59,34 @@ impl EventHandler for BabyriteEventHandler {
                 match crate::command::parse(text, bot_id) {
                     Some(crate::command::Command::Unknown(word)) => unknown_command = Some(word),
                     Some(command) => {
-                        tracing::debug!(?command, "handling mention command");
-                        crate::command::execute(&ctx, &request, command).await;
+                        dispatch_command(&ctx, &request, command).await;
                         return;
                     }
                     None => {}
                 }
             }
 
-            let mut results = Vec::new();
-
-            // Discord link expansion
-            let discord_links = MessageLinkIDs::parse_all(text);
-            if !discord_links.is_empty() {
-                tracing::debug!(count = discord_links.len(), "parsed Discord links");
-                // Resolve the source channel once. The expanded preview is posted here,
-                // so it is needed to verify the link target is at least as visible as
-                // this channel. If it cannot be resolved, skip Discord expansion (but
-                // still allow GitHub expansion below).
-                match (CacheArgs {
-                    guild_id: request_guild_id,
-                    channel_id: request.channel_id,
-                })
-                .get(&ctx)
-                .await
-                {
-                    Ok(source_channel) => {
-                        for ids in discord_links {
-                            if ids.guild_id != request_guild_id {
-                                tracing::debug!(
-                                    link_guild_id = %ids.guild_id,
-                                    "skipping cross-guild Discord link"
-                                );
-                                continue;
-                            }
-
-                            match ids.fetch(&ctx, &source_channel).await {
-                                Ok(content) => results.push(content),
-                                Err(e) => {
-                                    tracing::error!(error = %e, "failed to expand Discord link")
-                                }
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        tracing::error!(error = %e, "failed to resolve source channel");
-                    }
-                }
-            }
-
-            // GitHub Permalink expansion (can be disabled via config)
-            if config.features.github_permalink {
-                let permalinks = GitHubPermalink::parse_all(text);
-                if !permalinks.is_empty() {
-                    tracing::debug!(count = permalinks.len(), "parsed GitHub permalinks");
-                    let data = ctx.data.read().await;
-                    if let Some(http_client) = data.get::<HttpClient>() {
-                        for permalink in permalinks {
-                            match permalink.fetch(http_client).await {
-                                Ok(content) => results.push(content),
-                                Err(e) => {
-                                    tracing::error!(error = %e, "failed to expand GitHub permalink")
-                                }
-                            }
-                        }
-                    } else {
-                        tracing::error!("HTTP client not found in TypeMap");
-                    }
-                }
-            }
+            // Expanders are independent of each other, so run them concurrently.
+            // `join_all` preserves registration order in the combined results.
+            let cx = ExpandContext {
+                ctx: &ctx,
+                message: &request,
+                guild_id: request_guild_id,
+            };
+            let results: Vec<ExpandedContent> = join_all(
+                EXPANDERS
+                    .iter()
+                    .filter(|expander| expander.enabled(config))
+                    .map(|expander| expander.expand_all(&cx)),
+            )
+            .await
+            .into_iter()
+            .flatten()
+            .collect();
 
             if results.is_empty() {
                 if let Some(word) = unknown_command {
-                    let command = crate::command::Command::Unknown(word);
-                    tracing::debug!(?command, "handling mention command");
-                    crate::command::execute(&ctx, &request, command).await;
+                    dispatch_command(&ctx, &request, crate::command::Command::Unknown(word)).await;
                 } else {
                     tracing::debug!("no expandable content found");
                 }
@@ -156,6 +98,12 @@ impl EventHandler for BabyriteEventHandler {
         .instrument(span)
         .await;
     }
+}
+
+/// Logs and executes a parsed mention command.
+async fn dispatch_command(ctx: &Context, request: &Message, command: crate::command::Command) {
+    tracing::debug!(?command, "handling mention command");
+    crate::command::execute(ctx, request, command).await;
 }
 
 /// Sends expanded contents as a reply to the original message.

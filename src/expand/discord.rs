@@ -13,10 +13,11 @@ use serenity::all::{
 use serenity_builder::model::embed::SerenityEmbed;
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
-use url::Url;
 
-use super::{ExpandError, ExpandedContent};
+use super::{ExpandContext, ExpandError, ExpandedContent, LinkExpander};
 use crate::cache::CacheArgs;
+use crate::config::BabyriteConfig;
+use serenity::futures::future::join_all;
 
 /// Regex pattern for matching Discord message links.
 ///
@@ -37,12 +38,80 @@ pub struct MessageLinkIDs {
 }
 
 /// A preview containing the message and its channel.
-#[derive(serde::Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Preview {
     /// The message to preview.
     pub message: Message,
     /// The channel containing the message.
     pub channel: GuildChannel,
+}
+
+/// Discord message link expander.
+pub struct DiscordExpander;
+
+#[serenity::async_trait]
+impl LinkExpander for DiscordExpander {
+    /// Discord link expansion is the bot's core function and has no feature flag.
+    fn enabled(&self, _config: &BabyriteConfig) -> bool {
+        true
+    }
+
+    /// Expands Discord message links into embed previews.
+    ///
+    /// Cross-guild links are skipped. The source channel is resolved once — the
+    /// expanded preview is posted there, so it is needed to verify each link
+    /// target is at least as visible as that channel. If it cannot be resolved,
+    /// Discord expansion is skipped entirely (other expanders are unaffected).
+    async fn expand_all(&self, cx: &ExpandContext<'_>) -> Vec<ExpandedContent> {
+        let links = MessageLinkIDs::parse_all(&cx.message.content);
+        if links.is_empty() {
+            return Vec::new();
+        }
+        tracing::debug!(count = links.len(), "parsed Discord links");
+
+        let links: Vec<_> = links
+            .into_iter()
+            .filter(|ids| {
+                if ids.guild_id != cx.guild_id {
+                    tracing::debug!(
+                        link_guild_id = %ids.guild_id,
+                        "skipping cross-guild Discord link"
+                    );
+                    return false;
+                }
+                true
+            })
+            .collect();
+        if links.is_empty() {
+            return Vec::new();
+        }
+
+        let source_channel = match (CacheArgs {
+            guild_id: cx.guild_id,
+            channel_id: cx.message.channel_id,
+        })
+        .get(cx.ctx)
+        .await
+        {
+            Ok(channel) => channel,
+            Err(e) => {
+                tracing::error!(error = %e, "failed to resolve source channel");
+                return Vec::new();
+            }
+        };
+
+        join_all(links.iter().map(|ids| ids.fetch(cx.ctx, &source_channel)))
+            .await
+            .into_iter()
+            .filter_map(|result| match result {
+                Ok(content) => Some(content),
+                Err(e) => {
+                    tracing::error!(error = %e, "failed to expand Discord link");
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 /// Errors that can occur when generating a Discord message preview.
@@ -67,44 +136,16 @@ impl MessageLinkIDs {
     /// Parses all Discord message links from the given text.
     ///
     /// Returns a `Vec<MessageLinkIDs>` containing all valid message links found.
-    ///
-    /// Note: Duplicate URLs are ignored, and a maximum of 3 links are returned.
+    /// The shared link policy applies (see [`super::parse_links`]): angle-bracket
+    /// wrapped and duplicate URLs are ignored, and at most 3 links are returned.
     pub fn parse_all(text: &str) -> Vec<MessageLinkIDs> {
-        let mut seen_urls = HashSet::new();
-        MESSAGE_LINK_REGEX
-            .captures_iter(text)
-            .filter_map(|captures| {
-                let m = captures.get(0)?;
-                let full_url = m.as_str();
-                // Skip URLs wrapped in angle brackets (e.g., <https://...>)
-                if m.start() > 0 && text.as_bytes()[m.start() - 1] == b'<' {
-                    return None;
-                }
-                if !seen_urls.insert(full_url.to_string()) {
-                    return None;
-                }
-
-                let url = Url::parse(full_url).ok()?;
-
-                if !matches!(
-                    url.domain(),
-                    Some("discord.com") | Some("canary.discord.com") | Some("ptb.discord.com")
-                ) {
-                    return None;
-                }
-
-                let guild_id = GuildId::new(captures.get(1)?.as_str().parse().ok()?);
-                let channel_id = ChannelId::new(captures.get(2)?.as_str().parse().ok()?);
-                let message_id = MessageId::new(captures.get(3)?.as_str().parse().ok()?);
-
-                Some(MessageLinkIDs {
-                    guild_id,
-                    channel_id,
-                    message_id,
-                })
+        super::parse_links(text, &MESSAGE_LINK_REGEX, |captures| {
+            Some(MessageLinkIDs {
+                guild_id: GuildId::new(captures.get(1)?.as_str().parse().ok()?),
+                channel_id: ChannelId::new(captures.get(2)?.as_str().parse().ok()?),
+                message_id: MessageId::new(captures.get(3)?.as_str().parse().ok()?),
             })
-            .take(3) // Limit to maximum 3 links
-            .collect()
+        })
     }
 
     /// Fetches the linked message and returns an embed preview.
@@ -125,13 +166,13 @@ impl MessageLinkIDs {
         ctx: &Context,
         source_channel: &GuildChannel,
     ) -> Result<ExpandedContent, ExpandError> {
-        let preview = Preview::get(self, ctx, source_channel).await?;
-        let (message, channel) = (preview.message, preview.channel);
+        let Preview { message, channel } = Preview::get(self, ctx, source_channel).await?;
 
+        let author_icon_url = message.author.avatar_url().unwrap_or_default();
         let embed = SerenityEmbed::builder()
             .description(message.content)
-            .author_name(message.author.name.clone())
-            .author_icon_url(message.author.avatar_url().unwrap_or_default())
+            .author_name(message.author.name)
+            .author_icon_url(author_icon_url)
             .footer_text(channel.name)
             .timestamp(message.timestamp)
             .color(0x7A4AFFu32)
@@ -199,6 +240,14 @@ fn viewing_roles(
         .copied()
         .unwrap_or_else(Permissions::empty);
 
+    let overwrite_by_role: HashMap<RoleId, (Permissions, Permissions)> = overwrites
+        .iter()
+        .filter_map(|ow| match ow.kind {
+            PermissionOverwriteType::Role(id) => Some((id, (ow.allow, ow.deny))),
+            _ => None,
+        })
+        .collect();
+
     let mut set = HashSet::new();
     for (&role_id, &perms) in role_perms {
         let base = everyone_base | perms;
@@ -209,14 +258,12 @@ fn viewing_roles(
 
         let mut allowed = base.contains(Permissions::VIEW_CHANNEL);
         for target in [everyone_role_id, role_id] {
-            for ow in overwrites {
-                if matches!(ow.kind, PermissionOverwriteType::Role(id) if id == target) {
-                    if ow.deny.contains(Permissions::VIEW_CHANNEL) {
-                        allowed = false;
-                    }
-                    if ow.allow.contains(Permissions::VIEW_CHANNEL) {
-                        allowed = true;
-                    }
+            if let Some(&(allow, deny)) = overwrite_by_role.get(&target) {
+                if deny.contains(Permissions::VIEW_CHANNEL) {
+                    allowed = false;
+                }
+                if allow.contains(Permissions::VIEW_CHANNEL) {
+                    allowed = true;
                 }
             }
         }
@@ -249,6 +296,79 @@ async fn permission_channel(
     .get(ctx)
     .await
     .map_err(|_| PreviewError::Cache)
+}
+
+/// Validates that everyone who can view `source_channel` could also view `channel`.
+///
+/// The expanded content is posted as a single message that all members of
+/// `source_channel` can read, so the linked channel must be at least as visible
+/// as the source channel to avoid leaking restricted content.
+async fn check_visibility(
+    channel: &GuildChannel,
+    source_channel: &GuildChannel,
+    guild_id: GuildId,
+    ctx: &Context,
+) -> Result<(), PreviewError> {
+    // Private threads cannot be represented by the role-set comparison
+    // (membership is per-user), and DMs are outside the guild context, so
+    // both are rejected. Public/news threads fall through and are judged via
+    // their parent channel.
+    if matches!(
+        channel.kind,
+        ChannelType::PrivateThread | ChannelType::Private
+    ) {
+        tracing::debug!(kind = ?channel.kind, "rejected: private channel or thread");
+        return Err(PreviewError::Permission);
+    }
+
+    // Threads follow their parent channel's permissions, so resolve both the
+    // link target and the request source to the channel that actually
+    // defines visibility before comparing.
+    let (dest_perm, source_perm) = tokio::try_join!(
+        permission_channel(channel, ctx),
+        permission_channel(source_channel, ctx),
+    )?;
+
+    // A per-member deny on the target cannot be represented in the role-set
+    // comparison below, so reject conservatively.
+    if has_member_view_deny(&dest_perm.permission_overwrites) {
+        tracing::debug!("rejected: target has a per-member VIEW_CHANNEL deny");
+        return Err(PreviewError::Permission);
+    }
+
+    let everyone_role_id = RoleId::new(guild_id.get());
+    // Clone the role permission map out of the cache so the non-`Send`
+    // `GuildRef` is dropped immediately — holding it across an `await` would
+    // make the future `!Send` and fail to compile in the event handler.
+    let role_perms: HashMap<RoleId, Permissions> = {
+        let guild = ctx.cache.guild(guild_id).ok_or(PreviewError::Permission)?;
+        guild
+            .roles
+            .iter()
+            .map(|(&id, role)| (id, role.permissions))
+            .collect()
+    };
+
+    let dest_roles = viewing_roles(
+        &dest_perm.permission_overwrites,
+        &role_perms,
+        everyone_role_id,
+    );
+    let source_roles = viewing_roles(
+        &source_perm.permission_overwrites,
+        &role_perms,
+        everyone_role_id,
+    );
+    if !source_roles.is_subset(&dest_roles) {
+        tracing::debug!(
+            source_roles = source_roles.len(),
+            dest_roles = dest_roles.len(),
+            "rejected: source channel is more visible than the target"
+        );
+        return Err(PreviewError::Permission);
+    }
+
+    Ok(())
 }
 
 impl Preview {
@@ -294,69 +414,11 @@ impl Preview {
         // When the link points to the same channel the request came from, the
         // expansion is posted back into that very channel. Every member who can
         // read the reply can already read the original message, so there is
-        // nothing to leak and all visibility checks below can be skipped. This
+        // nothing to leak and the visibility checks can be skipped. This
         // notably covers quoting within a private channel, which would otherwise
         // be rejected by the per-member deny guard.
         if requires_visibility_check(args.channel_id, source_channel.id) {
-            // Private threads cannot be represented by the role-set comparison
-            // (membership is per-user), and DMs are outside the guild context, so
-            // both are rejected. Public/news threads fall through and are judged via
-            // their parent channel.
-            if matches!(
-                channel.kind,
-                ChannelType::PrivateThread | ChannelType::Private
-            ) {
-                tracing::debug!(kind = ?channel.kind, "rejected: private channel or thread");
-                return Err(PreviewError::Permission);
-            }
-
-            // Threads follow their parent channel's permissions, so resolve both the
-            // link target and the request source to the channel that actually
-            // defines visibility before comparing.
-            let dest_perm = permission_channel(&channel, ctx).await?;
-            let source_perm = permission_channel(source_channel, ctx).await?;
-
-            // A per-member deny on the target cannot be represented in the role-set
-            // comparison below, so reject conservatively.
-            if has_member_view_deny(&dest_perm.permission_overwrites) {
-                tracing::debug!("rejected: target has a per-member VIEW_CHANNEL deny");
-                return Err(PreviewError::Permission);
-            }
-
-            let everyone_role_id = RoleId::new(args.guild_id.get());
-            // Clone the role permission map out of the cache so the `GuildRef` is
-            // dropped before the `await` below (holding it across `await` would make
-            // the future `!Send` and fail to compile in the event handler).
-            let role_perms: HashMap<RoleId, Permissions> = {
-                let guild = ctx
-                    .cache
-                    .guild(args.guild_id)
-                    .ok_or(PreviewError::Permission)?;
-                guild
-                    .roles
-                    .iter()
-                    .map(|(&id, role)| (id, role.permissions))
-                    .collect()
-            };
-
-            let dest_roles = viewing_roles(
-                &dest_perm.permission_overwrites,
-                &role_perms,
-                everyone_role_id,
-            );
-            let source_roles = viewing_roles(
-                &source_perm.permission_overwrites,
-                &role_perms,
-                everyone_role_id,
-            );
-            if !source_roles.is_subset(&dest_roles) {
-                tracing::debug!(
-                    source_roles = source_roles.len(),
-                    dest_roles = dest_roles.len(),
-                    "rejected: source channel is more visible than the target"
-                );
-                return Err(PreviewError::Permission);
-            }
+            check_visibility(&channel, source_channel, args.guild_id, ctx).await?;
         }
 
         let started = std::time::Instant::now();
