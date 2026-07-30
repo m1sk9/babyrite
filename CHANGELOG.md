@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.4.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.0...babyrite-v1.4.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **deps:** bump quinn-proto from 0.11.14 to 0.11.16 ([#633](https://github.com/m1sk9/babyrite/issues/633)) ([a06df1b](https://github.com/m1sk9/babyrite/commit/a06df1b720401a1431dc849690ffd45c607cf57b))
+
+
+### Miscellaneous
+
+* **command:** remove mention-prefixed command system ([#639](https://github.com/m1sk9/babyrite/issues/639)) ([eda417d](https://github.com/m1sk9/babyrite/commit/eda417dfcb2b8a2f45274dbf7f2a689d89f02c96))
+* **deps:** update dependency @biomejs/biome to v2.5.6 ([#636](https://github.com/m1sk9/babyrite/issues/636)) ([a723a9b](https://github.com/m1sk9/babyrite/commit/a723a9bb9637654b06e818a92a5fac7c1e3ea71b))
+* **deps:** update dependency wrangler to v4.115.0 ([#638](https://github.com/m1sk9/babyrite/issues/638)) ([169a0a1](https://github.com/m1sk9/babyrite/commit/169a0a126c738acb02540b09e7e992fc4cfedf29))
+* **deps:** update rust crate toml to v1.1.4 ([#637](https://github.com/m1sk9/babyrite/issues/637)) ([778531b](https://github.com/m1sk9/babyrite/commit/778531b853ed92319d07b96e501dca14706bd702))
+
+
+### CI
+
+* run coverage on nightly to exclude untestable runtime glue ([#634](https://github.com/m1sk9/babyrite/issues/634)) ([59ff40b](https://github.com/m1sk9/babyrite/commit/59ff40b1057a81710f5b2c506481a00bbb6f5778))
+
 ## [1.4.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.3.2...babyrite-v1.4.0) (2026-07-23)
 
 
