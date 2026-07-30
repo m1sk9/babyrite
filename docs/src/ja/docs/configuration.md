@@ -17,7 +17,6 @@ format = "compact"
 
 [features]
 github_permalink = true
-commands = true
 
 [github]
 max_lines = 50
@@ -31,7 +30,6 @@ max_lines = 50
 | `log.format` | ログ出力形式：`"compact"` または `"json"`． | `"compact"` |
 | `json_logging` | **非推奨．** `log.format = "json"` を使用してください．`log.format` が未設定の場合のみ使用されます． | `false` |
 | `features.github_permalink` | GitHub パーマリンク展開機能の有効/無効を切り替えます． | `true` |
-| `features.commands` | メンション接頭辞コマンドシステム(例：`@babyrite ping`)の有効/無効を切り替えます． | `true` |
 | `github.max_lines` | 省略せずに表示する最大行数． | `50` |
 
 ## ロギング

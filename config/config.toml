@@ -24,8 +24,6 @@ format = "compact"
 [features]
 ## Enable GitHub Permalink expansion (default: true)
 github_permalink = true
-## Enable the mention-prefixed command system, e.g. "@babyrite ping" (default: true)
-commands = true
 
 # GitHub configuration
 [github]

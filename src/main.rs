@@ -8,14 +8,12 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod cache;
-mod command;
 mod config;
 mod event;
 mod expand;
 mod utils;
 
 use crate::{
-    command::ShardManagerContainer,
     config::{BabyriteConfig, EnvConfig, LogFormat},
     event::BabyriteEventHandler,
     expand::github::HttpClient,
@@ -50,12 +48,10 @@ async fn main() -> anyhow::Result<()> {
     .await
     .expect("Failed to initialize client.");
 
-    // Register the shared HTTP client for GitHub API requests, and the shard
-    // manager so the `ping` command can read gateway heartbeat latency.
+    // Register the shared HTTP client for GitHub API requests.
     {
         let mut data = client.data.write().await;
         data.insert::<HttpClient>(reqwest::Client::new());
-        data.insert::<ShardManagerContainer>(client.shard_manager.clone());
     }
 
     client.start().await?;
