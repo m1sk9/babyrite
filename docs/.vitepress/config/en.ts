@@ -21,16 +21,6 @@ export const en: DefaultTheme.Config = {
           { text: 'GitHub Permalink Expansion', link: '/docs/features/github' },
         ],
       },
-      {
-        text: 'Command Reference',
-        items: [
-          { text: 'version', link: '/docs/reference/command/version' },
-          { text: 'ping', link: '/docs/reference/command/ping' },
-          { text: 'help', link: '/docs/reference/command/help' },
-          { text: 'config', link: '/docs/reference/command/config' },
-          { text: 'debug', link: '/docs/reference/command/debug' },
-        ],
-      },
     ],
   },
 };

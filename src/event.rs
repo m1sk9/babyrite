@@ -43,28 +43,7 @@ impl EventHandler for BabyriteEventHandler {
         );
 
         async {
-            let text = &request.content;
             let config = BabyriteConfig::get();
-
-            // Mention-prefixed commands (e.g. `@babyrite ping`) take priority
-            // over link expansion below. A message starting with the bot's
-            // mention followed by an unrecognized word isn't necessarily a
-            // command attempt, though — e.g. "@babyrite check this out:
-            // <link>" — so an unrecognized command only gets its "Unknown
-            // command" hint if the message has no expandable links either;
-            // otherwise the links are expanded as normal.
-            let mut unknown_command = None;
-            if config.features.commands {
-                let bot_id = ctx.cache.current_user().id;
-                match crate::command::parse(text, bot_id) {
-                    Some(crate::command::Command::Unknown(word)) => unknown_command = Some(word),
-                    Some(command) => {
-                        dispatch_command(&ctx, &request, command).await;
-                        return;
-                    }
-                    None => {}
-                }
-            }
 
             // Expanders are independent of each other, so run them concurrently.
             // `join_all` preserves registration order in the combined results.
@@ -85,11 +64,7 @@ impl EventHandler for BabyriteEventHandler {
             .collect();
 
             if results.is_empty() {
-                if let Some(word) = unknown_command {
-                    dispatch_command(&ctx, &request, crate::command::Command::Unknown(word)).await;
-                } else {
-                    tracing::debug!("no expandable content found");
-                }
+                tracing::debug!("no expandable content found");
                 return;
             }
 
@@ -98,12 +73,6 @@ impl EventHandler for BabyriteEventHandler {
         .instrument(span)
         .await;
     }
-}
-
-/// Logs and executes a parsed mention command.
-async fn dispatch_command(ctx: &Context, request: &Message, command: crate::command::Command) {
-    tracing::debug!(?command, "handling mention command");
-    crate::command::execute(ctx, request, command).await;
 }
 
 /// Sends expanded contents as a reply to the original message.
