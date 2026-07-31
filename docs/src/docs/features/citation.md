@@ -51,6 +51,8 @@ babyrite behaves as follows with respect to channel permissions.
   - It is not expanded if the linked channel's visibility is narrower than the source channel's.
 - Public threads are judged based on their parent channel's permissions.
 - Channels that individually deny specific members access are not expanded, as a safety measure.
+- If the source channel individually grants specific members access, only channels everyone can view may be quoted there.
+  - Visibility is judged per role, so whether an individually added member can view a restricted channel cannot be determined.
 - If the target is the same channel as the source, the permission checks above are skipped and the link is expanded as-is.
 
 ## Supported message links

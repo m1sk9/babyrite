@@ -225,6 +225,37 @@ fn has_member_view_deny(overwrites: &[PermissionOverwrite]) -> bool {
     })
 }
 
+/// Returns `true` if any per-member overwrite grants `VIEW_CHANNEL`.
+///
+/// This is how Discord represents a channel made private by adding individual
+/// users. Access granted this way is invisible to [`viewing_roles`], so its
+/// presence means the role set understates who can see the channel.
+fn has_member_view_allow(overwrites: &[PermissionOverwrite]) -> bool {
+    overwrites.iter().any(|ow| {
+        matches!(ow.kind, PermissionOverwriteType::Member(_))
+            && ow.allow.contains(Permissions::VIEW_CHANNEL)
+    })
+}
+
+/// Returns `true` when a source channel that grants access through per-member
+/// overwrites may still be expanded into the target described by `dest_roles`.
+///
+/// Members holding such a grant are not represented in the source's role set, so
+/// the subset comparison in [`check_visibility`] says nothing about whether they
+/// can view the target. The only target they are provably allowed to see is one
+/// `@everyone` can view — which, since [`viewing_roles`] treats `@everyone` as an
+/// ordinary role, is exactly `dest_roles` containing it.
+///
+/// Sources without such a grant are fully described by their role set and are
+/// left to the subset comparison.
+fn member_granted_source_is_safe(
+    source_overwrites: &[PermissionOverwrite],
+    dest_roles: &HashSet<RoleId>,
+    everyone_role_id: RoleId,
+) -> bool {
+    !has_member_view_allow(source_overwrites) || dest_roles.contains(&everyone_role_id)
+}
+
 /// Returns `true` when a link crosses a guild boundary.
 ///
 /// Roles, permission overwrites and the `@everyone` id are all guild-local, so
@@ -332,6 +363,10 @@ async fn permission_channel(
 /// Both channels must be in the same guild, which [`Preview::get`] guarantees by
 /// refusing cross-guild links: the role data this compares them against is
 /// guild-local and would be meaningless otherwise.
+///
+/// Comparison is by role set, which cannot express per-member grants, so those
+/// are handled by separate conservative guards: [`has_member_view_deny`] on the
+/// target and [`member_granted_source_is_safe`] on the source.
 #[cfg_attr(coverage_nightly, coverage(off))]
 async fn check_visibility(
     channel: &GuildChannel,
@@ -389,6 +424,17 @@ async fn check_visibility(
         &role_perms,
         everyone_role_id,
     );
+    if !member_granted_source_is_safe(
+        &source_perm.permission_overwrites,
+        &dest_roles,
+        everyone_role_id,
+    ) {
+        tracing::debug!(
+            "rejected: source grants access per member and the target is not visible to everyone"
+        );
+        return Err(PreviewError::Permission);
+    }
+
     if !source_roles.is_subset(&dest_roles) {
         tracing::debug!(
             source_roles = source_roles.len(),
@@ -590,15 +636,18 @@ mod tests {
         }
     }
 
-    /// Builds a per-member overwrite that denies VIEW_CHANNEL when `deny_view`.
-    fn member_ow(id: u64, deny_view: bool) -> PermissionOverwrite {
-        PermissionOverwrite {
-            allow: Permissions::empty(),
-            deny: if deny_view {
+    /// Builds a per-member overwrite allowing and/or denying VIEW_CHANNEL.
+    fn member_ow(id: u64, allow_view: bool, deny_view: bool) -> PermissionOverwrite {
+        let bit = |set: bool| {
+            if set {
                 Permissions::VIEW_CHANNEL
             } else {
                 Permissions::empty()
-            },
+            }
+        };
+        PermissionOverwrite {
+            allow: bit(allow_view),
+            deny: bit(deny_view),
             kind: PermissionOverwriteType::Member(UserId::new(id)),
         }
     }
@@ -619,12 +668,65 @@ mod tests {
 
     #[test]
     fn member_view_deny_detected() {
-        assert!(has_member_view_deny(&[member_ow(5, true)]));
+        assert!(has_member_view_deny(&[member_ow(5, false, true)]));
         // role deny is not a member deny
         assert!(!has_member_view_deny(&[role_ow(1, false, true)]));
         // member allow (not deny) does not trigger
-        assert!(!has_member_view_deny(&[member_ow(5, false)]));
+        assert!(!has_member_view_deny(&[member_ow(5, true, false)]));
         assert!(!has_member_view_deny(&[]));
+    }
+
+    #[test]
+    fn member_view_allow_detected() {
+        assert!(has_member_view_allow(&[member_ow(5, true, false)]));
+        // A role allow is not a per-member grant.
+        assert!(!has_member_view_allow(&[role_ow(1, true, false)]));
+        // A member deny is not a grant.
+        assert!(!has_member_view_allow(&[member_ow(5, false, true)]));
+        assert!(!has_member_view_allow(&[]));
+    }
+
+    #[test]
+    fn member_granted_source_may_only_expand_public_targets() {
+        let public_target = HashSet::from([EVERYONE, MEMBER]);
+        let restricted_target = HashSet::from([MEMBER]);
+        let granted = [member_ow(5, true, false)];
+
+        // Whoever was added individually can read anything `@everyone` can.
+        assert!(member_granted_source_is_safe(
+            &granted,
+            &public_target,
+            EVERYONE
+        ));
+        // Their access to a restricted target cannot be established from roles.
+        assert!(!member_granted_source_is_safe(
+            &granted,
+            &restricted_target,
+            EVERYONE
+        ));
+    }
+
+    #[test]
+    fn role_only_source_is_left_to_the_subset_check() {
+        let restricted_target = HashSet::from([MEMBER]);
+        // A source described entirely by roles imposes no extra restriction here,
+        // whatever the target looks like.
+        assert!(member_granted_source_is_safe(
+            &[],
+            &restricted_target,
+            EVERYONE
+        ));
+        assert!(member_granted_source_is_safe(
+            &[role_ow(MEMBER.get(), true, false)],
+            &restricted_target,
+            EVERYONE
+        ));
+        // A member deny on the source narrows it, which is already conservative.
+        assert!(member_granted_source_is_safe(
+            &[member_ow(5, false, true)],
+            &restricted_target,
+            EVERYONE
+        ));
     }
 
     #[test]
