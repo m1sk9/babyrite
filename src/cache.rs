@@ -23,7 +23,14 @@ pub struct CacheArgs {
 }
 
 /// Builds a cache with the shared tuning for both channel caches:
-/// 500 entries, TTL 12 hours, TTI 1 hour.
+/// 500 entries, TTL 1 hour, TTI 1 hour.
+///
+/// The time-to-live is not just a memory bound: a cached [`GuildChannel`] carries
+/// the permission overwrites that decide whether a link may be expanded, so a
+/// stale entry keeps authorizing against permissions that no longer exist.
+/// [`invalidate_channel`] drops entries as soon as Discord reports a change, and
+/// this bounds how long a change that never reached us — a missed event across a
+/// gateway session it could not resume — can stay in effect.
 fn channel_cache<K, V>(name: &str) -> Cache<K, V>
 where
     K: std::hash::Hash + Eq + Send + Sync + 'static,
@@ -32,7 +39,7 @@ where
     CacheBuilder::new(500)
         .name(name)
         .time_to_idle(std::time::Duration::from_secs(3600))
-        .time_to_live(std::time::Duration::from_secs(43200))
+        .time_to_live(std::time::Duration::from_secs(3600))
         .build()
 }
 
@@ -49,14 +56,35 @@ fn belongs_to_guild(channel: &GuildChannel, guild_id: GuildId) -> bool {
     channel.guild_id == guild_id
 }
 
+/// Drops every cached view of `channel_id`.
+///
+/// Both caches hold permission overwrites, and those decide whether a linked
+/// channel may be expanded. Serving them after Discord has changed them means
+/// authorizing against permissions that no longer exist — a channel made private
+/// would keep being treated as public. Callers invoke this from the gateway
+/// events that report such a change.
+///
+/// The whole guild's channel list goes too, not just the one entry: the list is a
+/// single cached value holding every channel's overwrites, so there is no way to
+/// replace one member of it.
+pub async fn invalidate_channel(guild_id: GuildId, channel_id: ChannelId) {
+    GUILD_CHANNEL_CACHE.invalidate(&channel_id).await;
+    GUILD_CHANNEL_LIST_CACHE.invalidate(&guild_id).await;
+    tracing::debug!(%guild_id, %channel_id, "invalidated channel caches");
+}
+
 impl CacheArgs {
     /// Retrieves a guild channel from cache or fetches it from the API.
     ///
     /// The returned channel is always in [`Self::guild_id`]. [`GUILD_CHANNEL_CACHE`]
     /// is keyed by channel id alone, so a hit is verified against the requested
     /// guild before it is returned; the remaining steps are already scoped to the
-    /// guild. Callers may therefore treat the result as authoritative for
-    /// guild-local decisions such as permission checks.
+    /// guild.
+    ///
+    /// The result is only as fresh as the cache. [`invalidate_channel`] drops
+    /// entries when Discord reports a change and nothing survives the hour
+    /// regardless, but permission overwrites read from here can still lag a change
+    /// whose event never reached the bot.
     ///
     /// The lookup order is:
     /// 1. Individual channel cache
@@ -173,5 +201,54 @@ mod tests {
             &channel_in(GuildId::new(2)),
             GuildId::new(1)
         ));
+    }
+
+    // The caches are process-wide statics, so each async test claims ids of its
+    // own rather than relying on ordering or isolation between tests.
+
+    #[tokio::test]
+    async fn invalidating_drops_the_individual_channel() {
+        let guild = GuildId::new(900);
+        let channel = ChannelId::new(901);
+        GUILD_CHANNEL_CACHE.insert(channel, channel_in(guild)).await;
+
+        invalidate_channel(guild, channel).await;
+
+        assert!(GUILD_CHANNEL_CACHE.get(&channel).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn invalidating_drops_the_whole_guild_channel_list() {
+        let guild = GuildId::new(910);
+        let channel = ChannelId::new(911);
+        let other = ChannelId::new(912);
+        // The list is one cached value covering every channel in the guild, so a
+        // change to one of them has to discard all of it.
+        let mut list = HashMap::new();
+        list.insert(channel, channel_in(guild));
+        list.insert(other, channel_in(guild));
+        GUILD_CHANNEL_LIST_CACHE.insert(guild, list).await;
+
+        invalidate_channel(guild, channel).await;
+
+        assert!(GUILD_CHANNEL_LIST_CACHE.get(&guild).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn invalidating_leaves_other_guilds_alone() {
+        let target = GuildId::new(920);
+        let bystander = GuildId::new(921);
+        let bystander_channel = ChannelId::new(922);
+        GUILD_CHANNEL_LIST_CACHE
+            .insert(bystander, HashMap::new())
+            .await;
+        GUILD_CHANNEL_CACHE
+            .insert(bystander_channel, channel_in(bystander))
+            .await;
+
+        invalidate_channel(target, ChannelId::new(923)).await;
+
+        assert!(GUILD_CHANNEL_LIST_CACHE.get(&bystander).await.is_some());
+        assert!(GUILD_CHANNEL_CACHE.get(&bystander_channel).await.is_some());
     }
 }
