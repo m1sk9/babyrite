@@ -5,7 +5,9 @@
 
 use crate::config::BabyriteConfig;
 use crate::expand::{EXPANDERS, ExpandContext, ExpandedContent};
-use serenity::all::{ActivityData, Context, EventHandler, Message, Ready};
+use serenity::all::{
+    ActivityData, Context, CreateAllowedMentions, CreateMessage, EventHandler, Message, Ready,
+};
 use serenity::futures::future::join_all;
 use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
 use tracing::Instrument;
@@ -88,6 +90,7 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
                 code,
                 metadata,
             } => {
+                let code = crate::utils::defuse_code_fences(&code);
                 code_blocks.push(format!("{metadata}\n```{language}\n{code}\n```"));
             }
         }
@@ -121,9 +124,18 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
         }
     }
 
-    // Send code blocks as plain messages
+    // Send code blocks as plain messages.
+    //
+    // Not `say`: it leaves `allowed_mentions` unset, which makes Discord parse
+    // every mention in the content under the bot's permissions. The content is
+    // fetched from a repository the requester chose, so that would let it borrow
+    // mention rights the requester may not hold. The embed path already sends an
+    // explicit `allowed_mentions`.
     for block in code_blocks {
-        if let Err(e) = request.channel_id.say(&ctx.http, &block).await {
+        let message = CreateMessage::new()
+            .content(&block)
+            .allowed_mentions(CreateAllowedMentions::new());
+        if let Err(e) = request.channel_id.send_message(&ctx.http, message).await {
             tracing::error!(error = ?e, "failed to send code block");
         }
     }

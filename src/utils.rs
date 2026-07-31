@@ -67,6 +67,32 @@ pub fn language_for_path(path: &str) -> &str {
     }
 }
 
+/// Rewrites `text` so it cannot terminate a Discord code fence.
+///
+/// Discord closes a code block at the first ``` it encounters, so fetched file
+/// content containing one would escape the fence and have the remainder
+/// rendered as markdown. Runs of backticks are kept below three by wedging in a
+/// zero-width space, which leaves the text visually unchanged. Single and double
+/// backticks are untouched, so ordinary code (template literals, shell quoting)
+/// still displays as written.
+pub fn defuse_code_fences(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut backticks = 0;
+    for c in text.chars() {
+        if c == '`' {
+            if backticks == 2 {
+                out.push('\u{200b}');
+                backticks = 0;
+            }
+            backticks += 1;
+        } else {
+            backticks = 0;
+        }
+        out.push(c);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,5 +183,48 @@ mod tests {
     #[test]
     fn language_for_path_dotfile() {
         assert_eq!(language_for_path(".gitignore"), "gitignore");
+    }
+
+    /// The number of consecutive backticks a run of `n` is reduced to.
+    fn longest_backtick_run(text: &str) -> usize {
+        text.chars()
+            .fold((0, 0), |(longest, run), c| {
+                let run = if c == '`' { run + 1 } else { 0 };
+                (longest.max(run), run)
+            })
+            .0
+    }
+
+    #[test]
+    fn code_without_backticks_is_unchanged() {
+        assert_eq!(defuse_code_fences("fn main() {}"), "fn main() {}");
+    }
+
+    #[test]
+    fn short_backtick_runs_are_preserved() {
+        // Inline code and shell quoting must survive verbatim.
+        assert_eq!(defuse_code_fences("let s = `a`;"), "let s = `a`;");
+        assert_eq!(defuse_code_fences("``double``"), "``double``");
+    }
+
+    #[test]
+    fn no_backtick_run_survives_at_fence_length() {
+        // Any run of three or more would close the fence Discord opened.
+        for run in 3..=8 {
+            let input = "`".repeat(run);
+            assert!(
+                longest_backtick_run(&defuse_code_fences(&input)) < 3,
+                "a run of {run} backticks was not defused"
+            );
+        }
+    }
+
+    #[test]
+    fn defusing_keeps_surrounding_text() {
+        let defused = defuse_code_fences("before```after");
+        assert!(longest_backtick_run(&defused) < 3);
+        assert!(defused.starts_with("before"));
+        assert!(defused.ends_with("after"));
+        assert_eq!(defused.matches('`').count(), 3);
     }
 }
