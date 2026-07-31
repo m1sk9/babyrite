@@ -18,7 +18,7 @@ This page explains how to set up babyrite.
 - babyrite has no external database, and there are no plans to add a feature that would require one.
 - When it connects to the Discord API over WebSocket, babyrite caches channel information in memory using [moka](https://github.com/moka-rs/moka).
   - The cache stores up to 500 entries each for a guild's channel list and individual channels.
-  - It's configured with a 12h TTL and a 1h TTI.
+  - It's configured with a 1h TTL and a 1h TTI.
 
 ::: tip These are implementation-derived estimates, not measured benchmarks
 The figures above are estimated from the source code (cache size, the 1MB limit on GitHub raw fetches, etc.), not measured benchmarks. Adjust them to fit your deployment scale.
