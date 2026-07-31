@@ -40,6 +40,13 @@ static GITHUB_PERMALINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
+/// Maximum number of body bytes read from a raw response.
+///
+/// Why not `Content-Length`: `raw.githubusercontent.com` may respond with chunked
+/// transfer encoding, where the header is absent and any pre-check against it would
+/// pass unconditionally (#625). The limit is enforced on bytes actually received.
+const MAX_BODY_BYTES: usize = 1_048_576;
+
 /// A parsed GitHub permalink.
 #[derive(Debug)]
 pub struct GitHubPermalink {
@@ -183,10 +190,9 @@ impl GitHubPermalink {
             .await
             .map_err(GitHubExpandError::Http)?;
 
-        let content_length = response.content_length().unwrap_or(0);
         tracing::debug!(
             status = %response.status(),
-            content_length,
+            content_length = response.content_length(),
             elapsed_ms = started.elapsed().as_millis(),
             "received response"
         );
@@ -201,17 +207,36 @@ impl GitHubPermalink {
             .into());
         }
 
-        // 1 MB limit to avoid fetching huge files
-        if content_length > 1_048_576 {
-            tracing::warn!(content_length, "content exceeds size limit");
-            return Err(GitHubExpandError::ContentTooLarge.into());
-        }
-
-        let body = response.text().await.map_err(GitHubExpandError::Http)?;
+        let needed_lines = self.needed_lines(max_lines);
+        let body = read_body_limited(response, needed_lines)
+            .await
+            .inspect_err(|e| tracing::warn!(error = %e, needed_lines, "failed to read body"))?;
+        tracing::debug!(
+            bytes = body.len(),
+            elapsed_ms = started.elapsed().as_millis(),
+            "body read"
+        );
 
         let content = self.build_code_block(&body, max_lines);
         tracing::debug!("code block built");
         Ok(content)
+    }
+
+    /// Number of leading lines [`Self::build_code_block`] can consume.
+    ///
+    /// One line beyond the display limit is required: [`truncate_lines`] tells
+    /// "exactly at the limit" apart from "truncated" by whether a further line exists.
+    fn needed_lines(&self, max_lines: usize) -> usize {
+        match self.line_range {
+            Some(range) => range.end.min(
+                range
+                    .start
+                    .saturating_sub(1)
+                    .saturating_add(max_lines)
+                    .saturating_add(1),
+            ),
+            None => max_lines.saturating_add(1),
+        }
     }
 
     /// Builds an `ExpandedContent::CodeBlock` from raw file content.
@@ -263,6 +288,100 @@ impl GitHubPermalink {
             code,
             metadata,
         }
+    }
+}
+
+/// Reads the response body chunk by chunk, stopping as soon as `needed_lines`
+/// complete lines have been received.
+///
+/// Dropping `response` before the transfer finishes aborts it, so the bytes past
+/// the last displayed line are never downloaded.
+#[cfg_attr(coverage_nightly, coverage(off))]
+async fn read_body_limited(
+    mut response: reqwest::Response,
+    needed_lines: usize,
+) -> Result<String, GitHubExpandError> {
+    let mut body = LimitedBody::new(needed_lines);
+    while !body.is_complete() {
+        let Some(chunk) = response.chunk().await.map_err(GitHubExpandError::Http)? else {
+            break;
+        };
+        body.push(&chunk)?;
+    }
+    Ok(body.finish())
+}
+
+/// Accumulates response chunks until enough lines are received or [`MAX_BODY_BYTES`]
+/// is exceeded.
+struct LimitedBody {
+    buf: Vec<u8>,
+    newlines: usize,
+    needed_lines: usize,
+}
+
+impl LimitedBody {
+    fn new(needed_lines: usize) -> Self {
+        Self {
+            buf: Vec::new(),
+            newlines: 0,
+            needed_lines,
+        }
+    }
+
+    /// Whether enough lines have been received to build the code block.
+    fn is_complete(&self) -> bool {
+        self.newlines >= self.needed_lines
+    }
+
+    /// Appends the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`].
+    fn push(&mut self, chunk: &[u8]) -> Result<(), GitHubExpandError> {
+        if self.is_complete() {
+            return Ok(());
+        }
+        let wanted = self.needed_lines - self.newlines;
+        let mut newlines = 0;
+        let mut end = chunk.len();
+        for (i, byte) in chunk.iter().enumerate() {
+            if *byte == b'\n' {
+                newlines += 1;
+                if newlines == wanted {
+                    end = i + 1;
+                    break;
+                }
+            }
+        }
+
+        // The limit is checked against the retained slice, not the whole chunk: a
+        // chunk that overshoots the limit only past the last needed line is fine.
+        if self.buf.len() + end > MAX_BODY_BYTES {
+            return Err(GitHubExpandError::ContentTooLarge);
+        }
+
+        self.buf.extend_from_slice(&chunk[..end]);
+        self.newlines += newlines;
+        Ok(())
+    }
+
+    /// Decodes the accumulated bytes.
+    ///
+    /// Why not decode per chunk: a multi-byte sequence can straddle a chunk boundary,
+    /// so decoding happens once over the joined bytes.
+    ///
+    /// Why `encoding_rs` rather than `String::from_utf8_lossy`: this is the decode
+    /// the replaced `Response::text` performed, so BOM sniffing keeps its behaviour —
+    /// the BOM is dropped instead of showing up as an invisible U+FEFF, and a
+    /// UTF-16 BOM selects UTF-16 instead of decoding to mojibake.
+    ///
+    /// A UTF-16 body only survives being read in full: [`Self::push`] counts lines in
+    /// raw bytes, so stopping at the `0A` of a UTF-16LE `\n` (`0A 00`) leaves the
+    /// final code unit incomplete. Counting lines in decoded text instead would mean
+    /// decoding incrementally, which is not worth it for how rare such files are.
+    ///
+    /// Why not read the `Content-Type` charset like `Response::text` does: the header
+    /// is gone by the time chunks are joined. `raw.githubusercontent.com` serves
+    /// `charset=utf-8`, which is also what `text` assumes when the charset is absent.
+    fn finish(self) -> String {
+        encoding_rs::UTF_8.decode(&self.buf).0.into_owned()
     }
 }
 
@@ -708,6 +827,224 @@ mod tests {
                 assert!(metadata.contains("o/r@develop"));
             }
             _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    // --- GitHubPermalink::needed_lines ---
+
+    #[test]
+    fn needed_lines_without_range_is_max_plus_one() {
+        let permalink = make_permalink("f.rs", None);
+        assert_eq!(permalink.needed_lines(50), 51);
+    }
+
+    #[test]
+    fn needed_lines_with_range_capped_by_range_end() {
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 3, end: 5 }));
+        assert_eq!(permalink.needed_lines(50), 5);
+    }
+
+    #[test]
+    fn needed_lines_with_range_capped_by_max_lines() {
+        let permalink = make_permalink(
+            "f.rs",
+            Some(LineRange {
+                start: 10,
+                end: 1000,
+            }),
+        );
+        // Lines 10..=59 are displayed; line 60 only decides the truncation flag.
+        assert_eq!(permalink.needed_lines(50), 60);
+    }
+
+    #[test]
+    fn needed_lines_saturates_on_huge_max_lines() {
+        let permalink = make_permalink("f.rs", None);
+        assert_eq!(permalink.needed_lines(usize::MAX), usize::MAX);
+
+        let ranged = make_permalink("f.rs", Some(LineRange { start: 1, end: 3 }));
+        assert_eq!(ranged.needed_lines(usize::MAX), 3);
+    }
+
+    // --- LimitedBody ---
+
+    /// Feeds `chunks` through a `LimitedBody`, stopping once it reports completion.
+    fn read_chunks(chunks: &[&[u8]], needed_lines: usize) -> Result<String, GitHubExpandError> {
+        let mut body = LimitedBody::new(needed_lines);
+        for chunk in chunks {
+            if body.is_complete() {
+                break;
+            }
+            body.push(chunk)?;
+        }
+        Ok(body.finish())
+    }
+
+    #[test]
+    fn limited_body_stops_after_needed_newlines() {
+        let result = read_chunks(&[b"a\nb\nc\nd\n"], 2).unwrap();
+        assert_eq!(result, "a\nb\n");
+    }
+
+    #[test]
+    fn limited_body_joins_chunk_boundaries() {
+        let result = read_chunks(&[b"hel", b"lo\nwor", b"ld\n"], 2).unwrap();
+        assert_eq!(result, "hello\nworld\n");
+    }
+
+    #[test]
+    fn limited_body_handles_newline_at_chunk_boundary() {
+        let result = read_chunks(&[b"a\n", b"b\n", b"c\n"], 2).unwrap();
+        assert_eq!(result, "a\nb\n");
+    }
+
+    #[test]
+    fn limited_body_keeps_partial_last_line_without_trailing_newline() {
+        // Fewer newlines than needed: the whole body is read and the unterminated
+        // last line is retained.
+        let result = read_chunks(&[b"a\nb\nc"], 5).unwrap();
+        assert_eq!(result, "a\nb\nc");
+    }
+
+    #[test]
+    fn limited_body_rejects_over_limit() {
+        // A single line longer than the limit: no newline ever satisfies the request.
+        let huge = vec![b'x'; MAX_BODY_BYTES + 1];
+        let err = read_chunks(&[&huge], 2).unwrap_err();
+        assert!(matches!(err, GitHubExpandError::ContentTooLarge));
+    }
+
+    #[test]
+    fn limited_body_rejects_over_limit_across_chunks() {
+        let half = vec![b'x'; MAX_BODY_BYTES / 2 + 1];
+        let err = read_chunks(&[&half, &half], 2).unwrap_err();
+        assert!(matches!(err, GitHubExpandError::ContentTooLarge));
+    }
+
+    #[test]
+    fn limited_body_accepts_when_needed_lines_met_before_limit() {
+        // The needed line ends one byte before the limit; the rest of the chunk
+        // would overshoot it but is discarded.
+        let mut chunk = vec![b'x'; MAX_BODY_BYTES - 1];
+        chunk.push(b'\n');
+        chunk.extend_from_slice(&vec![b'y'; MAX_BODY_BYTES]);
+
+        let result = read_chunks(&[&chunk], 1).unwrap();
+        assert_eq!(result.len(), MAX_BODY_BYTES);
+        assert!(result.ends_with('\n'));
+    }
+
+    #[test]
+    fn limited_body_decodes_utf8_split_across_chunks() {
+        // "あ" is E3 81 82; split it between two chunks.
+        let result = read_chunks(&[b"\xe3\x81", b"\x82\n"], 1).unwrap();
+        assert_eq!(result, "あ\n");
+    }
+
+    #[test]
+    fn limited_body_strips_leading_utf8_bom() {
+        let result = read_chunks(&[b"\xef\xbb\xbffn main() {}\n"], 1).unwrap();
+        assert_eq!(result, "fn main() {}\n");
+    }
+
+    #[test]
+    fn limited_body_keeps_bom_appearing_mid_body() {
+        let result = read_chunks(&["a\n\u{feff}b\n".as_bytes()], 2).unwrap();
+        assert_eq!(result, "a\n\u{feff}b\n");
+    }
+
+    #[test]
+    fn limited_body_decodes_utf16_read_in_full() {
+        // UTF-16LE BOM followed by "hi\n". A BOM selects its own encoding, so a body
+        // read in full decodes rather than turning into replacement characters.
+        let result = read_chunks(&[b"\xff\xfeh\0i\0\n\0"], 5).unwrap();
+        assert_eq!(result, "hi\n");
+    }
+
+    #[test]
+    fn limited_body_clips_utf16_when_stopping_early() {
+        // Known limitation: lines are counted in raw bytes, so stopping at the `0A`
+        // of a UTF-16LE `\n` (`0A 00`) drops the trailing `00` and leaves the final
+        // code unit incomplete. Only the boundary line is affected.
+        let result = read_chunks(&[b"\xff\xfeh\0i\0\n\0j\0\n\0"], 1).unwrap();
+        assert_eq!(result, "hi\u{fffd}");
+    }
+
+    #[test]
+    fn limited_body_replaces_invalid_utf8() {
+        let result = read_chunks(&[b"a\xffb\n"], 1).unwrap();
+        assert_eq!(result, "a\u{fffd}b\n");
+    }
+
+    #[test]
+    fn limited_body_with_zero_needed_lines_reads_nothing() {
+        let result = read_chunks(&[b"a\nb\n"], 0).unwrap();
+        assert_eq!(result, "");
+    }
+
+    // --- early truncation equivalence ---
+
+    fn code_block_parts(content: ExpandedContent) -> (String, String, String) {
+        match content {
+            ExpandedContent::CodeBlock {
+                language,
+                code,
+                metadata,
+            } => (language, code, metadata),
+            _ => panic!("expected CodeBlock"),
+        }
+    }
+
+    /// Asserts that reading only `needed_lines` produces the same code block as
+    /// reading the whole body — this is what makes the early stop safe.
+    fn assert_truncated_read_matches_full(
+        permalink: &GitHubPermalink,
+        body: &str,
+        max_lines: usize,
+    ) {
+        let truncated = read_chunks(&[body.as_bytes()], permalink.needed_lines(max_lines)).unwrap();
+        assert_eq!(
+            code_block_parts(permalink.build_code_block(&truncated, max_lines)),
+            code_block_parts(permalink.build_code_block(body, max_lines)),
+            "body: {body:?}, max_lines: {max_lines}"
+        );
+    }
+
+    #[test]
+    fn early_read_matches_full_read_without_range() {
+        let permalink = make_permalink("f.rs", None);
+        let body = "a\nb\nc\nd\ne\nf\n";
+        for max_lines in [1, 2, 5, 6, 50] {
+            assert_truncated_read_matches_full(&permalink, body, max_lines);
+        }
+    }
+
+    #[test]
+    fn early_read_matches_full_read_without_trailing_newline() {
+        let permalink = make_permalink("f.rs", None);
+        let body = "a\nb\nc";
+        for max_lines in [1, 2, 3, 50] {
+            assert_truncated_read_matches_full(&permalink, body, max_lines);
+        }
+    }
+
+    #[test]
+    fn early_read_matches_full_read_with_range() {
+        let body = "a\nb\nc\nd\ne\nf\ng\nh\n";
+        let ranges = [
+            LineRange { start: 1, end: 3 },
+            LineRange { start: 3, end: 5 },
+            LineRange { start: 2, end: 100 },
+            LineRange {
+                start: 100,
+                end: 200,
+            },
+        ];
+        for range in ranges {
+            let permalink = make_permalink("f.rs", Some(range));
+            for max_lines in [1, 2, 3, 50] {
+                assert_truncated_read_matches_full(&permalink, body, max_lines);
+            }
         }
     }
 

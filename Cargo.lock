@@ -103,6 +103,7 @@ version = "1.4.1"
 dependencies = [
  "anyhow",
  "dotenvy",
+ "encoding_rs",
  "envy",
  "moka",
  "regex",

@@ -10,6 +10,7 @@ description = "A citation message Discord bot."
 [dependencies]
 anyhow = "1.0.82"
 dotenvy = "0.15.7"
+encoding_rs = "0.8.35"
 envy = "0.4.2"
 moka = { version = "0.12.8", features = ["future"] }
 regex = "1.10.4"

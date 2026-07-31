@@ -60,7 +60,7 @@ features:
     <ul>
       <li>Supports line range specifications (<code>#L10-L20</code>)</li>
       <li>Expands up to 3 links per message</li>
-      <li>1MB file size limit; truncated to 50 lines by default (configurable)</li>
+      <li>Truncated to 50 lines by default (configurable); only the displayed lines are downloaded, up to a 1MB read limit</li>
     </ul>
   </div>
   <div class="feature-showcase-media">🐙</div>

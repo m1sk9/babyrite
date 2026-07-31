@@ -47,7 +47,7 @@ Detects GitHub permalinks (blob URLs containing a commit SHA) and expands file c
 
 - Supports line range specifications (`#L10-L20`)
 - Expands up to 3 links per message
-- 1MB file size limit; display truncated to 50 lines by default (configurable)
+- Display truncated to 50 lines by default (configurable); only the displayed lines are downloaded, up to a 1MB read limit
 
 <details>
 <summary>Supported languages</summary>
