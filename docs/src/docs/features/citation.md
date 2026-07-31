@@ -30,7 +30,7 @@ Follow these steps in your client to copy a message link.
 :::
 
 - Expands up to 3 links per message.
-- Content in NSFW channels is not expanded.
+- Content in NSFW channels is not expanded. The same applies to threads under an NSFW channel.
 
 ### Canceling a preview
 

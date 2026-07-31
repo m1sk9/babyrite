@@ -298,11 +298,12 @@ fn viewing_roles(
     set
 }
 
-/// Resolves the channel whose permission overwrites determine visibility.
+/// Resolves the channel that carries the properties a thread inherits — its
+/// permission overwrites and its NSFW flag.
 ///
-/// Threads inherit visibility from their parent channel, so for any thread the
-/// parent channel is fetched and returned. Non-thread channels are returned
-/// unchanged. A thread without a `parent_id` is treated as an error.
+/// Threads hold neither of their own, so for any thread the parent channel is
+/// fetched and returned. Non-thread channels are returned unchanged. A thread
+/// without a `parent_id` is treated as an error.
 #[cfg_attr(coverage_nightly, coverage(off))]
 async fn permission_channel(
     channel: &GuildChannel,
@@ -410,8 +411,8 @@ impl Preview {
     /// content is posted as a single message that all members of
     /// `source_channel` can read, so the linked channel must be at least as
     /// visible as the source channel to avoid leaking restricted content. Public
-    /// and news threads are judged by their parent channel's permissions, since
-    /// threads do not carry their own overwrites.
+    /// and news threads are judged by their parent channel, which holds both the
+    /// permission overwrites and the NSFW flag they inherit.
     ///
     /// The guild boundary is checked before the channel is resolved. Roles and
     /// permission overwrites are guild-local, so a link into another guild
@@ -451,7 +452,12 @@ impl Preview {
         let channel = caches.get(ctx).await.map_err(|_| PreviewError::Cache)?;
         tracing::debug!(kind = ?channel.kind, nsfw = channel.nsfw, "resolved target channel");
 
-        if channel.nsfw {
+        // Judged on the parent for threads, not on `channel.nsfw` directly:
+        // Discord omits `nsfw` from thread objects because threads inherit it,
+        // and serenity defaults the absent field to `false`, so every thread
+        // under an NSFW channel would otherwise slip past this gate.
+        let age_gate = permission_channel(&channel, ctx).await?;
+        if age_gate.nsfw {
             tracing::debug!("rejected: target channel is NSFW");
             return Err(PreviewError::Nsfw);
         }
