@@ -3,10 +3,12 @@
 //! This module implements the serenity [`EventHandler`] trait to handle
 //! Discord gateway events such as ready and message events.
 
+use crate::cache::invalidate_channel;
 use crate::config::BabyriteConfig;
 use crate::expand::{EXPANDERS, ExpandContext, ExpandedContent};
 use serenity::all::{
-    ActivityData, Context, CreateAllowedMentions, CreateMessage, EventHandler, Message, Ready,
+    ActivityData, Context, CreateAllowedMentions, CreateMessage, EventHandler, GuildChannel,
+    Message, PartialGuildChannel, Ready,
 };
 use serenity::futures::future::join_all;
 use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
@@ -21,6 +23,48 @@ impl EventHandler for BabyriteEventHandler {
         let version = format!("v{}", env!("CARGO_PKG_VERSION"));
         ctx.set_activity(ActivityData::custom(format!("Running {}", version)).into());
         tracing::info!("Running {}, {} is connected!", version, bot.user.name);
+    }
+
+    // The six handlers below exist only to keep the channel caches from
+    // outliving the permissions they hold. `check_visibility` decides whether a
+    // link may be expanded from the cached permission overwrites, so a cached
+    // channel that Discord has since restricted keeps being treated as visible.
+    // Creations and deletions are included because the guild's channel list is
+    // cached as one value, and a stale list answers for channels that no longer
+    // exist and misses ones that now do.
+
+    async fn channel_create(&self, _ctx: Context, channel: GuildChannel) {
+        invalidate_channel(channel.guild_id, channel.id).await;
+    }
+
+    async fn channel_update(&self, _ctx: Context, _old: Option<GuildChannel>, new: GuildChannel) {
+        invalidate_channel(new.guild_id, new.id).await;
+    }
+
+    async fn channel_delete(
+        &self,
+        _ctx: Context,
+        channel: GuildChannel,
+        _messages: Option<Vec<Message>>,
+    ) {
+        invalidate_channel(channel.guild_id, channel.id).await;
+    }
+
+    async fn thread_create(&self, _ctx: Context, thread: GuildChannel) {
+        invalidate_channel(thread.guild_id, thread.id).await;
+    }
+
+    async fn thread_update(&self, _ctx: Context, _old: Option<GuildChannel>, new: GuildChannel) {
+        invalidate_channel(new.guild_id, new.id).await;
+    }
+
+    async fn thread_delete(
+        &self,
+        _ctx: Context,
+        thread: PartialGuildChannel,
+        _full_thread_data: Option<GuildChannel>,
+    ) {
+        invalidate_channel(thread.guild_id, thread.id).await;
     }
 
     async fn message(&self, ctx: Context, request: Message) {

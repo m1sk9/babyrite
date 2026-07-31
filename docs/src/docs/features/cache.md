@@ -8,8 +8,9 @@ babyrite uses the concurrent caching library [moka](https://github.com/moka-rs/m
 
 ::: warning About the caching system's technical constraints
 
-- There is no explicit cache invalidation mechanism.
-  - Even after a channel is renamed, deleted, or has its permissions changed, stale data may still be returned until the TTI/TTL expires.
+- When Discord reports that a channel was created, updated or deleted (threads included), the cache for that channel and its guild is discarded.
+  - Making a channel private therefore takes effect immediately.
+  - An event missed across a gateway reconnect is the exception; the TTL resolves that within the hour.
 - Cache keys are shared across the entire process.
   - `GUILD_CHANNEL_CACHE` is keyed by `channel_id` alone, so a channel cached for another guild can still be a hit.
   - Every lookup therefore verifies that the channel really belongs to the requested guild. If it does not, the channel is not returned and the lookup fails.
@@ -39,7 +40,8 @@ Both operate with the following shared settings:
 - TTI (Time To Idle):
   - Data that hasn't been accessed for 1 hour is automatically removed.
 - TTL (Time To Live):
-  - Data expires after 12 hours regardless of access frequency.
+  - Data expires after 1 hour regardless of access frequency.
+  - Cached channel data feeds permission decisions, so the TTL is not just a memory bound — it also bounds how long a missed event can stay in effect.
 
 ## Cache lookup flow
 

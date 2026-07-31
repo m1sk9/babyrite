@@ -26,7 +26,7 @@ The bot listens for Discord messages containing links and expands them into embe
 
 - **`config.rs`** — Singleton config via `OnceLock`. Loads from TOML file (`CONFIG_FILE_PATH` env var) or defaults. `EnvConfig` handles env vars (`DISCORD_API_TOKEN`).
 - **`event.rs`** — Implements `serenity::EventHandler`. Filters bot/non-guild messages, parses up to 3 Discord links and 3 GitHub permalinks per message, sends expanded content as replies.
-- **`cache.rs`** — Two `moka::future::Cache` instances for guild channel lists and individual channels (500 entries, 12h TTL, 1h TTI). Lookup cascade: channel cache → guild list → active threads → API.
+- **`cache.rs`** — Two `moka::future::Cache` instances for guild channel lists and individual channels (500 entries, 1h TTL, 1h TTI). Lookup cascade: channel cache → guild list → active threads → API. `invalidate_channel()` drops both on channel/thread gateway events, since cached overwrites feed the visibility policy.
 - **`expand.rs`** — `ExpandedContent` enum: `Embed` for Discord previews, `CodeBlock` for GitHub files. `ExpandError` unifies error types.
 - **`expand/discord.rs`** — Regex-based parsing of Discord message URLs (production/PTB/Canary). `Preview::get` holds the whole visibility policy: guild boundary, NSFW, permissions, privacy.
 - **`expand/github.rs`** — Parses GitHub permalinks with commit SHAs and optional line ranges (`#L10-L20`). Fetches raw content with 1MB size limit, truncates to `max_lines` (default 50).
