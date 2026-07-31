@@ -58,10 +58,15 @@ impl LinkExpander for DiscordExpander {
 
     /// Expands Discord message links into embed previews.
     ///
-    /// Cross-guild links are skipped. The source channel is resolved once — the
-    /// expanded preview is posted there, so it is needed to verify each link
-    /// target is at least as visible as that channel. If it cannot be resolved,
-    /// Discord expansion is skipped entirely (other expanders are unaffected).
+    /// The source channel is resolved once — the expanded preview is posted
+    /// there, so it is needed to verify each link target is at least as visible
+    /// as that channel. If it cannot be resolved, Discord expansion is skipped
+    /// entirely (other expanders are unaffected).
+    ///
+    /// Whether a link may be expanded at all is decided by [`Preview::get`].
+    /// The rejections it reports are expected outcomes and are logged at
+    /// `debug`; only genuine failures reach `error` (see
+    /// [`PreviewError::is_policy_rejection`]).
     #[cfg_attr(coverage_nightly, coverage(off))]
     async fn expand_all(&self, cx: &ExpandContext<'_>) -> Vec<ExpandedContent> {
         let links = MessageLinkIDs::parse_all(&cx.message.content);
@@ -69,23 +74,6 @@ impl LinkExpander for DiscordExpander {
             return Vec::new();
         }
         tracing::debug!(count = links.len(), "parsed Discord links");
-
-        let links: Vec<_> = links
-            .into_iter()
-            .filter(|ids| {
-                if ids.guild_id != cx.guild_id {
-                    tracing::debug!(
-                        link_guild_id = %ids.guild_id,
-                        "skipping cross-guild Discord link"
-                    );
-                    return false;
-                }
-                true
-            })
-            .collect();
-        if links.is_empty() {
-            return Vec::new();
-        }
 
         let source_channel = match (CacheArgs {
             guild_id: cx.guild_id,
@@ -106,6 +94,10 @@ impl LinkExpander for DiscordExpander {
             .into_iter()
             .filter_map(|result| match result {
                 Ok(content) => Some(content),
+                Err(ExpandError::Discord(e)) if e.is_policy_rejection() => {
+                    tracing::debug!(error = %e, "skipped Discord link by visibility policy");
+                    None
+                }
                 Err(e) => {
                     tracing::error!(error = %e, "failed to expand Discord link");
                     None
@@ -118,6 +110,9 @@ impl LinkExpander for DiscordExpander {
 /// Errors that can occur when generating a Discord message preview.
 #[derive(thiserror::Error, Debug)]
 pub enum PreviewError {
+    /// The link points into a guild other than the one it was posted in.
+    #[error("The link points to another guild, which cannot be expanded.")]
+    CrossGuild,
     /// Failed to retrieve channel information from cache.
     #[error("Failed to retrieve from cache.")]
     Cache,
@@ -131,6 +126,22 @@ pub enum PreviewError {
     #[allow(clippy::enum_variant_names)]
     #[error(transparent)]
     SerenityError(#[from] serenity::Error),
+}
+
+impl PreviewError {
+    /// Whether this is the visibility policy working as designed rather than a
+    /// failure.
+    ///
+    /// Rejections happen during normal use, so callers log them at `debug` and
+    /// keep `error` for cases that need attention.
+    pub fn is_policy_rejection(&self) -> bool {
+        // Matched exhaustively rather than with a `_` arm so that a new variant
+        // has to declare its severity instead of silently counting as a failure.
+        match self {
+            Self::CrossGuild | Self::Nsfw | Self::Permission => true,
+            Self::Cache | Self::SerenityError(_) => false,
+        }
+    }
 }
 
 impl MessageLinkIDs {
@@ -212,6 +223,16 @@ fn has_member_view_deny(overwrites: &[PermissionOverwrite]) -> bool {
         matches!(ow.kind, PermissionOverwriteType::Member(_))
             && ow.deny.contains(Permissions::VIEW_CHANNEL)
     })
+}
+
+/// Returns `true` when a link crosses a guild boundary.
+///
+/// Roles, permission overwrites and the `@everyone` id are all guild-local, so
+/// the role-set comparison in [`check_visibility`] cannot judge a channel in
+/// another guild — and the bot may not even be a member of that guild. Such
+/// links are refused outright rather than judged.
+fn is_cross_guild(link: GuildId, source: GuildId) -> bool {
+    link != source
 }
 
 /// Returns `true` when the link's visibility must be validated against the
@@ -306,11 +327,14 @@ async fn permission_channel(
 /// The expanded content is posted as a single message that all members of
 /// `source_channel` can read, so the linked channel must be at least as visible
 /// as the source channel to avoid leaking restricted content.
+///
+/// Both channels must be in the same guild, which [`Preview::get`] guarantees by
+/// refusing cross-guild links: the role data this compares them against is
+/// guild-local and would be meaningless otherwise.
 #[cfg_attr(coverage_nightly, coverage(off))]
 async fn check_visibility(
     channel: &GuildChannel,
     source_channel: &GuildChannel,
-    guild_id: GuildId,
     ctx: &Context,
 ) -> Result<(), PreviewError> {
     // Private threads cannot be represented by the role-set comparison
@@ -340,6 +364,7 @@ async fn check_visibility(
         return Err(PreviewError::Permission);
     }
 
+    let guild_id = source_channel.guild_id;
     let everyone_role_id = RoleId::new(guild_id.get());
     // Clone the role permission map out of the cache so the non-`Send`
     // `GuildRef` is dropped immediately — holding it across an `await` would
@@ -378,13 +403,20 @@ async fn check_visibility(
 impl Preview {
     /// Retrieves a preview for the given message link.
     ///
-    /// Validates that the linked channel is not NSFW, is not a private thread or
-    /// DM, and that everyone who can view the request's `source_channel` could
-    /// also view the linked channel. The expanded content is posted as a single
-    /// message that all members of `source_channel` can read, so the linked
-    /// channel must be at least as visible as the source channel to avoid leaking
-    /// restricted content. Public and news threads are judged by their parent
-    /// channel's permissions, since threads do not carry their own overwrites.
+    /// Every rule deciding whether a link may be expanded lives here. In order,
+    /// the link must point into the same guild as `source_channel`, and the
+    /// linked channel must not be NSFW, must not be a private thread or DM, and
+    /// must be viewable by everyone who can view `source_channel`. The expanded
+    /// content is posted as a single message that all members of
+    /// `source_channel` can read, so the linked channel must be at least as
+    /// visible as the source channel to avoid leaking restricted content. Public
+    /// and news threads are judged by their parent channel's permissions, since
+    /// threads do not carry their own overwrites.
+    ///
+    /// The guild boundary is checked before the channel is resolved. Roles and
+    /// permission overwrites are guild-local, so a link into another guild
+    /// cannot be judged at all, and resolving it would spend rate limit on a
+    /// guild the bot may not even be in.
     ///
     /// When the link target is the same channel as `source_channel`, the
     /// visibility checks are skipped entirely: the reply lands in that same
@@ -403,8 +435,16 @@ impl Preview {
         ctx: &Context,
         source_channel: &GuildChannel,
     ) -> Result<Preview, PreviewError> {
+        if is_cross_guild(args.guild_id, source_channel.guild_id) {
+            tracing::debug!(link_guild_id = %args.guild_id, "rejected: cross-guild link");
+            return Err(PreviewError::CrossGuild);
+        }
+
         let caches = CacheArgs {
-            guild_id: args.guild_id,
+            // Not `args.guild_id`: that is the value the URL claims. It equals
+            // the source guild after the check above, so take it from the
+            // resolved channel and keep guild scoping sourced from Discord.
+            guild_id: source_channel.guild_id,
             channel_id: args.channel_id,
         };
 
@@ -423,7 +463,7 @@ impl Preview {
         // notably covers quoting within a private channel, which would otherwise
         // be rejected by the per-member deny guard.
         if requires_visibility_check(args.channel_id, source_channel.id) {
-            check_visibility(&channel, source_channel, args.guild_id, ctx).await?;
+            check_visibility(&channel, source_channel, ctx).await?;
         }
 
         let started = std::time::Instant::now();
@@ -588,6 +628,26 @@ mod tests {
         assert!(!requires_visibility_check(chan, chan));
         // A link to a different channel still requires validation.
         assert!(requires_visibility_check(chan, ChannelId::new(99)));
+    }
+
+    #[test]
+    fn cross_guild_links_are_rejected() {
+        let guild = GuildId::new(7);
+        // A link into the guild it was posted in may be judged further.
+        assert!(!is_cross_guild(guild, guild));
+        // A link from any other guild is refused outright.
+        assert!(is_cross_guild(GuildId::new(8), guild));
+    }
+
+    #[test]
+    fn only_visibility_rejections_count_as_policy() {
+        // Expected outcomes of the visibility policy: logged at debug.
+        assert!(PreviewError::CrossGuild.is_policy_rejection());
+        assert!(PreviewError::Nsfw.is_policy_rejection());
+        assert!(PreviewError::Permission.is_policy_rejection());
+        // Genuine failures: logged at error.
+        assert!(!PreviewError::Cache.is_policy_rejection());
+        assert!(!PreviewError::SerenityError(serenity::Error::Other("boom")).is_policy_rejection());
     }
 
     #[test]
