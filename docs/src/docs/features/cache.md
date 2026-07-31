@@ -11,7 +11,8 @@ babyrite uses the concurrent caching library [moka](https://github.com/moka-rs/m
 - There is no explicit cache invalidation mechanism.
   - Even after a channel is renamed, deleted, or has its permissions changed, stale data may still be returned until the TTI/TTL expires.
 - Cache keys are shared across the entire process.
-  - If the caller's `guild_id` / `channel_id` match, the cache is reused even for a different guild's Discord link expansion.
+  - `GUILD_CHANNEL_CACHE` is keyed by `channel_id` alone, so a channel cached for another guild can still be a hit.
+  - Every lookup therefore verifies that the channel really belongs to the requested guild. If it does not, the channel is not returned and the lookup fails.
 
 :::
 
@@ -45,7 +46,8 @@ Both operate with the following shared settings:
 ### Message preview
 
 1. Look up `GUILD_CHANNEL_CACHE` (the individual channel cache)
-    - If it's a hit, return it as-is.
+    - On a hit, return the channel if it belongs to the requested guild.
+    - If it belongs to another guild, fail. (Channel IDs are unique across Discord, so this means the request itself was wrong.)
 2. If not found, look up `GUILD_CHANNEL_LIST_CACHE` (the channel list cache)
     - If it's a hit, look for the target channel in that map.
     - If it's a miss, fetch from the Discord API and store the result in the cache.
