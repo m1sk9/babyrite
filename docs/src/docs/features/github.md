@@ -53,7 +53,11 @@ https://github.com/{owner}/{repo}/blob/{ref}/{path}#L{start}-L{end}
 
 Content is fetched from `https://raw.githubusercontent.com/`.
 
-If the response size (`Content-Length`) exceeds 1MB (`1_048_576` bytes), the fetch is aborted and an error is returned.
+The response body is read incrementally and the transfer is aborted as soon as enough lines for the code block have arrived, so the rest of the file is never downloaded. A file larger than 1MB can therefore still be previewed, as long as the lines that are actually displayed fit within the limit.
+
+If the bytes read up to the last displayed line exceed 1MB (`1_048_576` bytes), the fetch is aborted and an error is returned. The limit is applied to the bytes actually received rather than to `Content-Length`, because `raw.githubusercontent.com` may respond with chunked transfer encoding, in which case that header is absent.
+
+The whole request (connect, response, and body read) is bounded by a 10 second timeout.
 
 ### Canceling a preview
 

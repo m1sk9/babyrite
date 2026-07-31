@@ -29,7 +29,7 @@ The bot listens for Discord messages containing links and expands them into embe
 - **`cache.rs`** — Two `moka::future::Cache` instances for guild channel lists and individual channels (500 entries, 12h TTL, 1h TTI). Lookup cascade: channel cache → guild list → active threads → API.
 - **`expand.rs`** — `ExpandedContent` enum: `Embed` for Discord previews, `CodeBlock` for GitHub files. `ExpandError` unifies error types.
 - **`expand/discord.rs`** — Regex-based parsing of Discord message URLs (production/PTB/Canary). `Preview::get` holds the whole visibility policy: guild boundary, NSFW, permissions, privacy.
-- **`expand/github.rs`** — Parses GitHub permalinks with commit SHAs and optional line ranges (`#L10-L20`). Fetches raw content with 1MB size limit, truncates to `max_lines` (default 50).
+- **`expand/github.rs`** — Parses GitHub permalinks with commit SHAs and optional line ranges (`#L10-L20`). Streams raw content and aborts the transfer once `max_lines` (default 50) worth of lines have arrived; the 1MB limit applies to the bytes actually read, not to `Content-Length`.
 - **`utils.rs`** — `language_from_extension()` maps file extensions to syntax highlighting language names.
 
 ## Patterns & Conventions
