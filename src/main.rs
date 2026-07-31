@@ -19,6 +19,7 @@ use crate::{
     expand::github::HttpClient,
 };
 use serenity::all::GatewayIntents;
+use std::time::Duration;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -51,7 +52,14 @@ async fn main() -> anyhow::Result<()> {
     // Register the shared HTTP client for GitHub API requests.
     {
         let mut data = client.data.write().await;
-        data.insert::<HttpClient>(reqwest::Client::new());
+        // The raw-content read caps bytes, not time: without a timeout a stalled
+        // server would hold the fetch open indefinitely.
+        data.insert::<HttpClient>(
+            reqwest::Client::builder()
+                .timeout(Duration::from_secs(10))
+                .build()
+                .expect("Failed to build HTTP client."),
+        );
     }
 
     client.start().await?;
