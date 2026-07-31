@@ -364,14 +364,24 @@ impl LimitedBody {
 
     /// Decodes the accumulated bytes.
     ///
-    /// Why not decode per chunk: a multi-byte UTF-8 sequence can straddle a chunk
-    /// boundary, so decoding happens once over the joined bytes.
+    /// Why not decode per chunk: a multi-byte sequence can straddle a chunk boundary,
+    /// so decoding happens once over the joined bytes.
     ///
-    /// Why not `Response::text`: it honours the `Content-Type` charset, which
-    /// `chunk`-based reading cannot. `raw.githubusercontent.com` serves
-    /// `charset=utf-8`, and `text` itself assumes UTF-8 when the charset is absent.
+    /// Why `encoding_rs` rather than `String::from_utf8_lossy`: this is the decode
+    /// the replaced `Response::text` performed, so BOM sniffing keeps its behaviour —
+    /// the BOM is dropped instead of showing up as an invisible U+FEFF, and a
+    /// UTF-16 BOM selects UTF-16 instead of decoding to mojibake.
+    ///
+    /// A UTF-16 body only survives being read in full: [`Self::push`] counts lines in
+    /// raw bytes, so stopping at the `0A` of a UTF-16LE `\n` (`0A 00`) leaves the
+    /// final code unit incomplete. Counting lines in decoded text instead would mean
+    /// decoding incrementally, which is not worth it for how rare such files are.
+    ///
+    /// Why not read the `Content-Type` charset like `Response::text` does: the header
+    /// is gone by the time chunks are joined. `raw.githubusercontent.com` serves
+    /// `charset=utf-8`, which is also what `text` assumes when the charset is absent.
     fn finish(self) -> String {
-        String::from_utf8_lossy(&self.buf).into_owned()
+        encoding_rs::UTF_8.decode(&self.buf).0.into_owned()
     }
 }
 
@@ -929,6 +939,41 @@ mod tests {
         // "あ" is E3 81 82; split it between two chunks.
         let result = read_chunks(&[b"\xe3\x81", b"\x82\n"], 1).unwrap();
         assert_eq!(result, "あ\n");
+    }
+
+    #[test]
+    fn limited_body_strips_leading_utf8_bom() {
+        let result = read_chunks(&[b"\xef\xbb\xbffn main() {}\n"], 1).unwrap();
+        assert_eq!(result, "fn main() {}\n");
+    }
+
+    #[test]
+    fn limited_body_keeps_bom_appearing_mid_body() {
+        let result = read_chunks(&["a\n\u{feff}b\n".as_bytes()], 2).unwrap();
+        assert_eq!(result, "a\n\u{feff}b\n");
+    }
+
+    #[test]
+    fn limited_body_decodes_utf16_read_in_full() {
+        // UTF-16LE BOM followed by "hi\n". A BOM selects its own encoding, so a body
+        // read in full decodes rather than turning into replacement characters.
+        let result = read_chunks(&[b"\xff\xfeh\0i\0\n\0"], 5).unwrap();
+        assert_eq!(result, "hi\n");
+    }
+
+    #[test]
+    fn limited_body_clips_utf16_when_stopping_early() {
+        // Known limitation: lines are counted in raw bytes, so stopping at the `0A`
+        // of a UTF-16LE `\n` (`0A 00`) drops the trailing `00` and leaves the final
+        // code unit incomplete. Only the boundary line is affected.
+        let result = read_chunks(&[b"\xff\xfeh\0i\0\n\0j\0\n\0"], 1).unwrap();
+        assert_eq!(result, "hi\u{fffd}");
+    }
+
+    #[test]
+    fn limited_body_replaces_invalid_utf8() {
+        let result = read_chunks(&[b"a\xffb\n"], 1).unwrap();
+        assert_eq!(result, "a\u{fffd}b\n");
     }
 
     #[test]
