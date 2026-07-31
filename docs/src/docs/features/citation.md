@@ -44,6 +44,8 @@ If you don't want a link expanded, wrap the message link in `<>` and it will be 
 
 babyrite behaves as follows with respect to channel permissions.
 
+- Message links pointing to another server (guild) are not expanded.
+  - Permissions are defined per server, so babyrite cannot judge whether a channel in another server is viewable.
 - Messages in private threads and DMs are not expanded.
 - The linked channel is only expanded if every member who can view the source channel can also view it.
   - It is not expanded if the linked channel's visibility is narrower than the source channel's.
