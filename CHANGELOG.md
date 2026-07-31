@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.1...babyrite-v1.4.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **cache:** invalidate cached channels when their permissions change ([#648](https://github.com/m1sk9/babyrite/issues/648)) ([fe25c8c](https://github.com/m1sk9/babyrite/commit/fe25c8cd82ea9e62b19b34bdd4b986cc515cbef2))
+* **cache:** reject cached channels that belong to another guild ([#642](https://github.com/m1sk9/babyrite/issues/642)) ([ceace26](https://github.com/m1sk9/babyrite/commit/ceace260179dedc38f9e565f2aba9980aa8b53d3))
+* **discord:** judge NSFW on the parent channel for threads ([#646](https://github.com/m1sk9/babyrite/issues/646)) ([fd1b038](https://github.com/m1sk9/babyrite/commit/fd1b03888dc1cd24fdd16b0ab991890e63fcf5b1))
+* **discord:** refuse restricted targets when the source grants access per member ([#651](https://github.com/m1sk9/babyrite/issues/651)) ([35d3e4b](https://github.com/m1sk9/babyrite/commit/35d3e4ba6c807b91b3e2e5e6962e1d4c7a98412e))
+* **event:** stop code blocks from parsing mentions or escaping their fence ([#647](https://github.com/m1sk9/babyrite/issues/647)) ([7f8db73](https://github.com/m1sk9/babyrite/commit/7f8db73ca15b05da8173ae37c084f28175f66a36))
+* **github:** enforce the raw fetch size limit on received bytes and stop reading once enough lines arrive ([#645](https://github.com/m1sk9/babyrite/issues/645)) ([b445550](https://github.com/m1sk9/babyrite/commit/b4455500cda21f936a3ab97bb1afdc054331a36d))
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.116.0 ([#640](https://github.com/m1sk9/babyrite/issues/640)) ([41569c6](https://github.com/m1sk9/babyrite/commit/41569c6989814e421ad864b6636a420fbb363118))
+* **expand:** consolidate cross-guild rejection into Preview::get ([#644](https://github.com/m1sk9/babyrite/issues/644)) ([02443cd](https://github.com/m1sk9/babyrite/commit/02443cd3693bf5015c99f93b03c71cdde09c695d))
+
 ## [1.4.1](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.0...babyrite-v1.4.1) (2026-07-30)
 
 
