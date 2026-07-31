@@ -47,6 +47,11 @@ export default defineConfig({
   vite: {
     plugins: [llmstxt()],
   },
+  themeConfig: {
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/m1sk9/babyrite' },
+    ],
+  },
   markdown: {
     config(md) {
       md.use(tabsMarkdownPlugin);
