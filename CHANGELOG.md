@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.3](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.2...babyrite-v1.4.3) (2026-08-08)
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.5.7 ([#656](https://github.com/m1sk9/babyrite/issues/656)) ([1dcb8ab](https://github.com/m1sk9/babyrite/commit/1dcb8abe4f86f8e4b74c0e4833a5efc993cccfbb))
+* **deps:** update dependency wrangler to v4.118.0 ([#654](https://github.com/m1sk9/babyrite/issues/654)) ([3ee21c8](https://github.com/m1sk9/babyrite/commit/3ee21c8a6c0685129686914df458a9f4830002a4))
+* **deps:** update dependency wrangler to v4.119.0 ([#658](https://github.com/m1sk9/babyrite/issues/658)) ([e653cb9](https://github.com/m1sk9/babyrite/commit/e653cb9a1df77a69df344a2c823c4471ce484a88))
+* **deps:** update dependency wrangler to v4.120.0 ([#660](https://github.com/m1sk9/babyrite/issues/660)) ([b8b7153](https://github.com/m1sk9/babyrite/commit/b8b7153339aeb6276513bfee1e233182a36fc78d))
+* **deps:** update rust crate thiserror to v2.0.20 ([#661](https://github.com/m1sk9/babyrite/issues/661)) ([9baeabc](https://github.com/m1sk9/babyrite/commit/9baeabc53348bab33835875938f9960e28a4a549))
+* **deps:** update swatinem/rust-cache action to v2.9.2 ([#659](https://github.com/m1sk9/babyrite/issues/659)) ([c7c0d1d](https://github.com/m1sk9/babyrite/commit/c7c0d1deb8f224482f676e63c7b844ae05366b67))
+
 ## [1.4.2](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.1...babyrite-v1.4.2) (2026-07-31)
 
 
