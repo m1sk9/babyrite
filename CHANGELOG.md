@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.4](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.3...babyrite-v1.4.4) (2026-08-18)
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.5.8 ([#664](https://github.com/m1sk9/babyrite/issues/664)) ([b4e9501](https://github.com/m1sk9/babyrite/commit/b4e9501eb476a95423d29cbeafcd869905f017a9))
+* **deps:** update dependency @biomejs/biome to v2.5.9 ([#669](https://github.com/m1sk9/babyrite/issues/669)) ([ae238c9](https://github.com/m1sk9/babyrite/commit/ae238c9ae0b2c5f3800a714d835c4e7e3baa89ac))
+* **deps:** update dependency wrangler to v4.121.0 ([#665](https://github.com/m1sk9/babyrite/issues/665)) ([91f0713](https://github.com/m1sk9/babyrite/commit/91f0713281d1778fa1faea5b27eff635e9e7b8b6))
+* **deps:** update dependency wrangler to v4.122.0 ([#667](https://github.com/m1sk9/babyrite/issues/667)) ([24e7369](https://github.com/m1sk9/babyrite/commit/24e7369dbee3ad62a5b26f5ed31c3817b3f92e74))
+* **deps:** update dependency wrangler to v4.123.0 ([#668](https://github.com/m1sk9/babyrite/issues/668)) ([f378d77](https://github.com/m1sk9/babyrite/commit/f378d7781f1e2a89ed65f6e3a532e847bddb1986))
+* **deps:** update dependency wrangler to v4.124.0 ([#670](https://github.com/m1sk9/babyrite/issues/670)) ([6d917de](https://github.com/m1sk9/babyrite/commit/6d917de727379f0d429476cc0e1a641fecd05e1a))
+
 ## [1.4.3](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.2...babyrite-v1.4.3) (2026-08-10)
 
 
