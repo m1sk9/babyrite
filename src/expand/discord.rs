@@ -7,10 +7,10 @@
 
 use regex::Regex;
 use serenity::all::{
-    ChannelId, ChannelType, Context, GuildChannel, GuildId, Message, MessageId,
-    PermissionOverwrite, PermissionOverwriteType, Permissions, RoleId,
+    ChannelId, ChannelType, Context, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
+    GuildChannel, GuildId, Message, MessageId, PermissionOverwrite, PermissionOverwriteType,
+    Permissions, RoleId,
 };
-use serenity_builder::model::embed::SerenityEmbed;
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 
@@ -183,25 +183,37 @@ impl MessageLinkIDs {
     ) -> Result<ExpandedContent, ExpandError> {
         let Preview { message, channel } = Preview::get(self, ctx, source_channel).await?;
 
-        let author_icon_url = message.author.avatar_url().unwrap_or_default();
-        let embed = SerenityEmbed::builder()
-            .description(message.content)
-            .author_name(message.author.name)
-            .author_icon_url(author_icon_url)
-            .footer_text(channel.name)
-            .timestamp(message.timestamp)
-            .color(0x7A4AFFu32)
-            .image_url(
-                message
-                    .attachments
-                    .first()
-                    .map(|a| a.url.clone())
-                    .unwrap_or_default(),
-            )
-            .build();
-
-        Ok(ExpandedContent::Embed(Box::new(embed)))
+        Ok(ExpandedContent::Embed(Box::new(preview_embed(
+            &message, &channel,
+        ))))
     }
+}
+
+/// Accent colour of a message preview embed.
+const PREVIEW_EMBED_COLOUR: u32 = 0x7A4AFF;
+
+/// Renders a fetched message as the embed posted in the requester's channel.
+///
+/// Optional parts of the source message stay unset rather than being sent as an
+/// empty string: Discord rejects `""` where it expects a URL.
+fn preview_embed(message: &Message, channel: &GuildChannel) -> CreateEmbed {
+    let mut author = CreateEmbedAuthor::new(message.author.name.as_str());
+    if let Some(avatar_url) = message.author.avatar_url() {
+        author = author.icon_url(avatar_url);
+    }
+
+    let mut embed = CreateEmbed::new()
+        .description(message.content.as_str())
+        .author(author)
+        .footer(CreateEmbedFooter::new(channel.name.as_str()))
+        .timestamp(message.timestamp)
+        .colour(PREVIEW_EMBED_COLOUR);
+
+    if let Some(attachment) = message.attachments.first() {
+        embed = embed.image(attachment.url.as_str());
+    }
+
+    embed
 }
 
 /// Returns `true` for thread channel types.
@@ -869,5 +881,51 @@ mod tests {
         let ow = [role_ow(MEMBER.get(), true, false)];
         let viewing = viewing_roles(&ow, &roles, EVERYONE);
         assert!(viewing.contains(&MEMBER));
+    }
+
+    // --- Preview embed rendering ---
+
+    use serenity::all::Timestamp;
+
+    fn preview_parts(avatar: Option<&str>) -> (Message, GuildChannel) {
+        let mut message = Message::default();
+        message.content = "quoted content".to_string();
+        message.author.name = "author".to_string();
+        message.author.avatar = avatar.map(|hash| hash.parse().unwrap());
+        message.timestamp = Timestamp::parse("2024-01-01T00:00:00Z").unwrap();
+
+        let mut channel = GuildChannel::default();
+        channel.name = "general".to_string();
+
+        (message, channel)
+    }
+
+    #[test]
+    fn embed_carries_the_quoted_message_and_its_origin() {
+        let (message, channel) = preview_parts(None);
+
+        let embed = preview_embed(&message, &channel);
+
+        assert_eq!(
+            embed,
+            CreateEmbed::new()
+                .description("quoted content")
+                .author(CreateEmbedAuthor::new("author"))
+                .footer(CreateEmbedFooter::new("general"))
+                .timestamp(message.timestamp)
+                .colour(PREVIEW_EMBED_COLOUR)
+        );
+    }
+
+    #[test]
+    fn an_author_without_an_avatar_gets_no_icon_url() {
+        let (message, channel) = preview_parts(None);
+        let without_avatar = preview_embed(&message, &channel);
+
+        let (message, channel) = preview_parts(Some("a_00000000000000000000000000000000"));
+        let with_avatar = preview_embed(&message, &channel);
+
+        assert_ne!(without_avatar, with_avatar);
+        assert!(format!("{with_avatar:?}").contains("a_00000000000000000000000000000000"));
     }
 }

@@ -20,14 +20,15 @@ cargo llvm-cov --all-features --workspace      # Code coverage
 
 The bot listens for Discord messages containing links and expands them into embeds or code blocks.
 
-**Entry flow:** `main.rs` → loads config → initializes logging → starts Serenity client → `event.rs` handles messages
+**Entry flow:** `main.rs` → loads config → initializes logging → starts Serenity client → `event.rs` handles messages → `reply.rs` builds the outgoing messages
 
 **Key modules:**
 
 - **`config.rs`** — Singleton config via `OnceLock`. Loads from TOML file (`CONFIG_FILE_PATH` env var) or defaults. `EnvConfig` handles env vars (`DISCORD_API_TOKEN`).
 - **`event.rs`** — Implements `serenity::EventHandler`. Filters bot/non-guild messages, parses up to 3 Discord links and 3 GitHub permalinks per message, sends expanded content as replies.
 - **`cache.rs`** — Two `moka::future::Cache` instances for guild channel lists and individual channels (500 entries, 1h TTL, 1h TTI). Lookup cascade: channel cache → guild list → active threads → API. `invalidate_channel()` drops both on channel/thread gateway events, since cached overwrites feed the visibility policy.
-- **`expand.rs`** — `ExpandedContent` enum: `Embed` for Discord previews, `CodeBlock` for GitHub files. `ExpandError` unifies error types.
+- **`expand.rs`** — `ExpandedContent` enum: `Embed` (a serenity `CreateEmbed`) for Discord previews, `CodeBlock` for GitHub files. `ExpandError` unifies error types.
+- **`reply.rs`** — `build_messages()` turns `ExpandedContent` into the `CreateMessage`s sent back: embeds share one reply, each code block is its own message. The mention policy (reply ping only for the preview, nothing for code blocks) lives here.
 - **`expand/discord.rs`** — Regex-based parsing of Discord message URLs (production/PTB/Canary). `Preview::get` holds the whole visibility policy: guild boundary, NSFW, permissions, privacy.
 - **`expand/github.rs`** — Parses GitHub permalinks with commit SHAs and optional line ranges (`#L10-L20`). Streams raw content and aborts the transfer once `max_lines` (default 50) worth of lines have arrived; the 1MB limit applies to the bytes actually read, not to `Content-Length`.
 - **`utils.rs`** — `language_from_extension()` maps file extensions to syntax highlighting language names.
