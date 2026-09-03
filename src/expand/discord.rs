@@ -123,9 +123,11 @@ pub enum PreviewError {
     #[error("The channel is a private channel or private thread.")]
     Permission,
     /// An error occurred while communicating with Discord.
+    // Boxed: `serenity::Error` is 136 bytes and would otherwise dominate the
+    // size of every `Result` in this module (`clippy::result_large_err`).
     #[allow(clippy::enum_variant_names)]
     #[error(transparent)]
-    SerenityError(#[from] serenity::Error),
+    SerenityError(#[from] Box<serenity::Error>),
 }
 
 impl PreviewError {
@@ -519,7 +521,10 @@ impl Preview {
         }
 
         let started = std::time::Instant::now();
-        let message = channel.message(&ctx.http, args.message_id).await?;
+        let message = channel
+            .message(&ctx.http, args.message_id)
+            .await
+            .map_err(Box::new)?;
         tracing::debug!(
             elapsed_ms = started.elapsed().as_millis(),
             "fetched linked message"
@@ -755,7 +760,10 @@ mod tests {
         assert!(PreviewError::Permission.is_policy_rejection());
         // Genuine failures: logged at error.
         assert!(!PreviewError::Cache.is_policy_rejection());
-        assert!(!PreviewError::SerenityError(serenity::Error::Other("boom")).is_policy_rejection());
+        assert!(
+            !PreviewError::SerenityError(Box::new(serenity::Error::Other("boom")))
+                .is_policy_rejection()
+        );
     }
 
     #[test]
