@@ -8,8 +8,7 @@ pub mod github;
 
 use crate::config::BabyriteConfig;
 use regex::Regex;
-use serenity::all::{Context, GuildId, Message};
-use serenity_builder::model::embed::SerenityEmbed;
+use serenity::all::{Context, CreateEmbed, GuildId, Message};
 use std::collections::HashSet;
 
 /// Shared inputs for expanding the links of one message.
@@ -81,7 +80,9 @@ pub(crate) fn parse_links<T>(
 /// expanding a link.
 pub enum ExpandedContent {
     /// A Discord message preview displayed as an embed.
-    Embed(Box<SerenityEmbed>),
+    ///
+    /// Boxed because an embed dwarfs the other variant.
+    Embed(Box<CreateEmbed>),
     /// A code block with syntax highlighting (e.g. GitHub permalink).
     CodeBlock {
         /// The programming language for syntax highlighting.

@@ -7,11 +7,9 @@ use crate::cache::invalidate_channel;
 use crate::config::BabyriteConfig;
 use crate::expand::{EXPANDERS, ExpandContext, ExpandedContent};
 use serenity::all::{
-    ActivityData, Context, CreateAllowedMentions, CreateMessage, EventHandler, GuildChannel,
-    Message, PartialGuildChannel, Ready,
+    ActivityData, Context, EventHandler, GuildChannel, Message, PartialGuildChannel, Ready,
 };
 use serenity::futures::future::join_all;
-use serenity_builder::model::message::{SerenityMessage, SerenityMessageMentionType};
 use tracing::Instrument;
 
 /// Event handler for Babyrite bot.
@@ -122,71 +120,31 @@ impl EventHandler for BabyriteEventHandler {
 }
 
 /// Sends expanded contents as a reply to the original message.
+///
+/// A failed send is reported and skipped rather than aborting the rest: the
+/// expansions are independent, so one rejected message must not silence the
+/// others.
 async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<ExpandedContent>) {
-    let mut embeds = Vec::new();
-    let mut code_blocks = Vec::new();
+    let embeds = results
+        .iter()
+        .filter(|result| matches!(result, ExpandedContent::Embed(_)))
+        .count();
+    let code_blocks = results.len() - embeds;
 
-    for result in results {
-        match result {
-            ExpandedContent::Embed(embed) => embeds.push(*embed),
-            ExpandedContent::CodeBlock {
-                language,
-                code,
-                metadata,
-            } => {
-                let code = crate::utils::defuse_code_fences(&code);
-                code_blocks.push(format!("{metadata}\n```{language}\n{code}\n```"));
-            }
+    let messages = crate::reply::build_messages(request, results);
+    let total = messages.len();
+    let mut sent = 0;
+    for message in messages {
+        match request.channel_id.send_message(&ctx.http, message).await {
+            Ok(_) => sent += 1,
+            Err(e) => tracing::error!(error = ?e, "failed to send expanded content"),
         }
     }
 
-    let embed_count = embeds.len();
-    let code_block_count = code_blocks.len();
-
-    // Send embeds if any
-    if !embeds.is_empty() {
-        let message_builder = SerenityMessage::builder()
-            .embeds(embeds)
-            .mention_type(SerenityMessageMentionType::Reply(Box::new(request.clone())))
-            .build();
-
-        let converted_message = match message_builder.convert() {
-            Ok(m) => m,
-            Err(e) => {
-                tracing::error!(error = ?e, "failed to convert embed message");
-                return;
-            }
-        };
-
-        if let Err(e) = request
-            .channel_id
-            .send_message(&ctx.http, converted_message)
-            .await
-        {
-            tracing::error!(error = ?e, "failed to send preview");
-            return;
-        }
+    // `sent`/`total` count messages, not expansions: every embed shares one.
+    if sent == total {
+        tracing::info!(embeds, code_blocks, "preview sent");
+    } else {
+        tracing::warn!(embeds, code_blocks, sent, total, "preview partially sent");
     }
-
-    // Send code blocks as plain messages.
-    //
-    // Not `say`: it leaves `allowed_mentions` unset, which makes Discord parse
-    // every mention in the content under the bot's permissions. The content is
-    // fetched from a repository the requester chose, so that would let it borrow
-    // mention rights the requester may not hold. The embed path already sends an
-    // explicit `allowed_mentions`.
-    for block in code_blocks {
-        let message = CreateMessage::new()
-            .content(&block)
-            .allowed_mentions(CreateAllowedMentions::new());
-        if let Err(e) = request.channel_id.send_message(&ctx.http, message).await {
-            tracing::error!(error = ?e, "failed to send code block");
-        }
-    }
-
-    tracing::info!(
-        embeds = embed_count,
-        code_blocks = code_block_count,
-        "preview sent"
-    );
 }
