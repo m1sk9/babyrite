@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.4...babyrite-v1.4.5) (2026-09-03)
+
+
+### Bug Fixes
+
+* box `serenity::Error` to satisfy clippy `result_large_err` on Rust 1.98 ([#675](https://github.com/m1sk9/babyrite/issues/675)) ([3937e76](https://github.com/m1sk9/babyrite/commit/3937e767ed46426366cce387d3cb29c3a33ca043))
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.5.10 ([#673](https://github.com/m1sk9/babyrite/issues/673)) ([18ac32a](https://github.com/m1sk9/babyrite/commit/18ac32ab8c33ee6ce3df78a232eee0825c060ddd))
+* **deps:** update dependency @biomejs/biome to v2.5.12 ([#678](https://github.com/m1sk9/babyrite/issues/678)) ([ed61d10](https://github.com/m1sk9/babyrite/commit/ed61d10a3fa4075bdc40f3f7fe05e98d3b550b32))
+* **deps:** update dependency bun to v1.4.0 ([#671](https://github.com/m1sk9/babyrite/issues/671)) ([51ca5af](https://github.com/m1sk9/babyrite/commit/51ca5af64b1e09c9e03a2f4ef8f813125755a7be))
+* **deps:** update dependency wrangler to v4.125.0 ([#672](https://github.com/m1sk9/babyrite/issues/672)) ([c27b467](https://github.com/m1sk9/babyrite/commit/c27b4676669f6f9f0b8068a3c8647ef43c983fea))
+* **deps:** update rust crate toml to v1.1.5 ([#674](https://github.com/m1sk9/babyrite/issues/674)) ([7d9911a](https://github.com/m1sk9/babyrite/commit/7d9911a797cac507322874b6f59dff0f448f90c7))
+* **deps:** update taiki-e/install-action digest to e67fa11 ([#605](https://github.com/m1sk9/babyrite/issues/605)) ([e1429e3](https://github.com/m1sk9/babyrite/commit/e1429e3619e52dfc7a7b159634121695a82437c6))
+* replace serenity-builder with serenity's own message builders ([#677](https://github.com/m1sk9/babyrite/issues/677)) ([0d72442](https://github.com/m1sk9/babyrite/commit/0d724426a0bb318c0a6936af8e62485c21ca4719))
+
 ## [1.4.4](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.3...babyrite-v1.4.4) (2026-08-18)
 
 
