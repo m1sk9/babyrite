@@ -131,13 +131,20 @@ async fn send_expanded_contents(ctx: &Context, request: &Message, results: Vec<E
         .count();
     let code_blocks = results.len() - embeds;
 
+    let messages = crate::reply::build_messages(request, results);
+    let total = messages.len();
     let mut sent = 0;
-    for message in crate::reply::build_messages(request, results) {
+    for message in messages {
         match request.channel_id.send_message(&ctx.http, message).await {
             Ok(_) => sent += 1,
             Err(e) => tracing::error!(error = ?e, "failed to send expanded content"),
         }
     }
 
-    tracing::info!(embeds, code_blocks, sent, "preview sent");
+    // `sent`/`total` count messages, not expansions: every embed shares one.
+    if sent == total {
+        tracing::info!(embeds, code_blocks, "preview sent");
+    } else {
+        tracing::warn!(embeds, code_blocks, sent, total, "preview partially sent");
+    }
 }
