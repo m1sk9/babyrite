@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.6](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.5...babyrite-v1.4.6) (2026-09-05)
+
+
+### Miscellaneous
+
+* **deps:** update dependency bun to v1.4.1 ([#681](https://github.com/m1sk9/babyrite/issues/681)) ([72f901c](https://github.com/m1sk9/babyrite/commit/72f901c56e701049aa46a4976ec5e6d850855647))
+* **deps:** update dependency bun to v1.4.2 ([#683](https://github.com/m1sk9/babyrite/issues/683)) ([af0168b](https://github.com/m1sk9/babyrite/commit/af0168bc4598de33fbe955a4de1423fa0b4bf53e))
+* **deps:** update dependency wrangler to v4.129.0 ([#679](https://github.com/m1sk9/babyrite/issues/679)) ([88cb8c0](https://github.com/m1sk9/babyrite/commit/88cb8c05d790822d4fc8c401a40c508c07d8aa91))
+
 ## [1.4.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.4...babyrite-v1.4.5) (2026-09-03)
 
 
