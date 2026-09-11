@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.6](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.5...babyrite-v1.4.6) (2026-09-11)
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.5.13 ([#689](https://github.com/m1sk9/babyrite/issues/689)) ([bb6b905](https://github.com/m1sk9/babyrite/commit/bb6b905f71320e6ffd99b5e8023c812cb8124ee9))
+* **deps:** update dependency bun to v1.4.1 ([#681](https://github.com/m1sk9/babyrite/issues/681)) ([72f901c](https://github.com/m1sk9/babyrite/commit/72f901c56e701049aa46a4976ec5e6d850855647))
+* **deps:** update dependency bun to v1.4.2 ([#683](https://github.com/m1sk9/babyrite/issues/683)) ([af0168b](https://github.com/m1sk9/babyrite/commit/af0168bc4598de33fbe955a4de1423fa0b4bf53e))
+* **deps:** update dependency wrangler to v4.129.0 ([#679](https://github.com/m1sk9/babyrite/issues/679)) ([88cb8c0](https://github.com/m1sk9/babyrite/commit/88cb8c05d790822d4fc8c401a40c508c07d8aa91))
+* **deps:** update dependency wrangler to v4.129.1 ([#685](https://github.com/m1sk9/babyrite/issues/685)) ([b10c4c9](https://github.com/m1sk9/babyrite/commit/b10c4c94a878c9850d0f87d761e36c5969b223fc))
+* **deps:** update dependency wrangler to v4.130.0 ([#686](https://github.com/m1sk9/babyrite/issues/686)) ([4e91478](https://github.com/m1sk9/babyrite/commit/4e9147884868694b5b661593ed779086711b3405))
+* **deps:** update dependency wrangler to v4.131.0 ([#690](https://github.com/m1sk9/babyrite/issues/690)) ([911d750](https://github.com/m1sk9/babyrite/commit/911d75003539d4b11b2d2faa416ad32303dfa293))
+* **deps:** update dependency wrangler to v4.131.1 ([#692](https://github.com/m1sk9/babyrite/issues/692)) ([1419992](https://github.com/m1sk9/babyrite/commit/1419992d125ebe91dfe66e3736d994367384cbb4))
+* **deps:** update rust crate encoding_rs to v0.8.40 ([#684](https://github.com/m1sk9/babyrite/issues/684)) ([6c795a8](https://github.com/m1sk9/babyrite/commit/6c795a858dfac048f104d279c567aca96b53467a))
+* **deps:** update rust crate encoding_rs to v0.8.41 ([#688](https://github.com/m1sk9/babyrite/issues/688)) ([b4b55a9](https://github.com/m1sk9/babyrite/commit/b4b55a9d69d8a023327ccde9e6419162de5a6c1e))
+* **deps:** update rust crate reqwest to v0.13.5 ([#687](https://github.com/m1sk9/babyrite/issues/687)) ([c31fa7d](https://github.com/m1sk9/babyrite/commit/c31fa7d0ba75c18e5407090ec4758aebf864a323))
+* **deps:** update rust crate toml to v1.1.6 ([#691](https://github.com/m1sk9/babyrite/issues/691)) ([bd200bc](https://github.com/m1sk9/babyrite/commit/bd200bcfb9d7be1364cb1b8156b954cdf7957cf5))
+
 ## [1.4.5](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.4...babyrite-v1.4.5) (2026-09-03)
 
 
