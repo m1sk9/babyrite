@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.7](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.6...babyrite-v1.4.7) (2026-09-15)
+
+
+### Miscellaneous
+
+* **deps:** update codecov/codecov-action action to v7.1.0 ([#695](https://github.com/m1sk9/babyrite/issues/695)) ([0fb76f1](https://github.com/m1sk9/babyrite/commit/0fb76f17d20180793d3ee4c9959c574200208174))
+* **deps:** update dependency wrangler to v4.131.2 ([#693](https://github.com/m1sk9/babyrite/issues/693)) ([b0f8084](https://github.com/m1sk9/babyrite/commit/b0f808441a6904faefa143f714a18138e78c4253))
+* **deps:** update dependency wrangler to v4.132.0 ([#697](https://github.com/m1sk9/babyrite/issues/697)) ([0afd65c](https://github.com/m1sk9/babyrite/commit/0afd65c7e5dcd0db622d9dd0f586aad348a583a0))
+
 ## [1.4.6](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.5...babyrite-v1.4.6) (2026-09-13)
 
 
