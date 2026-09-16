@@ -52,56 +52,56 @@ Detects GitHub permalinks (blob URLs containing a commit SHA) and expands file c
 <details>
 <summary>Supported languages</summary>
 
-| Extension | Language |
-| --- | --- |
-| `.rs` | Rust |
-| `.py` | Python |
-| `.js` | JavaScript |
-| `.ts` | TypeScript |
-| `.jsx` | JSX |
-| `.tsx` | TSX |
-| `.rb` | Ruby |
-| `.go` | Go |
-| `.java` | Java |
-| `.kt`, `.kts` | Kotlin |
-| `.c`, `.h` | C |
-| `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx` | C++ |
-| `.cs` | C# |
-| `.swift` | Swift |
-| `.php` | PHP |
-| `.scala` | Scala |
-| `.sh`, `.bash`, `.zsh`, `.fish` | Bash |
-| `.ps1` | PowerShell |
-| `.html`, `.htm` | HTML |
-| `.css` | CSS |
-| `.scss` | SCSS |
-| `.sass` | Sass |
-| `.less` | Less |
-| `.json` | JSON |
-| `.yaml`, `.yml` | YAML |
-| `.toml` | TOML |
-| `.xml` | XML |
-| `.sql` | SQL |
-| `.md`, `.markdown` | Markdown |
-| `.lua` | Lua |
-| `.r` | R |
-| `.dart` | Dart |
-| `.zig` | Zig |
-| `.nim` | Nim |
-| `.ex`, `.exs` | Elixir |
-| `.erl`, `.hrl` | Erlang |
-| `.hs` | Haskell |
-| `.ml`, `.mli` | OCaml |
-| `.clj`, `.cljs` | Clojure |
-| `.tf` | HCL |
-| `.vue` | Vue |
-| `.svelte` | Svelte |
-| `.graphql`, `.gql` | GraphQL |
-| `.proto` | Protobuf |
-| `.mk`, `Makefile` | Makefile |
-| `Dockerfile` | Dockerfile |
+| Extension                             | Language   |
+| ------------------------------------- | ---------- |
+| `.rs`                                 | Rust       |
+| `.py`                                 | Python     |
+| `.js`                                 | JavaScript |
+| `.ts`                                 | TypeScript |
+| `.jsx`                                | JSX        |
+| `.tsx`                                | TSX        |
+| `.rb`                                 | Ruby       |
+| `.go`                                 | Go         |
+| `.java`                               | Java       |
+| `.kt`, `.kts`                         | Kotlin     |
+| `.c`, `.h`                            | C          |
+| `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx` | C++        |
+| `.cs`                                 | C#         |
+| `.swift`                              | Swift      |
+| `.php`                                | PHP        |
+| `.scala`                              | Scala      |
+| `.sh`, `.bash`, `.zsh`, `.fish`       | Bash       |
+| `.ps1`                                | PowerShell |
+| `.html`, `.htm`                       | HTML       |
+| `.css`                                | CSS        |
+| `.scss`                               | SCSS       |
+| `.sass`                               | Sass       |
+| `.less`                               | Less       |
+| `.json`                               | JSON       |
+| `.yaml`, `.yml`                       | YAML       |
+| `.toml`                               | TOML       |
+| `.xml`                                | XML        |
+| `.sql`                                | SQL        |
+| `.md`, `.markdown`                    | Markdown   |
+| `.lua`                                | Lua        |
+| `.r`                                  | R          |
+| `.dart`                               | Dart       |
+| `.zig`                                | Zig        |
+| `.nim`                                | Nim        |
+| `.ex`, `.exs`                         | Elixir     |
+| `.erl`, `.hrl`                        | Erlang     |
+| `.hs`                                 | Haskell    |
+| `.ml`, `.mli`                         | OCaml      |
+| `.clj`, `.cljs`                       | Clojure    |
+| `.tf`                                 | HCL        |
+| `.vue`                                | Vue        |
+| `.svelte`                             | Svelte     |
+| `.graphql`, `.gql`                    | GraphQL    |
+| `.proto`                              | Protobuf   |
+| `.mk`, `Makefile`                     | Makefile   |
+| `Dockerfile`                          | Dockerfile |
 
-For extensions not listed above, the extension name is used as-is for the language hint. 
+For extensions not listed above, the extension name is used as-is for the language hint.
 
 Note that Discord code blocks use [highlight.js](https://highlightjs.org/) for syntax highlighting, so languages not supported by highlight.js cannot be highlighted regardless of babyrite's configuration. If syntax highlighting does not work correctly for a supported language, please [open an issue](https://github.com/m1sk9/babyrite/issues/new).
 
@@ -117,6 +117,7 @@ docker pull ghcr.io/m1sk9/babyrite:v1
 
 - babyrite is tested on macOS and Linux (major distributions) as recommended environment.
   - Also compatible with Windows, but we recommend running it on macOS or Linux. (v0.19.0+)
+  - [Starting with macOS 28, Apple is ending support for Intel-based applications, so support has also been discontinued in babyrite](https://github.com/m1sk9/babyrite/discussions/701) (v1.4.7+).
 - ARM64 environments are supported (v0.16.0+)
 
 ### Using Docker Compose
@@ -152,13 +153,13 @@ github_permalink = true
 max_lines = 50
 ```
 
-| Key                          | Description                                                                     | Default Value     |
-| ---------------------------- | ------------------------------------------------------------------------------ | ----------------- |
-| `log.level`                  | Log level filter (same syntax as `RUST_LOG`). Overridden by `RUST_LOG` if set. | `"babyrite=info"` |
-| `log.format`                 | Log output format: `"compact"` or `"json"`.                                    | `"compact"`       |
-| `json_logging`               | **Deprecated.** Use `log.format = "json"`. Only used when `log.format` is unset. | `false`           |
-| `features.github_permalink`  | Enable or disable GitHub Permalink expansion.                                  | `true`            |
-| `github.max_lines`           | Maximum number of lines to display without truncation.                         | `50`              |
+| Key                         | Description                                                                      | Default Value     |
+| --------------------------- | -------------------------------------------------------------------------------- | ----------------- |
+| `log.level`                 | Log level filter (same syntax as `RUST_LOG`). Overridden by `RUST_LOG` if set.   | `"babyrite=info"` |
+| `log.format`                | Log output format: `"compact"` or `"json"`.                                      | `"compact"`       |
+| `json_logging`              | **Deprecated.** Use `log.format = "json"`. Only used when `log.format` is unset. | `false`           |
+| `features.github_permalink` | Enable or disable GitHub Permalink expansion.                                    | `true`            |
+| `github.max_lines`          | Maximum number of lines to display without truncation.                           | `50`              |
 
 ### Logging
 
@@ -171,7 +172,7 @@ babyrite uses [`tracing`](https://docs.rs/tracing) and emits logs to standard ou
 
 The environment variables used by babyrite are as follows. Note that the only environment variable required for startup is `DISCORD_API_TOKEN`.
 
-| Key                 | Description                                                                  |
+| Key                 | Description                                                                 |
 | ------------------- | --------------------------------------------------------------------------- |
 | `DISCORD_API_TOKEN` | Discord API token                                                           |
 | `CONFIG_FILE`       | Path to the configuration file (recursive path)                             |

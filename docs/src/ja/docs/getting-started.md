@@ -8,12 +8,12 @@ babyrite を導入するための手順を説明します．
 
 ## 動作要件
 
-| 項目 | 最小要件 | 推奨要件(複数ギルド運用時) |
-| --- | --- | --- |
-| CPU | 1 vCPU(共有可) | 1 vCPU |
-| メモリ | 128MB | 256MB 以上 |
-| ディスク | 数十 MB(`config.toml` のみ) | 同左 |
-| ネットワーク | Discord Gateway(WebSocket 常時接続)と Discord API / GitHub API への HTTPS アウトバウンド | 同左 |
+| 項目         | 最小要件                                                                                 | 推奨要件(複数ギルド運用時) |
+| ------------ | ---------------------------------------------------------------------------------------- | -------------------------- |
+| CPU          | 1 vCPU(共有可)                                                                           | 1 vCPU                     |
+| メモリ       | 128MB                                                                                    | 256MB 以上                 |
+| ディスク     | 数十 MB(`config.toml` のみ)                                                              | 同左                       |
+| ネットワーク | Discord Gateway(WebSocket 常時接続)と Discord API / GitHub API への HTTPS アウトバウンド | 同左                       |
 
 - babyrite は外部データベースを持ちません．また今後このようなデータベースを要求するような機能を追加する予定はありません．
 - Discord API への WebSocket 接続を行った際，チャンネル情報を [moka](https://github.com/moka-rs/moka) でメモリキャッシュします．
@@ -28,6 +28,7 @@ babyrite を導入するための手順を説明します．
 
 - 推奨環境として，macOS および主要な Linux ディストリビューションでの動作を確認しています．
   - Windows でも動作しますが，macOS または Linux での実行を推奨します(v0.19.0 以降)．
+  - macOS 28以降、Appleによる Intel ベースのアプリケーションのサポートが終了することに伴い，[babyriteでもサポートを終了しました](https://github.com/m1sk9/babyrite/discussions/701)(v1.4.7 以降)．
 - ARM64 環境にも対応しています(v0.16.0 以降)．
 
 ### トレードオフ
@@ -73,8 +74,8 @@ services:
 
 babyrite が使用する環境変数は以下の通りです．起動に必須な環境変数は `DISCORD_API_TOKEN` のみです．
 
-| Key | Description |
-| --- | --- |
-| `DISCORD_API_TOKEN` | Discord API トークン |
-| `CONFIG_FILE_PATH` | 設定ファイルへのパス(再帰的パス) |
-| `RUST_LOG` | ログレベルのフィルタ．設定した場合，設定ファイルの `log.level` を上書きします． |
+| Key                 | Description                                                                     |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `DISCORD_API_TOKEN` | Discord API トークン                                                            |
+| `CONFIG_FILE_PATH`  | 設定ファイルへのパス(再帰的パス)                                                |
+| `RUST_LOG`          | ログレベルのフィルタ．設定した場合，設定ファイルの `log.level` を上書きします． |

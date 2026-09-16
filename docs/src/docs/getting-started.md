@@ -8,12 +8,12 @@ This page explains how to set up babyrite.
 
 ## Requirements
 
-| Item | Minimum | Recommended (multi-guild) |
-| --- | --- | --- |
-| CPU | 1 vCPU (shared is fine) | 1 vCPU |
-| Memory | 128MB | 256MB or more |
-| Disk | Tens of MB (`config.toml` only) | Same |
-| Network | HTTPS outbound to the Discord Gateway (persistent WebSocket) and the Discord API / GitHub API | Same |
+| Item    | Minimum                                                                                       | Recommended (multi-guild) |
+| ------- | --------------------------------------------------------------------------------------------- | ------------------------- |
+| CPU     | 1 vCPU (shared is fine)                                                                       | 1 vCPU                    |
+| Memory  | 128MB                                                                                         | 256MB or more             |
+| Disk    | Tens of MB (`config.toml` only)                                                               | Same                      |
+| Network | HTTPS outbound to the Discord Gateway (persistent WebSocket) and the Discord API / GitHub API | Same                      |
 
 - babyrite has no external database, and there are no plans to add a feature that would require one.
 - When it connects to the Discord API over WebSocket, babyrite caches channel information in memory using [moka](https://github.com/moka-rs/moka).
@@ -28,6 +28,7 @@ The figures above are estimated from the source code (cache size, the 1MB limit 
 
 - Verified to run on macOS and major Linux distributions, which are the recommended environments.
   - It also runs on Windows, but macOS or Linux is recommended (since v0.19.0).
+  - Starting with macOS 28, Apple is ending support for Intel-based applications, [so support has also been discontinued in babyrite](https://github.com/m1sk9/babyrite/discussions/701) (v1.4.7+).
 - ARM64 environments are supported (since v0.16.0).
 
 ### Trade-offs
@@ -73,8 +74,8 @@ See the [Configuration Reference](./configuration) for the full list of settings
 
 The environment variables babyrite uses are as follows. `DISCORD_API_TOKEN` is the only one required to start.
 
-| Key | Description |
-| --- | --- |
-| `DISCORD_API_TOKEN` | Discord API token |
-| `CONFIG_FILE_PATH` | Path to the configuration file (recursive path) |
-| `RUST_LOG` | Log level filter. When set, it overrides the configuration file's `log.level`. |
+| Key                 | Description                                                                    |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `DISCORD_API_TOKEN` | Discord API token                                                              |
+| `CONFIG_FILE_PATH`  | Path to the configuration file (recursive path)                                |
+| `RUST_LOG`          | Log level filter. When set, it overrides the configuration file's `log.level`. |
