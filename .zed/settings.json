@@ -5,6 +5,27 @@
 {
   "enable_language_server": true,
   "format_on_save": "on",
-  "formatter": "language_server",
-  "language_servers": ["biome", "rust-analyzer"],
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["biome", "vtsls"],
+      "formatter": { "language_server": { "name": "biome" } },
+    },
+    "JavaScript": {
+      "language_servers": ["biome", "vtsls"],
+      "formatter": { "language_server": { "name": "biome" } },
+    },
+    "Rust": {
+      "language_servers": ["rust-analyzer"],
+    },
+  },
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy",
+          "extraArgs": ["--all-features"],
+        },
+      },
+    },
+  },
 }
