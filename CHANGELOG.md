@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.4.8](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.7...babyrite-v1.4.8) (2026-09-25)
+
+
+### Miscellaneous
+
+* **deps:** update cloudflare/wrangler-action action to v4.1.1 ([#710](https://github.com/m1sk9/babyrite/issues/710)) ([47f4d93](https://github.com/m1sk9/babyrite/commit/47f4d935845fa763ece0ec13802b1541022a47be))
+* **deps:** update cloudflare/wrangler-action action to v4.1.2 ([#711](https://github.com/m1sk9/babyrite/issues/711)) ([839e5a5](https://github.com/m1sk9/babyrite/commit/839e5a5f26da68c737889b83e32ba5d1317f163a))
+* **deps:** update cloudflare/wrangler-action action to v4.1.3 ([#714](https://github.com/m1sk9/babyrite/issues/714)) ([c68f1bc](https://github.com/m1sk9/babyrite/commit/c68f1bc7ef244ccc0bbeb6fc205b0f8eb8e46d9e))
+* **deps:** update codecov/codecov-action action to v7.1.1 ([#704](https://github.com/m1sk9/babyrite/issues/704)) ([bb91427](https://github.com/m1sk9/babyrite/commit/bb91427e6fef4371e612362bded5f75c8082adc1))
+* **deps:** update dependency wrangler to v4.133.0 ([#702](https://github.com/m1sk9/babyrite/issues/702)) ([18b1510](https://github.com/m1sk9/babyrite/commit/18b1510a388e9460a537e8b251bae534b7e17496))
+* **deps:** update dependency wrangler to v4.134.0 ([#706](https://github.com/m1sk9/babyrite/issues/706)) ([2f09fb6](https://github.com/m1sk9/babyrite/commit/2f09fb624d4d85508f66be0c92ba6a9103e3572d))
+* **deps:** update dependency wrangler to v4.135.0 ([#707](https://github.com/m1sk9/babyrite/issues/707)) ([948d2be](https://github.com/m1sk9/babyrite/commit/948d2be63a3d7c329406507e12d92bfe01bd19a1))
+* **deps:** update dependency wrangler to v4.136.1 ([#708](https://github.com/m1sk9/babyrite/issues/708)) ([9bc8deb](https://github.com/m1sk9/babyrite/commit/9bc8deb5dc75aceaf0208c8349945a7eb409c3ec))
+* **deps:** update dependency wrangler to v4.136.3 ([#709](https://github.com/m1sk9/babyrite/issues/709)) ([2842c43](https://github.com/m1sk9/babyrite/commit/2842c436854085b0ab15cf6875f53c15892b5de0))
+* **deps:** update dependency wrangler to v4.137.0 ([#713](https://github.com/m1sk9/babyrite/issues/713)) ([2cb760b](https://github.com/m1sk9/babyrite/commit/2cb760b1d4a18d5e2a31ad468b2c3cb8258e5aae))
+* **deps:** update dependency wrangler to v4.139.0 ([#716](https://github.com/m1sk9/babyrite/issues/716)) ([ab7ed99](https://github.com/m1sk9/babyrite/commit/ab7ed990154ea383b8792d5c0ef872cbd9de24d7))
+* **deps:** update dependency wrangler to v4.140.0 ([#717](https://github.com/m1sk9/babyrite/issues/717)) ([5a6ca91](https://github.com/m1sk9/babyrite/commit/5a6ca91da00ed480bc8fcc1b03fc91c180fe4793))
+* **deps:** update dependency wrangler to v4.141.0 ([#718](https://github.com/m1sk9/babyrite/issues/718)) ([cececec](https://github.com/m1sk9/babyrite/commit/cecececc159d72f36d7cf9cb287033f51b281fe2))
+* **deps:** update rust crate encoding_rs to v0.8.42 ([#715](https://github.com/m1sk9/babyrite/issues/715)) ([362ebf9](https://github.com/m1sk9/babyrite/commit/362ebf917ddd7de8d92da861e7c456063bc06606))
+* **deps:** update rust crate thiserror to v2.0.21 ([#712](https://github.com/m1sk9/babyrite/issues/712)) ([a9a97e5](https://github.com/m1sk9/babyrite/commit/a9a97e56826939e770f4989f39870536b0e2d86b))
+
 ## [1.4.7](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.6...babyrite-v1.4.7) (2026-09-16)
 
 
