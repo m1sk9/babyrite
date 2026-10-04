@@ -95,7 +95,7 @@ pub async fn invalidate_channel(guild_id: Id<GuildMarker>, channel_id: Id<Channe
 /// These are the other input of the visibility check besides the permission
 /// overwrites, so they are bounded by the same TTL and dropped by
 /// [`invalidate_guild_roles`] when Discord reports a change.
-#[tracing::instrument(skip(http))]
+#[tracing::instrument(skip_all, fields(%guild_id))]
 pub async fn role_permissions(
     http: &Client,
     guild_id: Id<GuildMarker>,
