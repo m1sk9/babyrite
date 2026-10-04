@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Babyrite is a Discord bot that automatically generates previews for Discord message links and expands GitHub permalinks into code blocks. Built with Rust (edition 2024), using Serenity for the Discord API and Tokio for async runtime.
+Babyrite is a Discord bot that automatically generates previews for Discord message links and expands GitHub permalinks into code blocks. Built with Rust (edition 2024), using twilight (`twilight-gateway` / `twilight-http` / `twilight-model`) for the Discord API and Tokio for async runtime.
 
 ## Common Commands
 
@@ -20,15 +20,16 @@ cargo llvm-cov --all-features --workspace      # Code coverage
 
 The bot listens for Discord messages containing links and expands them into embeds or code blocks.
 
-**Entry flow:** `main.rs` → loads config → initializes logging → starts Serenity client → `event.rs` handles messages → `reply.rs` builds the outgoing messages
+**Entry flow:** `main.rs` → loads config → initializes logging → starts a twilight `Shard` → spawns `event::handle` per gateway event → `event.rs` handles messages → `reply.rs` builds the outgoing messages
 
 **Key modules:**
 
 - **`config.rs`** — Singleton config via `OnceLock`. Loads from TOML file (`CONFIG_FILE_PATH` env var) or defaults. `EnvConfig` handles env vars (`DISCORD_API_TOKEN`).
-- **`event.rs`** — Implements `serenity::EventHandler`. Filters bot/non-guild messages, parses up to 3 Discord links and 3 GitHub permalinks per message, sends expanded content as replies.
-- **`cache.rs`** — Two `moka::future::Cache` instances for guild channel lists and individual channels (500 entries, 1h TTL, 1h TTI). Lookup cascade: channel cache → guild list → active threads → API. `invalidate_channel()` drops both on channel/thread gateway events, since cached overwrites feed the visibility policy.
-- **`expand.rs`** — `ExpandedContent` enum: `Embed` (a serenity `CreateEmbed`) for Discord previews, `CodeBlock` for GitHub files. `ExpandError` unifies error types.
-- **`reply.rs`** — `build_messages()` turns `ExpandedContent` into the `CreateMessage`s sent back: embeds share one reply, each code block is its own message. The mention policy (reply ping only for the preview, nothing for code blocks) lives here.
+- **`context.rs`** — `BotContext` (twilight HTTP client + reqwest client for GitHub), shared as `Arc<BotContext>` with every event task.
+- **`event.rs`** — `handle()` dispatches each gateway event. Filters bot/non-guild messages, parses up to 3 Discord links and 3 GitHub permalinks per message, sends expanded content as replies.
+- **`cache.rs`** — `moka::future::Cache` instances for guild channel lists, individual channels and role permissions (`GUILD_ROLE_CACHE`, fetched via `GET /guilds/{id}/roles`) (500 entries, 1h TTL, 1h TTI). Lookup cascade: channel cache → guild list → active threads → API. `invalidate_channel()` drops the channel caches on channel/thread gateway events and `invalidate_guild_roles()` drops the role cache on ROLE_* and GUILD_CREATE, since cached overwrites and role permissions feed the visibility policy.
+- **`expand.rs`** — `ExpandedContent` enum: `Embed` (a twilight `Embed`) for Discord previews, `CodeBlock` for GitHub files. `ExpandError` unifies error types.
+- **`reply.rs`** — `build_messages()` turns `ExpandedContent` into the `OutgoingMessage`s (plain data, sent by `event.rs` via `create_message`): embeds share one reply, each code block is its own message. The mention policy (reply ping only for the preview, nothing for code blocks) lives here.
 - **`expand/discord.rs`** — Regex-based parsing of Discord message URLs (production/PTB/Canary). `Preview::get` holds the whole visibility policy: guild boundary, NSFW, permissions, privacy.
 - **`expand/github.rs`** — Parses GitHub permalinks with commit SHAs and optional line ranges (`#L10-L20`). Streams raw content and aborts the transfer once `max_lines` (default 50) worth of lines have arrived; the 1MB limit applies to the bytes actually read, not to `Content-Length`.
 - **`utils.rs`** — `language_from_extension()` maps file extensions to syntax highlighting language names.
@@ -36,10 +37,10 @@ The bot listens for Discord messages containing links and expands them into embe
 ## Patterns & Conventions
 
 - **Error handling:** `thiserror::Error` for domain enums (`PreviewError`, `GitHubExpandError`, `BabyriteConfigError`), `anyhow::Result` + `anyhow::Context` for propagation.
-- **Statics:** `OnceLock` for config, `LazyLock` for compiled regexes and moka caches.
+- **Statics:** `OnceLock` for config, `LazyLock` for compiled regexes and moka caches. Runtime clients live in `Arc<BotContext>`, not statics.
 - **Lint enforcement:** `#![deny(clippy::all)]` in `main.rs`.
 - **Logging:** `tracing` macros (`info!`, `error!`, `debug!`). JSON or compact format based on config.
-- **Testing:** Unit tests in `#[cfg(test)]` modules within each source file. No integration tests. Tests use pure data structures without mocking.
+- **Testing:** Unit tests in `#[cfg(test)]` modules within each source file. No integration tests. Tests use pure data structures without mocking; twilight models without `Default` (`Channel`, `Message`) are built from JSON via `serde_json` (dev-dependency).
 - **Commits:** Conventional commits (`feat:`, `fix:`, `chore:`, `ci:`, `refactor:`, `docs:`). Release-please automates versioning and CHANGELOG.
 - **Docker:** Multi-stage build with cargo-chef for layer caching, distroless runtime image (`gcr.io/distroless/cc-debian12`).
 

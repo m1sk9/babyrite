@@ -7,18 +7,20 @@ pub mod discord;
 pub mod github;
 
 use crate::config::BabyriteConfig;
+use crate::context::BotContext;
 use regex::Regex;
-use serenity::all::{Context, CreateEmbed, GuildId, Message};
 use std::collections::HashSet;
+use twilight_model::channel::{Message, message::Embed};
+use twilight_model::id::{Id, marker::GuildMarker};
 
 /// Shared inputs for expanding the links of one message.
 pub struct ExpandContext<'a> {
-    /// The serenity context.
-    pub ctx: &'a Context,
+    /// The shared bot state.
+    pub ctx: &'a BotContext,
     /// The message whose links are being expanded.
     pub message: &'a Message,
     /// The guild the message was sent in.
-    pub guild_id: GuildId,
+    pub guild_id: Id<GuildMarker>,
 }
 
 /// A link expander: parses its own link type out of a message and expands
@@ -26,7 +28,7 @@ pub struct ExpandContext<'a> {
 ///
 /// Adding a new link type means implementing this trait and registering the
 /// expander in [`EXPANDERS`]; the event handler needs no changes.
-#[serenity::async_trait]
+#[async_trait::async_trait]
 pub trait LinkExpander: Send + Sync {
     /// Whether this expander is enabled under `config`.
     fn enabled(&self, config: &BabyriteConfig) -> bool;
@@ -82,7 +84,7 @@ pub enum ExpandedContent {
     /// A Discord message preview displayed as an embed.
     ///
     /// Boxed because an embed dwarfs the other variant.
-    Embed(Box<CreateEmbed>),
+    Embed(Box<Embed>),
     /// A code block with syntax highlighting (e.g. GitHub permalink).
     CodeBlock {
         /// The programming language for syntax highlighting.

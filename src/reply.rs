@@ -6,13 +6,31 @@
 
 use crate::expand::ExpandedContent;
 use crate::utils::defuse_code_fences;
-use serenity::all::{CreateAllowedMentions, CreateMessage, Message};
+use twilight_model::channel::message::{AllowedMentions, Embed};
+use twilight_model::id::{Id, marker::MessageMarker};
 
-/// Builds the messages answering `request`, in the order they are sent.
+/// A message to post, independent of the HTTP request that sends it.
+#[derive(Debug)]
+pub struct OutgoingMessage {
+    /// The message content.
+    pub content: Option<String>,
+    /// The embeds attached to the message.
+    pub embeds: Vec<Embed>,
+    /// The message this one replies to.
+    pub reply_to: Option<Id<MessageMarker>>,
+    /// Who the message may mention.
+    pub allowed_mentions: AllowedMentions,
+}
+
+/// Builds the messages answering the message `request_id`, in the order they
+/// are sent.
 ///
 /// Embeds ride in a single reply, while each code block gets a message of its
 /// own: a block fills the message content, and a message carries only one.
-pub fn build_messages(request: &Message, results: Vec<ExpandedContent>) -> Vec<CreateMessage> {
+pub fn build_messages(
+    request_id: Id<MessageMarker>,
+    results: Vec<ExpandedContent>,
+) -> Vec<OutgoingMessage> {
     let mut embeds = Vec::new();
     let mut code_blocks = Vec::new();
 
@@ -30,11 +48,12 @@ pub fn build_messages(request: &Message, results: Vec<ExpandedContent>) -> Vec<C
                 // permissions. The content is fetched from a repository the
                 // requester chose, so that would let it borrow mention rights
                 // the requester may not hold.
-                code_blocks.push(
-                    CreateMessage::new()
-                        .content(format!("{metadata}\n```{language}\n{code}\n```"))
-                        .allowed_mentions(CreateAllowedMentions::new()),
-                );
+                code_blocks.push(OutgoingMessage {
+                    content: Some(format!("{metadata}\n```{language}\n{code}\n```")),
+                    embeds: Vec::new(),
+                    reply_to: None,
+                    allowed_mentions: AllowedMentions::default(),
+                });
             }
         }
     }
@@ -45,10 +64,15 @@ pub fn build_messages(request: &Message, results: Vec<ExpandedContent>) -> Vec<C
 
     // Only the reply ping is allowed: the quoted message is someone else's
     // content and must not gain mention rights by being echoed by the bot.
-    let preview = CreateMessage::new()
-        .embeds(embeds)
-        .reference_message(request)
-        .allowed_mentions(CreateAllowedMentions::new().replied_user(true));
+    let preview = OutgoingMessage {
+        content: None,
+        embeds,
+        reply_to: Some(request_id),
+        allowed_mentions: AllowedMentions {
+            replied_user: true,
+            ..Default::default()
+        },
+    };
 
     std::iter::once(preview).chain(code_blocks).collect()
 }
@@ -56,17 +80,12 @@ pub fn build_messages(request: &Message, results: Vec<ExpandedContent>) -> Vec<C
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serenity::all::CreateEmbed;
+    use twilight_util::builder::embed::EmbedBuilder;
 
-    /// `CreateMessage` has neither getters nor `PartialEq`, so what it would
-    /// send is inspected through `Debug` rather than adding a JSON dependency
-    /// used by nothing but these tests.
-    fn rendered(message: &CreateMessage) -> String {
-        format!("{message:?}")
-    }
+    const REQUEST: Id<MessageMarker> = Id::new(1);
 
     fn embed() -> ExpandedContent {
-        ExpandedContent::Embed(Box::new(CreateEmbed::new().description("quoted")))
+        ExpandedContent::Embed(Box::new(EmbedBuilder::new().description("quoted").build()))
     }
 
     fn code_block() -> ExpandedContent {
@@ -79,47 +98,60 @@ mod tests {
 
     #[test]
     fn embeds_share_one_message_and_every_code_block_gets_its_own() {
-        let messages = build_messages(
-            &Message::default(),
-            vec![embed(), code_block(), embed(), code_block()],
-        );
+        let messages = build_messages(REQUEST, vec![embed(), code_block(), embed(), code_block()]);
 
         assert_eq!(messages.len(), 3);
+        assert_eq!(messages[0].embeds.len(), 2);
     }
 
     #[test]
     fn embeds_are_sent_before_code_blocks() {
-        let messages = build_messages(&Message::default(), vec![code_block(), embed()]);
+        let messages = build_messages(REQUEST, vec![code_block(), embed()]);
 
-        assert!(rendered(&messages[0]).contains("quoted"));
-        assert!(rendered(&messages[1]).contains("src/main.rs L1"));
+        assert_eq!(messages[0].embeds[0].description.as_deref(), Some("quoted"));
+        assert!(messages[1].content.is_some());
     }
 
     #[test]
     fn nothing_is_sent_without_expanded_content() {
-        assert!(build_messages(&Message::default(), Vec::new()).is_empty());
+        assert!(build_messages(REQUEST, Vec::new()).is_empty());
     }
 
     #[test]
     fn code_block_is_fenced_with_its_language_below_its_metadata() {
-        let messages = build_messages(&Message::default(), vec![code_block()]);
+        let messages = build_messages(REQUEST, vec![code_block()]);
 
-        assert!(rendered(&messages[0]).contains(r"src/main.rs L1\n```rust\nfn main() {}\n```"));
+        assert_eq!(
+            messages[0].content.as_deref(),
+            Some("src/main.rs L1\n```rust\nfn main() {}\n```")
+        );
+    }
+
+    #[test]
+    fn the_preview_replies_to_the_request() {
+        let messages = build_messages(REQUEST, vec![embed()]);
+
+        assert_eq!(messages[0].reply_to, Some(REQUEST));
     }
 
     #[test]
     fn only_the_reply_ping_is_allowed_in_the_preview() {
-        let messages = build_messages(&Message::default(), vec![embed()]);
+        let messages = build_messages(REQUEST, vec![embed()]);
 
-        let rendered = rendered(&messages[0]);
-        assert!(rendered.contains("parse: [], users: [], roles: [], replied_user: Some(true)"));
+        assert_eq!(
+            messages[0].allowed_mentions,
+            AllowedMentions {
+                replied_user: true,
+                ..Default::default()
+            }
+        );
     }
 
     #[test]
-    fn a_code_block_mentions_nobody() {
-        let messages = build_messages(&Message::default(), vec![code_block()]);
+    fn a_code_block_mentions_nobody_and_replies_to_nothing() {
+        let messages = build_messages(REQUEST, vec![code_block()]);
 
-        let rendered = rendered(&messages[0]);
-        assert!(rendered.contains("parse: [], users: [], roles: [], replied_user: None"));
+        assert_eq!(messages[0].allowed_mentions, AllowedMentions::default());
+        assert_eq!(messages[0].reply_to, None);
     }
 }

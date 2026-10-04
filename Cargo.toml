@@ -9,19 +9,29 @@ description = "A citation message Discord bot."
 
 [dependencies]
 anyhow = "1.0.82"
+async-trait = "0.1.92"
 dotenvy = "0.15.7"
 encoding_rs = "0.8.35"
 envy = "0.4.2"
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
 moka = { version = "0.12.8", features = ["future"] }
 regex = "1.10.4"
+# Keep the default TLS features: twilight enables no rustls crypto provider of
+# its own and relies on the one reqwest brings in, so dropping it panics at runtime.
 reqwest = { version = "0.13.2" }
 serde = { version = "1.0.200", features = ["derive"] }
-serenity = { version = "0.12.1", default-features = false, features = ["client", "gateway", "model", "cache", "rustls_backend"] }
 thiserror = "2.0.0"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
 toml = "1.0.0"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
+twilight-gateway = { version = "0.17.1", default-features = false, features = ["rustls-platform-verifier", "zlib"] }
+twilight-http = "0.17.1"
+twilight-model = "0.17.1"
+twilight-util = { version = "0.17.0", features = ["builder"] }
+
+[dev-dependencies]
+serde_json = "1.0.151"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }

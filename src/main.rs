@@ -9,6 +9,7 @@
 
 mod cache;
 mod config;
+mod context;
 mod event;
 mod expand;
 mod reply;
@@ -16,12 +17,33 @@ mod utils;
 
 use crate::{
     config::{BabyriteConfig, EnvConfig, LogFormat},
-    event::BabyriteEventHandler,
-    expand::github::HttpClient,
+    context::BotContext,
 };
-use serenity::all::GatewayIntents;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing_subscriber::EnvFilter;
+use twilight_gateway::{ConfigBuilder, EventTypeFlags, Intents, Shard, ShardId, StreamExt as _};
+use twilight_model::gateway::{
+    payload::outgoing::update_presence::UpdatePresencePayload,
+    presence::{Activity, ActivityType, MinimalActivity, Status},
+};
+
+/// The gateway events [`event::handle`] acts on.
+///
+/// Everything else is skipped before deserialization, which matters most for
+/// the large guild payloads; `GUILD_CREATE` is kept only to invalidate roles.
+const WANTED_EVENTS: EventTypeFlags = EventTypeFlags::READY
+    .union(EventTypeFlags::MESSAGE_CREATE)
+    .union(EventTypeFlags::CHANNEL_CREATE)
+    .union(EventTypeFlags::CHANNEL_UPDATE)
+    .union(EventTypeFlags::CHANNEL_DELETE)
+    .union(EventTypeFlags::THREAD_CREATE)
+    .union(EventTypeFlags::THREAD_UPDATE)
+    .union(EventTypeFlags::THREAD_DELETE)
+    .union(EventTypeFlags::ROLE_CREATE)
+    .union(EventTypeFlags::ROLE_UPDATE)
+    .union(EventTypeFlags::ROLE_DELETE)
+    .union(EventTypeFlags::GUILD_CREATE);
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -42,28 +64,46 @@ async fn main() -> anyhow::Result<()> {
     }
     tracing::debug!("Config: {:?}", config);
 
-    let mut client = serenity::Client::builder(
-        &envs.discord_api_token,
-        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILDS,
-    )
-    .event_handler(BabyriteEventHandler)
-    .await
-    .expect("Failed to initialize client.");
-
-    // Register the shared HTTP client for GitHub API requests.
-    {
-        let mut data = client.data.write().await;
+    let token = envs.discord_api_token.clone();
+    let ctx = Arc::new(BotContext {
+        http: twilight_http::Client::new(token.clone()),
         // The raw-content read caps bytes, not time: without a timeout a stalled
         // server would hold the fetch open indefinitely.
-        data.insert::<HttpClient>(
-            reqwest::Client::builder()
-                .timeout(Duration::from_secs(10))
-                .build()
-                .expect("Failed to build HTTP client."),
-        );
+        github: reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .expect("Failed to build HTTP client."),
+    });
+
+    let mut activity = Activity::from(MinimalActivity {
+        kind: ActivityType::Custom,
+        name: "Custom Status".into(),
+        url: None,
+    });
+    activity.state = Some(format!("Running v{}", env!("CARGO_PKG_VERSION")));
+    // Sent with IDENTIFY rather than set once connected, so every re-identify
+    // after a lost session restores it without the bot doing anything.
+    let presence = UpdatePresencePayload::new(vec![activity], false, None, Status::Online)
+        .expect("presence has one activity");
+
+    let intents = Intents::GUILDS | Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT;
+    let shard_config = ConfigBuilder::new(token, intents)
+        .presence(presence)
+        .build();
+    let mut shard = Shard::with_config(ShardId::ONE, shard_config);
+
+    while let Some(item) = shard.next_event(WANTED_EVENTS).await {
+        match item {
+            Ok(event) => {
+                tokio::spawn(event::handle(Arc::clone(&ctx), event));
+            }
+            // Not fatal: the shard reconnects on its own.
+            Err(source) => tracing::warn!(?source, "error receiving gateway event"),
+        }
     }
 
-    client.start().await?;
-
-    Ok(())
+    // The stream ends only on a close code that reconnecting cannot fix (e.g.
+    // an invalid token or disallowed intents), so exit non-zero and let the
+    // supervisor decide.
+    anyhow::bail!("gateway connection closed fatally")
 }
