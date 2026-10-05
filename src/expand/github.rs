@@ -39,6 +39,13 @@ static GITHUB_PERMALINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 /// pass unconditionally (#625). The limit is enforced on bytes actually received.
 const MAX_BODY_BYTES: usize = 1_048_576;
 
+/// Number of bytes read past the last needed line to tell whether more follows.
+///
+/// Why not one byte: lines are counted at the `0A` byte, and in UTF-16LE the byte
+/// after it is the `00` completing the same `\n` code unit, so a single probe byte
+/// never reaches the next line.
+const PROBE_BYTES: usize = 2;
+
 /// A parsed GitHub permalink.
 #[derive(Debug)]
 pub struct GitHubPermalink {
@@ -206,23 +213,25 @@ impl GitHubPermalink {
     /// How much of the body [`Self::build_code_block`] can consume.
     ///
     /// When `max_lines` caps the display, [`truncate_lines`] tells "exactly at the
-    /// limit" apart from "truncated" by whether a further line exists. One byte of
+    /// limit" apart from "truncated" by whether a further line exists. The start of
     /// that line is enough to make it exist, so it is probed rather than read in full.
     fn read_limit(&self, max_lines: usize) -> ReadLimit {
-        let (displayed_end, capped_by_range) = match self.line_range {
+        let displayed_end = match self.line_range {
             Some(range) => {
                 let capped = range.start.saturating_sub(1).saturating_add(max_lines);
                 if range.end <= capped {
-                    (range.end, true)
-                } else {
-                    (capped, false)
+                    return ReadLimit {
+                        lines: range.end,
+                        probe: false,
+                    };
                 }
+                capped
             }
-            None => (max_lines, false),
+            None => max_lines,
         };
         ReadLimit {
             lines: displayed_end,
-            probe: !capped_by_range,
+            probe: true,
         }
     }
 
@@ -283,7 +292,8 @@ impl GitHubPermalink {
 struct ReadLimit {
     /// Number of leading lines read in full, including their terminating newline.
     lines: usize,
-    /// Whether one byte past those lines is also read, to tell whether more follows.
+    /// Whether [`PROBE_BYTES`] past those lines are also read, to tell whether more
+    /// follows.
     probe: bool,
 }
 
@@ -306,12 +316,12 @@ async fn read_body_limited(
     Ok(body.finish())
 }
 
-/// Accumulates response chunks until enough lines are received or [`MAX_BODY_BYTES`]
+/// Accumulates response chunks until its [`ReadLimit`] is met or [`MAX_BODY_BYTES`]
 /// is exceeded.
 struct LimitedBody {
     buf: Vec<u8>,
     newlines: usize,
-    probed: bool,
+    probed: usize,
     limit: ReadLimit,
 }
 
@@ -320,14 +330,14 @@ impl LimitedBody {
         Self {
             buf: Vec::new(),
             newlines: 0,
-            probed: false,
+            probed: 0,
             limit,
         }
     }
 
     /// Whether enough of the body has been received to build the code block.
     fn is_complete(&self) -> bool {
-        self.newlines >= self.limit.lines && (self.probed || !self.limit.probe)
+        self.newlines >= self.limit.lines && (!self.limit.probe || self.probed >= PROBE_BYTES)
     }
 
     /// Appends the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`].
@@ -350,9 +360,10 @@ impl LimitedBody {
                 }
             }
         }
-        let probed = newlines == wanted && self.limit.probe && end < chunk.len();
-        if probed {
-            end += 1;
+        let mut probed = 0;
+        if newlines == wanted && self.limit.probe {
+            probed = (PROBE_BYTES - self.probed).min(chunk.len() - end);
+            end += probed;
         }
 
         // The limit is checked against the retained slice, not the whole chunk: a
@@ -363,7 +374,7 @@ impl LimitedBody {
 
         self.buf.extend_from_slice(&chunk[..end]);
         self.newlines += newlines;
-        self.probed |= probed;
+        self.probed += probed;
         Ok(())
     }
 
@@ -378,8 +389,8 @@ impl LimitedBody {
     /// UTF-16 BOM selects UTF-16 instead of decoding to mojibake.
     ///
     /// A UTF-16 body only survives being read in full: [`Self::push`] counts lines in
-    /// raw bytes, so stopping at the `0A` of a UTF-16LE `\n` (`0A 00`) leaves the
-    /// final code unit incomplete. Counting lines in decoded text instead would mean
+    /// raw bytes, so stopping at the `0A` of a UTF-16LE `\n` (`0A 00`) without a probe
+    /// leaves the final code unit incomplete. Counting lines in decoded text instead would mean
     /// decoding incrementally, which is not worth it for how rare such files are.
     ///
     /// Why not read the `Content-Type` charset like `Response::text` does: the header
@@ -999,26 +1010,38 @@ mod tests {
     }
 
     #[test]
-    fn limited_body_with_zero_needed_lines_reads_nothing() {
+    fn limited_body_with_zero_lines_reads_nothing() {
         let result = read_chunks(&[b"a\nb\n"], full(0)).unwrap();
         assert_eq!(result, "");
     }
 
     #[test]
-    fn limited_body_probe_keeps_one_byte_past_needed_lines() {
+    fn limited_body_probe_keeps_probe_bytes_past_needed_lines() {
         let result = read_chunks(&[b"a\nb\nccc\nd\n"], probed(2)).unwrap();
-        assert_eq!(result, "a\nb\nc");
+        assert_eq!(result, "a\nb\ncc");
     }
 
     #[test]
-    fn limited_body_probe_takes_byte_from_next_chunk() {
+    fn limited_body_probe_takes_bytes_from_next_chunk() {
         let result = read_chunks(&[b"a\nb\n", b"ccc\n"], probed(2)).unwrap();
-        assert_eq!(result, "a\nb\nc");
+        assert_eq!(result, "a\nb\ncc");
+    }
+
+    #[test]
+    fn limited_body_probe_spans_chunk_boundary() {
+        let result = read_chunks(&[b"a\nb", b"bb\n"], probed(1)).unwrap();
+        assert_eq!(result, "a\nbb");
     }
 
     #[test]
     fn limited_body_probe_skips_empty_chunk() {
         let result = read_chunks(&[b"a\n", b"", b"bbb\n"], probed(1)).unwrap();
+        assert_eq!(result, "a\nbb");
+    }
+
+    #[test]
+    fn limited_body_probe_keeps_single_trailing_byte() {
+        let result = read_chunks(&[b"a\nb"], probed(1)).unwrap();
         assert_eq!(result, "a\nb");
     }
 
@@ -1029,9 +1052,9 @@ mod tests {
     }
 
     #[test]
-    fn limited_body_probe_with_zero_lines_reads_one_byte() {
+    fn limited_body_probe_with_zero_lines_reads_only_probe_bytes() {
         let result = read_chunks(&[b"abc\n"], probed(0)).unwrap();
-        assert_eq!(result, "a");
+        assert_eq!(result, "ab");
     }
 
     #[test]
@@ -1041,13 +1064,13 @@ mod tests {
         chunk.extend_from_slice(&vec![b'x'; MAX_BODY_BYTES + 1]);
 
         let result = read_chunks(&[&chunk], probed(2)).unwrap();
-        assert_eq!(result, "a\nb\nx");
+        assert_eq!(result, "a\nb\nxx");
     }
 
     #[test]
-    fn limited_body_probe_byte_counts_toward_limit() {
-        let mut chunk = vec![b'x'; MAX_BODY_BYTES - 1];
-        chunk.extend_from_slice(b"\ny");
+    fn limited_body_probe_bytes_count_toward_limit() {
+        let mut chunk = vec![b'x'; MAX_BODY_BYTES - 2];
+        chunk.extend_from_slice(b"\nyy");
 
         let err = read_chunks(&[&chunk], probed(1)).unwrap_err();
         assert!(matches!(err, GitHubExpandError::ContentTooLarge));
@@ -1140,6 +1163,19 @@ mod tests {
         let (_, code, metadata) = code_block_parts(permalink.build_code_block(&read, 2));
         assert_eq!(code, "a\nb");
         assert!(metadata.contains("truncated to 2 lines"));
+    }
+
+    #[test]
+    fn early_read_keeps_truncation_flag_for_utf16le() {
+        // UTF-16LE BOM followed by "hi\nj\n": the probe must reach past the `00`
+        // completing the first `\n` to see that a second line exists.
+        let permalink = make_permalink("f.txt", None);
+        let body = b"\xff\xfeh\0i\0\n\0j\0\n\0";
+        let read = read_chunks(&[body], permalink.read_limit(1)).unwrap();
+
+        let (_, code, metadata) = code_block_parts(permalink.build_code_block(&read, 1));
+        assert_eq!(code, "hi");
+        assert!(metadata.contains("truncated to 1 lines"));
     }
 
     // --- is_commit_sha / shorten_ref ---
