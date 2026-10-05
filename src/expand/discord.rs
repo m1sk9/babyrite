@@ -655,9 +655,13 @@ mod tests {
 
     #[test]
     fn parse_ignores_zero_ids() {
-        let text = "https://discord.com/channels/0/1/2";
-        let results = MessageLinkIDs::parse_all(text);
-        assert!(results.is_empty());
+        for text in [
+            "https://discord.com/channels/0/1/2",
+            "https://discord.com/channels/1/0/2",
+            "https://discord.com/channels/1/2/0",
+        ] {
+            assert!(MessageLinkIDs::parse_all(text).is_empty(), "{text}");
+        }
     }
 
     #[test]
@@ -1021,5 +1025,87 @@ mod tests {
 
         assert_ne!(without_avatar, with_avatar);
         assert!(format!("{with_avatar:?}").contains("a_00000000000000000000000000000000"));
+    }
+
+    fn attachment(url: &str) -> serde_json::Value {
+        serde_json::json!({
+            "id": "4",
+            "filename": "image.png",
+            "proxy_url": url,
+            "size": 1,
+            "url": url,
+        })
+    }
+
+    #[test]
+    fn the_first_attachment_becomes_the_embed_image() {
+        let mut message = message_with(None);
+        message.attachments = serde_json::from_value(serde_json::json!([
+            attachment("https://cdn.discordapp.com/attachments/1/2/first.png"),
+            attachment("https://cdn.discordapp.com/attachments/1/2/second.png"),
+        ]))
+        .unwrap();
+
+        let embed = preview_embed(&message, &channel_named(Some("general")));
+
+        assert_eq!(
+            embed.image.map(|image| image.url),
+            Some("https://cdn.discordapp.com/attachments/1/2/first.png".to_string())
+        );
+    }
+
+    #[test]
+    fn a_message_without_attachments_gets_no_embed_image() {
+        let embed = preview_embed(&message_with(None), &channel_named(Some("general")));
+
+        assert!(embed.image.is_none());
+    }
+
+    #[test]
+    fn a_static_avatar_is_served_as_webp() {
+        let author = message_with(Some("00000000000000000000000000000000")).author;
+
+        assert_eq!(
+            avatar_url(&author).as_deref(),
+            Some(
+                "https://cdn.discordapp.com/avatars/3/00000000000000000000000000000000.webp?size=1024"
+            )
+        );
+    }
+
+    #[test]
+    fn an_animated_avatar_is_served_as_gif() {
+        let author = message_with(Some("a_00000000000000000000000000000000")).author;
+
+        assert_eq!(
+            avatar_url(&author).as_deref(),
+            Some(
+                "https://cdn.discordapp.com/avatars/3/a_00000000000000000000000000000000.gif?size=1024"
+            )
+        );
+    }
+
+    #[test]
+    fn an_author_without_an_avatar_has_no_avatar_url() {
+        assert_eq!(avatar_url(&message_with(None).author), None);
+    }
+
+    #[test]
+    fn a_channel_without_overwrites_has_none() {
+        assert!(overwrites(&channel_named(Some("general"))).is_empty());
+    }
+
+    #[test]
+    fn a_channel_exposes_its_overwrites() {
+        let channel: Channel = serde_json::from_value(serde_json::json!({
+            "id": "2",
+            "type": 0,
+            "permission_overwrites": [
+                {"id": "1", "type": 0, "allow": "0", "deny": "1024"},
+            ],
+        }))
+        .unwrap();
+
+        assert_eq!(overwrites(&channel), [role_ow(1, false, true)]);
     }
 }
