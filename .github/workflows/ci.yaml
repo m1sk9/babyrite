@@ -41,7 +41,7 @@ jobs:
       # Coverage runs on nightly so that `#[cfg_attr(coverage_nightly,
       # coverage(off))]` takes effect — the `coverage_nightly` cfg is only set by
       # cargo-llvm-cov under nightly. This excludes untestable runtime glue (live
-      # Serenity gateway / HTTP) from the reported numbers. `rust-toolchain.toml`
+      # twilight gateway / HTTP) from the reported numbers. `rust-toolchain.toml`
       # pins stable, so the `cargo +nightly` below is required to override it.
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -54,7 +54,7 @@ jobs:
           prefix-key: "babyrite/gh-actions-cache"
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2
+        uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2
         with:
           tool: cargo-llvm-cov
 

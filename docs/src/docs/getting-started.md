@@ -35,7 +35,7 @@ The figures above are estimated from the source code (cache size, the 1MB limit 
 
 babyrite's own processing is centered on regex matching and HTTP requests, so it rarely pins the CPU. That said, the following factors scale with the number of guilds and message volume, so running at the "minimum" spec across multiple guilds can lead to memory pressure or increased latency.
 
-- **moka cache memory usage**: the more guilds and channels babyrite participates in, the more `GuildChannel` data the cache holds. The cache itself is capped at 500 entries, but the data size per entry depends on each guild's configuration.
+- **moka cache memory usage**: the more guilds and channels babyrite participates in, the more channel data the cache holds. The cache itself is capped at 500 entries, but the data size per entry depends on each guild's configuration.
 - **reqwest connection count**: when Discord message links and GitHub permalinks are expanded concurrently (up to 3 per message each), outbound HTTP connections temporarily increase.
 - **GitHub raw fetch buffer**: up to 1MB per file is temporarily loaded into memory, so momentary memory usage can spike when multiple GitHub permalinks are expanded at the same time.
 
