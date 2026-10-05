@@ -3,21 +3,13 @@
 //! This module provides functionality for parsing GitHub permalink URLs
 //! and fetching raw file content to display as code blocks.
 
+use futures_util::future::join_all;
 use regex::Regex;
-use serenity::futures::future::join_all;
-use serenity::prelude::TypeMapKey;
 use std::sync::LazyLock;
 
 use super::{ExpandContext, ExpandError, ExpandedContent, LinkExpander};
 use crate::config::BabyriteConfig;
 use crate::utils::language_for_path;
-
-/// TypeMap key for the shared reqwest HTTP client used to fetch raw content.
-pub struct HttpClient;
-
-impl TypeMapKey for HttpClient {
-    type Value = reqwest::Client;
-}
 
 /// Regex pattern for matching GitHub blob URLs.
 ///
@@ -74,7 +66,7 @@ pub struct LineRange {
 /// GitHub permalink expander.
 pub struct GitHubExpander;
 
-#[serenity::async_trait]
+#[async_trait::async_trait]
 impl LinkExpander for GitHubExpander {
     fn enabled(&self, config: &BabyriteConfig) -> bool {
         config.features.github_permalink
@@ -89,18 +81,7 @@ impl LinkExpander for GitHubExpander {
         }
         tracing::debug!(count = permalinks.len(), "parsed GitHub permalinks");
 
-        // `reqwest::Client` is internally reference-counted, so clone it out of
-        // the TypeMap instead of holding the read guard across the fetches below.
-        let http_client = {
-            let data = cx.ctx.data.read().await;
-            data.get::<HttpClient>().cloned()
-        };
-        let Some(http_client) = http_client else {
-            tracing::error!("HTTP client not found in TypeMap");
-            return Vec::new();
-        };
-
-        join_all(permalinks.iter().map(|p| p.fetch(&http_client)))
+        join_all(permalinks.iter().map(|p| p.fetch(&cx.ctx.github)))
             .await
             .into_iter()
             .filter_map(|result| match result {
