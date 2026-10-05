@@ -5,17 +5,18 @@
 //!
 //! Migrated from `preview.rs` with support for multiple link expansion.
 
-use futures_util::future::join_all;
+use futures_util::future::{join_all, try_join_all};
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
+use twilight_http::error::ErrorType;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::permission_overwrite::{PermissionOverwrite, PermissionOverwriteType};
 use twilight_model::channel::{Channel, ChannelType, Message};
 use twilight_model::guild::Permissions;
 use twilight_model::id::{
     Id,
-    marker::{ChannelMarker, GuildMarker, MessageMarker, RoleMarker},
+    marker::{ChannelMarker, GuildMarker, MessageMarker, RoleMarker, UserMarker},
 };
 use twilight_model::user::User;
 use twilight_util::builder::embed::{
@@ -23,7 +24,7 @@ use twilight_util::builder::embed::{
 };
 
 use super::{ExpandContext, ExpandError, ExpandedContent, LinkExpander};
-use crate::cache::CacheArgs;
+use crate::cache::{CacheArgs, RolePermissions};
 use crate::config::BabyriteConfig;
 use crate::context::BotContext;
 
@@ -273,32 +274,11 @@ fn is_thread(kind: ChannelType) -> bool {
     )
 }
 
-/// Returns `true` if any per-member overwrite denies `VIEW_CHANNEL`.
-///
-/// Per-member overwrites cannot be captured by the role-set comparison in
-/// [`viewing_roles`], so their presence forces a conservative rejection.
-fn has_member_view_deny(overwrites: &[PermissionOverwrite]) -> bool {
-    overwrites.iter().any(|ow| {
-        ow.kind == PermissionOverwriteType::Member && ow.deny.contains(Permissions::VIEW_CHANNEL)
-    })
-}
-
-/// Returns `true` if any per-member overwrite grants `VIEW_CHANNEL`.
-///
-/// This is how Discord represents a channel made private by adding individual
-/// users. Access granted this way is invisible to [`viewing_roles`], so its
-/// presence means the role set understates who can see the channel.
-fn has_member_view_allow(overwrites: &[PermissionOverwrite]) -> bool {
-    overwrites.iter().any(|ow| {
-        ow.kind == PermissionOverwriteType::Member && ow.allow.contains(Permissions::VIEW_CHANNEL)
-    })
-}
-
 /// Returns `true` if any overwrite targets a kind Discord added after this
 /// library was written.
 ///
-/// Such an overwrite cannot be placed in the role-set comparison in
-/// [`viewing_roles`], so its presence forces a conservative rejection.
+/// Its effect cannot be evaluated by [`Visibility`], so its presence forces a
+/// conservative rejection.
 fn has_unknown_overwrite(overwrites: &[PermissionOverwrite]) -> bool {
     overwrites
         .iter()
@@ -310,29 +290,10 @@ fn overwrites(channel: &Channel) -> &[PermissionOverwrite] {
     channel.permission_overwrites.as_deref().unwrap_or(&[])
 }
 
-/// Returns `true` when a source channel that grants access through per-member
-/// overwrites may still be expanded into the target described by `dest_roles`.
-///
-/// Members holding such a grant are not represented in the source's role set, so
-/// the subset comparison in [`check_visibility`] says nothing about whether they
-/// can view the target. The only target they are provably allowed to see is one
-/// `@everyone` can view — which, since [`viewing_roles`] treats `@everyone` as an
-/// ordinary role, is exactly `dest_roles` containing it.
-///
-/// Sources without such a grant are fully described by their role set and are
-/// left to the subset comparison.
-fn member_granted_source_is_safe(
-    source_overwrites: &[PermissionOverwrite],
-    dest_roles: &HashSet<Id<RoleMarker>>,
-    everyone_role_id: Id<RoleMarker>,
-) -> bool {
-    !has_member_view_allow(source_overwrites) || dest_roles.contains(&everyone_role_id)
-}
-
 /// Returns `true` when a link crosses a guild boundary.
 ///
 /// Roles, permission overwrites and the `@everyone` id are all guild-local, so
-/// the role-set comparison in [`check_visibility`] cannot judge a channel in
+/// [`check_visibility`] cannot evaluate a channel in
 /// another guild — and the bot may not even be a member of that guild. Such
 /// links are refused outright rather than judged.
 fn is_cross_guild(link: Id<GuildMarker>, source: Id<GuildMarker>) -> bool {
@@ -350,54 +311,302 @@ fn requires_visibility_check(target: Id<ChannelMarker>, source: Id<ChannelMarker
     target != source
 }
 
-/// Computes the set of roles that can effectively `VIEW_CHANNEL` a channel.
+/// Permissions a member needs to read the linked message in a text channel.
 ///
-/// `@everyone` (role id == guild id) is treated as a normal role and included in
-/// the result when applicable. For each role the effective permission is
-/// `@everyone perms | role perms`; a role with `ADMINISTRATOR` always views the
-/// channel. Otherwise the channel's `@everyone` overwrite is applied first, then
-/// the role's own overwrite, each as deny-then-allow.
-fn viewing_roles(
-    overwrites: &[PermissionOverwrite],
-    role_perms: &HashMap<Id<RoleMarker>, Permissions>,
-    everyone_role_id: Id<RoleMarker>,
-) -> HashSet<Id<RoleMarker>> {
-    let everyone_base = role_perms
-        .get(&everyone_role_id)
-        .copied()
-        .unwrap_or_else(Permissions::empty);
+/// `READ_MESSAGE_HISTORY` is required on top of `VIEW_CHANNEL`: without it a
+/// member only sees messages sent while they are watching, never an older one a
+/// link points at.
+const READ_TARGET: Permissions = Permissions::VIEW_CHANNEL.union(Permissions::READ_MESSAGE_HISTORY);
 
-    let overwrite_by_role: HashMap<Id<RoleMarker>, (Permissions, Permissions)> = overwrites
-        .iter()
-        .filter(|ow| ow.kind == PermissionOverwriteType::Role)
-        .map(|ow| (ow.id.cast(), (ow.allow, ow.deny)))
-        .collect();
+/// Permissions a member needs to read the expanded reply in the source channel.
+const READ_SOURCE: Permissions = Permissions::VIEW_CHANNEL;
 
-    let mut set = HashSet::new();
-    for (&role_id, &perms) in role_perms {
-        let base = everyone_base | perms;
-        if base.contains(Permissions::ADMINISTRATOR) {
-            set.insert(role_id);
-            continue;
+/// Permissions a member needs to read the linked message in a channel of `kind`.
+///
+/// The text chat of voice and stage channels is closed to members who cannot
+/// `CONNECT`, even when they can view the channel itself.
+fn read_target_requirement(kind: ChannelType) -> Permissions {
+    match kind {
+        ChannelType::GuildVoice | ChannelType::GuildStageVoice => {
+            READ_TARGET | Permissions::CONNECT
         }
+        _ => READ_TARGET,
+    }
+}
 
-        let mut allowed = base.contains(Permissions::VIEW_CHANNEL);
-        for target in [everyone_role_id, role_id] {
-            if let Some(&(allow, deny)) = overwrite_by_role.get(&target) {
-                if deny.contains(Permissions::VIEW_CHANNEL) {
-                    allowed = false;
+/// The `(allow, deny)` pair of a permission overwrite.
+type OverwritePair = (Permissions, Permissions);
+
+const NO_OVERWRITE: OverwritePair = (Permissions::empty(), Permissions::empty());
+
+/// A channel's permission overwrites, split by what they target and masked to
+/// the permissions that matter for that channel.
+#[derive(Debug)]
+struct ChannelOverwrites {
+    everyone: OverwritePair,
+    roles: HashMap<Id<RoleMarker>, OverwritePair>,
+    members: HashMap<Id<UserMarker>, OverwritePair>,
+}
+
+impl ChannelOverwrites {
+    fn new(
+        overwrites: &[PermissionOverwrite],
+        everyone_role_id: Id<RoleMarker>,
+        relevant: Permissions,
+    ) -> Self {
+        let mut this = Self {
+            everyone: NO_OVERWRITE,
+            roles: HashMap::new(),
+            members: HashMap::new(),
+        };
+        for ow in overwrites {
+            let pair = (ow.allow & relevant, ow.deny & relevant);
+            match ow.kind {
+                PermissionOverwriteType::Role if ow.id.cast() == everyone_role_id => {
+                    this.everyone = pair;
                 }
-                if allow.contains(Permissions::VIEW_CHANNEL) {
-                    allowed = true;
+                PermissionOverwriteType::Role => {
+                    this.roles.insert(ow.id.cast(), pair);
+                }
+                PermissionOverwriteType::Member => {
+                    this.members.insert(ow.id.cast(), pair);
+                }
+                // Refused by `has_unknown_overwrite` before any of this is built.
+                _ => {}
+            }
+        }
+        this
+    }
+
+    fn role(&self, role_id: Id<RoleMarker>) -> OverwritePair {
+        self.roles.get(&role_id).copied().unwrap_or(NO_OVERWRITE)
+    }
+
+    fn member(&self, user_id: Id<UserMarker>) -> OverwritePair {
+        self.members.get(&user_id).copied().unwrap_or(NO_OVERWRITE)
+    }
+}
+
+/// What a set of roles contributes to a member's permissions in the source and
+/// target channels.
+///
+/// Discord merges a member's roles by OR-ing their base permissions, and their
+/// role overwrites by OR-ing the allows and the denies separately. Every field
+/// here is merged the same way, so the grant of any set of roles is the
+/// [`Self::union`] of the grants of its roles.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct RoleGrant {
+    base: Permissions,
+    source: OverwritePair,
+    target: OverwritePair,
+}
+
+impl RoleGrant {
+    fn union(self, other: Self) -> Self {
+        let merge = |(a1, d1): OverwritePair, (a2, d2): OverwritePair| (a1 | a2, d1 | d2);
+        Self {
+            base: self.base | other.base,
+            source: merge(self.source, other.source),
+            target: merge(self.target, other.target),
+        }
+    }
+}
+
+/// Applies Discord's permission algorithm to one channel.
+///
+/// `ADMINISTRATOR` in the base grants everything. Otherwise the `@everyone`
+/// overwrite, the merged role overwrites and the member's own overwrite are
+/// applied in that order, each as deny-then-allow.
+fn channel_permissions(
+    base: Permissions,
+    everyone: OverwritePair,
+    roles: OverwritePair,
+    member: OverwritePair,
+) -> Permissions {
+    if base.contains(Permissions::ADMINISTRATOR) {
+        return Permissions::all();
+    }
+    [everyone, roles, member]
+        .into_iter()
+        .fold(base, |perms, (allow, deny)| (perms - deny) | allow)
+}
+
+/// Decides whether everyone who can read the source channel could also read the
+/// target channel.
+///
+/// Members are split by whether either channel carries an overwrite for them
+/// personally:
+///
+/// - Without one, a member's access depends only on which roles they hold.
+///   [`Self::roles_preserve_visibility`] checks every combination of roles a
+///   member could hold — not just each role on its own, since Discord merges a
+///   member's role overwrites before applying them.
+/// - With one, the member is looked up and judged on their actual roles by
+///   [`Self::member_preserves_visibility`]. [`Self::members_to_verify`] lists
+///   only those whose personal overwrite could make a difference.
+#[derive(Debug)]
+struct Visibility {
+    source: ChannelOverwrites,
+    target: ChannelOverwrites,
+    /// What a member needs in the target, from [`read_target_requirement`].
+    read_target: Permissions,
+    everyone_role_id: Id<RoleMarker>,
+    role_perms: RolePermissions,
+    /// Every grant a member without personal overwrites can hold.
+    reachable: HashSet<RoleGrant>,
+}
+
+impl Visibility {
+    fn new(
+        source_overwrites: &[PermissionOverwrite],
+        target_overwrites: &[PermissionOverwrite],
+        read_target: Permissions,
+        role_perms: RolePermissions,
+        everyone_role_id: Id<RoleMarker>,
+    ) -> Self {
+        let mut this = Self {
+            source: ChannelOverwrites::new(source_overwrites, everyone_role_id, READ_SOURCE),
+            target: ChannelOverwrites::new(target_overwrites, everyone_role_id, read_target),
+            read_target,
+            everyone_role_id,
+            role_perms,
+            reachable: HashSet::new(),
+        };
+        this.reachable = this.reachable_grants();
+        this
+    }
+
+    /// The grant of `@everyone`, which every member holds. Its overwrite is
+    /// applied separately, so it contributes base permissions only.
+    fn everyone_grant(&self) -> RoleGrant {
+        RoleGrant {
+            base: self.base_of(self.everyone_role_id),
+            source: NO_OVERWRITE,
+            target: NO_OVERWRITE,
+        }
+    }
+
+    fn role_grant(&self, role_id: Id<RoleMarker>) -> RoleGrant {
+        RoleGrant {
+            base: self.base_of(role_id),
+            source: self.source.role(role_id),
+            target: self.target.role(role_id),
+        }
+    }
+
+    /// Masked to the base permissions that can change the outcome of
+    /// [`channel_permissions`], so that equivalent roles collapse into one
+    /// [`RoleGrant`] and [`Self::reachable_grants`] stays small.
+    fn base_of(&self, role_id: Id<RoleMarker>) -> Permissions {
+        self.role_perms
+            .get(&role_id)
+            .copied()
+            .unwrap_or_else(Permissions::empty)
+            & (Permissions::ADMINISTRATOR | READ_SOURCE | self.read_target)
+    }
+
+    /// Closes `@everyone`'s grant under union with every other role's grant.
+    ///
+    /// Why not enumerate role subsets: that is exponential in the number of
+    /// roles, while the masked grants have only a few bits, so the closure stays
+    /// small no matter how many roles the guild has.
+    ///
+    /// Roles named only by an overwrite are included too: a role created after
+    /// the role cache was filled still restricts whoever holds it.
+    fn reachable_grants(&self) -> HashSet<RoleGrant> {
+        let roles: HashSet<RoleGrant> = self
+            .role_perms
+            .keys()
+            .chain(self.source.roles.keys())
+            .chain(self.target.roles.keys())
+            .filter(|&&id| id != self.everyone_role_id)
+            .map(|&id| self.role_grant(id))
+            .collect();
+
+        let start = self.everyone_grant();
+        let mut reachable = HashSet::from([start]);
+        let mut pending = vec![start];
+        while let Some(grant) = pending.pop() {
+            for &role in &roles {
+                let next = grant.union(role);
+                if reachable.insert(next) {
+                    pending.push(next);
                 }
             }
         }
-
-        if allowed {
-            set.insert(role_id);
-        }
+        reachable
     }
-    set
+
+    fn source_permissions(&self, grant: RoleGrant, member: OverwritePair) -> Permissions {
+        channel_permissions(grant.base, self.source.everyone, grant.source, member)
+    }
+
+    fn target_permissions(&self, grant: RoleGrant, member: OverwritePair) -> Permissions {
+        channel_permissions(grant.base, self.target.everyone, grant.target, member)
+    }
+
+    /// Whether a member with `grant` and the given personal overwrites can read
+    /// the source but not the target.
+    fn leaks(
+        &self,
+        grant: RoleGrant,
+        source_member: OverwritePair,
+        target_member: OverwritePair,
+    ) -> bool {
+        self.source_permissions(grant, source_member)
+            .contains(READ_SOURCE)
+            && !self
+                .target_permissions(grant, target_member)
+                .contains(self.read_target)
+    }
+
+    /// Whether no combination of roles lets a member read the source but not the
+    /// target, for members without personal overwrites.
+    fn roles_preserve_visibility(&self) -> bool {
+        self.reachable
+            .iter()
+            .all(|&grant| !self.leaks(grant, NO_OVERWRITE, NO_OVERWRITE))
+    }
+
+    /// Members whose personal overwrites could let them read the source but not
+    /// the target, sorted by id.
+    ///
+    /// A member is listed only when some role combination, together with their
+    /// personal overwrites, leaks; for anyone else the outcome is the same
+    /// whatever roles they actually hold, so looking them up is wasted.
+    fn members_to_verify(&self) -> Vec<Id<UserMarker>> {
+        let users: HashSet<Id<UserMarker>> = self
+            .source
+            .members
+            .keys()
+            .chain(self.target.members.keys())
+            .copied()
+            .collect();
+        let mut users: Vec<_> = users
+            .into_iter()
+            .filter(|&user| {
+                let (source_member, target_member) =
+                    (self.source.member(user), self.target.member(user));
+                self.reachable
+                    .iter()
+                    .any(|&grant| self.leaks(grant, source_member, target_member))
+            })
+            .collect();
+        users.sort_unstable();
+        users
+    }
+
+    /// Whether `user`, holding `roles`, cannot read the source without also being
+    /// able to read the target.
+    fn member_preserves_visibility(&self, user: Id<UserMarker>, roles: &[Id<RoleMarker>]) -> bool {
+        let grant = roles
+            .iter()
+            .filter(|&&id| id != self.everyone_role_id)
+            .fold(self.everyone_grant(), |grant, &id| {
+                grant.union(self.role_grant(id))
+            });
+        !self.leaks(grant, self.source.member(user), self.target.member(user))
+    }
 }
 
 /// Resolves the channel that carries the properties a thread inherits — its
@@ -426,30 +635,65 @@ async fn permission_channel(
     .map_err(|_| PreviewError::Cache)
 }
 
-/// Validates that everyone who can view `source_channel` could also view `channel`.
+/// Most members [`check_visibility`] looks up for a single link.
+///
+/// Each lookup is an API request made on every expansion, since the result
+/// cannot be cached (see [`member_roles`]). Past this many, the link is refused
+/// rather than spending that much rate limit on it.
+const MAX_MEMBER_LOOKUPS: usize = 10;
+
+/// Fetches the roles of `user_id`, or `None` when they are not in the guild.
+///
+/// Why not cached: without the privileged `GUILD_MEMBERS` intent no event
+/// reports a member's role changes, so a cached entry could never be
+/// invalidated.
+#[cfg_attr(coverage_nightly, coverage(off))]
+async fn member_roles(
+    ctx: &BotContext,
+    guild_id: Id<GuildMarker>,
+    user_id: Id<UserMarker>,
+) -> Result<Option<Vec<Id<RoleMarker>>>, PreviewError> {
+    match ctx.http.guild_member(guild_id, user_id).await {
+        Ok(response) => Ok(Some(response.model().await?.roles)),
+        Err(e) if matches!(e.kind(), ErrorType::Response { status, .. } if status.get() == 404) => {
+            Ok(None)
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// Validates that everyone who can read `source_channel` could also read the
+/// linked message in `channel`.
 ///
 /// The expanded content is posted as a single message that all members of
-/// `source_channel` can read, so the linked channel must be at least as visible
-/// as the source channel to avoid leaking restricted content.
+/// `source_channel` can read, so the linked channel must be at least as
+/// readable as the source channel to avoid leaking restricted content.
+/// "Readable" means `VIEW_CHANNEL` on the source, and on the target what
+/// [`read_target_requirement`] asks for. Permissions are evaluated by
+/// [`Visibility`] the way Discord does, so roles, role combinations, per-member
+/// overwrites and `ADMINISTRATOR` need no special cases.
 ///
-/// Both channels must be in the same guild, which [`Preview::get`] guarantees by
-/// refusing cross-guild links: the role data this compares them against is
-/// guild-local and would be meaningless otherwise.
+/// What remains is refused because it cannot be evaluated:
 ///
-/// Comparison is by role set, which cannot express per-member grants, so those
-/// are handled by separate conservative guards: [`has_member_view_deny`] on the
-/// target and [`member_granted_source_is_safe`] on the source.
+/// - Links into another guild, refused by [`Preview::get`] before this runs:
+///   roles and overwrites are guild-local, and the bot may not be in that guild.
+/// - Private threads (and DMs): their readers are the thread's members, and
+///   listing them needs the `GUILD_MEMBERS` intent.
+/// - Overwrites of a kind this library does not know.
+/// - More than [`MAX_MEMBER_LOOKUPS`] members needing a lookup.
+///
+/// Threads have no overwrites of their own and are judged by their parent. For
+/// a public thread that is exact; for a private thread used as the source it
+/// over-approximates the readers, which can only cause a refusal.
+/// `dest_perm` is `channel` resolved by [`permission_channel`].
 #[cfg_attr(coverage_nightly, coverage(off))]
 async fn check_visibility(
     channel: &Channel,
+    dest_perm: &Channel,
     source_channel: &Channel,
     guild_id: Id<GuildMarker>,
     ctx: &BotContext,
 ) -> Result<(), PreviewError> {
-    // Private threads cannot be represented by the role-set comparison
-    // (membership is per-user), and DMs are outside the guild context, so
-    // both are rejected. Public/news threads fall through and are judged via
-    // their parent channel.
     if matches!(
         channel.kind,
         ChannelType::PrivateThread | ChannelType::Private
@@ -458,51 +702,48 @@ async fn check_visibility(
         return Err(PreviewError::Permission);
     }
 
-    // Threads follow their parent channel's permissions, so resolve both the
-    // link target and the request source to the channel that actually
-    // defines visibility before comparing.
-    let (dest_perm, source_perm) = tokio::try_join!(
-        permission_channel(channel, guild_id, ctx),
-        permission_channel(source_channel, guild_id, ctx),
-    )?;
+    let source_perm = permission_channel(source_channel, guild_id, ctx).await?;
 
-    // A per-member deny on the target cannot be represented in the role-set
-    // comparison below, so reject conservatively.
-    if has_member_view_deny(overwrites(&dest_perm)) {
-        tracing::debug!("rejected: target has a per-member VIEW_CHANNEL deny");
-        return Err(PreviewError::Permission);
-    }
-
-    // An overwrite of an unknown kind may restrict either side in a way the
-    // role-set comparison cannot see, so reject rather than ignore it.
-    if has_unknown_overwrite(overwrites(&dest_perm))
+    if has_unknown_overwrite(overwrites(dest_perm))
         || has_unknown_overwrite(overwrites(&source_perm))
     {
         tracing::debug!("rejected: overwrite of unknown kind");
         return Err(PreviewError::Permission);
     }
 
-    let everyone_role_id = guild_id.cast::<RoleMarker>();
     let role_perms = crate::cache::role_permissions(&ctx.http, guild_id)
         .await
         .map_err(|_| PreviewError::Cache)?;
+    let visibility = Visibility::new(
+        overwrites(&source_perm),
+        overwrites(dest_perm),
+        read_target_requirement(channel.kind),
+        role_perms,
+        guild_id.cast(),
+    );
 
-    let dest_roles = viewing_roles(overwrites(&dest_perm), &role_perms, everyone_role_id);
-    let source_roles = viewing_roles(overwrites(&source_perm), &role_perms, everyone_role_id);
-    if !member_granted_source_is_safe(overwrites(&source_perm), &dest_roles, everyone_role_id) {
+    if !visibility.roles_preserve_visibility() {
+        tracing::debug!("rejected: a role combination can read the source but not the target");
+        return Err(PreviewError::Permission);
+    }
+
+    let users = visibility.members_to_verify();
+    if users.len() > MAX_MEMBER_LOOKUPS {
         tracing::debug!(
-            "rejected: source grants access per member and the target is not visible to everyone"
+            members = users.len(),
+            "rejected: too many members with personal overwrites to verify"
         );
         return Err(PreviewError::Permission);
     }
 
-    if !source_roles.is_subset(&dest_roles) {
-        tracing::debug!(
-            source_roles = source_roles.len(),
-            dest_roles = dest_roles.len(),
-            "rejected: source channel is more visible than the target"
-        );
-        return Err(PreviewError::Permission);
+    let roles = try_join_all(users.iter().map(|&user| member_roles(ctx, guild_id, user))).await?;
+    for (&user, roles) in users.iter().zip(roles) {
+        if let Some(roles) = roles
+            && !visibility.member_preserves_visibility(user, &roles)
+        {
+            tracing::debug!(%user, "rejected: member can read the source but not the target");
+            return Err(PreviewError::Permission);
+        }
     }
 
     Ok(())
@@ -514,7 +755,7 @@ impl Preview {
     /// Every rule deciding whether a link may be expanded lives here. In order,
     /// the link must point into `guild_id` — the guild of `source_channel` —
     /// and the linked channel must not be NSFW, must not be a private thread or
-    /// DM, and must be viewable by everyone who can view `source_channel`. The expanded
+    /// DM, and must be readable by everyone who can view `source_channel`. The expanded
     /// content is posted as a single message that all members of
     /// `source_channel` can read, so the linked channel must be at least as
     /// visible as the source channel to avoid leaking restricted content. Public
@@ -576,11 +817,9 @@ impl Preview {
         // When the link points to the same channel the request came from, the
         // expansion is posted back into that very channel. Every member who can
         // read the reply can already read the original message, so there is
-        // nothing to leak and the visibility checks can be skipped. This
-        // notably covers quoting within a private channel, which would otherwise
-        // be rejected by the per-member deny guard.
+        // nothing to leak and the visibility checks can be skipped.
         if requires_visibility_check(args.channel_id, source_channel.id) {
-            check_visibility(&channel, source_channel, guild_id, ctx).await?;
+            check_visibility(&channel, &age_gate, source_channel, guild_id, ctx).await?;
         }
 
         let started = std::time::Instant::now();
@@ -764,69 +1003,6 @@ mod tests {
     }
 
     #[test]
-    fn member_view_deny_detected() {
-        assert!(has_member_view_deny(&[member_ow(5, false, true)]));
-        // role deny is not a member deny
-        assert!(!has_member_view_deny(&[role_ow(1, false, true)]));
-        // member allow (not deny) does not trigger
-        assert!(!has_member_view_deny(&[member_ow(5, true, false)]));
-        assert!(!has_member_view_deny(&[]));
-    }
-
-    #[test]
-    fn member_view_allow_detected() {
-        assert!(has_member_view_allow(&[member_ow(5, true, false)]));
-        // A role allow is not a per-member grant.
-        assert!(!has_member_view_allow(&[role_ow(1, true, false)]));
-        // A member deny is not a grant.
-        assert!(!has_member_view_allow(&[member_ow(5, false, true)]));
-        assert!(!has_member_view_allow(&[]));
-    }
-
-    #[test]
-    fn member_granted_source_may_only_expand_public_targets() {
-        let public_target = HashSet::from([EVERYONE, MEMBER]);
-        let restricted_target = HashSet::from([MEMBER]);
-        let granted = [member_ow(5, true, false)];
-
-        // Whoever was added individually can read anything `@everyone` can.
-        assert!(member_granted_source_is_safe(
-            &granted,
-            &public_target,
-            EVERYONE
-        ));
-        // Their access to a restricted target cannot be established from roles.
-        assert!(!member_granted_source_is_safe(
-            &granted,
-            &restricted_target,
-            EVERYONE
-        ));
-    }
-
-    #[test]
-    fn role_only_source_is_left_to_the_subset_check() {
-        let restricted_target = HashSet::from([MEMBER]);
-        // A source described entirely by roles imposes no extra restriction here,
-        // whatever the target looks like.
-        assert!(member_granted_source_is_safe(
-            &[],
-            &restricted_target,
-            EVERYONE
-        ));
-        assert!(member_granted_source_is_safe(
-            &[role_ow(MEMBER.get(), true, false)],
-            &restricted_target,
-            EVERYONE
-        ));
-        // A member deny on the source narrows it, which is already conservative.
-        assert!(member_granted_source_is_safe(
-            &[member_ow(5, false, true)],
-            &restricted_target,
-            EVERYONE
-        ));
-    }
-
-    #[test]
     fn same_channel_skips_visibility_check() {
         let chan = Id::new(42);
         // Quoting within the same channel needs no visibility check.
@@ -857,109 +1033,342 @@ mod tests {
         );
     }
 
-    #[test]
-    fn public_channels_are_subsets() {
-        // @everyone has VIEW_CHANNEL by base permission, no overwrites.
-        let mut roles = HashMap::new();
-        roles.insert(EVERYONE, Permissions::VIEW_CHANNEL);
-        roles.insert(MEMBER, Permissions::empty());
+    // --- Visibility ---
 
-        let viewing = viewing_roles(&[], &roles, EVERYONE);
-        assert!(viewing.contains(&EVERYONE));
-        assert!(viewing.contains(&MEMBER));
-        // source == dest -> subset holds
-        assert!(viewing.is_subset(&viewing));
+    const ROLE_A: Id<RoleMarker> = Id::new(400);
+    const ROLE_B: Id<RoleMarker> = Id::new(500);
+    const USER: Id<UserMarker> = Id::new(5);
+
+    /// Builds an overwrite with arbitrary permissions.
+    fn overwrite(
+        kind: PermissionOverwriteType,
+        id: u64,
+        allow: Permissions,
+        deny: Permissions,
+    ) -> PermissionOverwrite {
+        PermissionOverwrite {
+            allow,
+            deny,
+            id: Id::new(id),
+            kind,
+        }
+    }
+
+    /// Role permissions where `@everyone` can view channels and read their history
+    /// by default, as in a freshly created guild, and every other role adds nothing.
+    fn default_roles(others: &[Id<RoleMarker>]) -> HashMap<Id<RoleMarker>, Permissions> {
+        let mut roles = HashMap::from([(EVERYONE, READ_TARGET)]);
+        roles.extend(others.iter().map(|&id| (id, Permissions::empty())));
+        roles
+    }
+
+    fn visibility(
+        source: &[PermissionOverwrite],
+        target: &[PermissionOverwrite],
+        roles: &HashMap<Id<RoleMarker>, Permissions>,
+    ) -> Visibility {
+        Visibility::new(source, target, READ_TARGET, roles.clone(), EVERYONE)
+    }
+
+    /// `@everyone` denied, `role` allowed: a channel only `role` can view.
+    fn gated_to(role: Id<RoleMarker>) -> [PermissionOverwrite; 2] {
+        [
+            role_ow(EVERYONE.get(), false, true),
+            role_ow(role.get(), true, false),
+        ]
     }
 
     #[test]
-    fn role_gate_allows_matching_member_role() {
-        // @everyone has no base view; member role is granted via overwrite.
-        let mut roles = HashMap::new();
-        roles.insert(EVERYONE, Permissions::empty());
-        roles.insert(MEMBER, Permissions::empty());
-
-        let ow = [
-            role_ow(EVERYONE.get(), false, true),
-            role_ow(MEMBER.get(), true, false),
-        ];
-        let viewing = viewing_roles(&ow, &roles, EVERYONE);
-
-        assert!(!viewing.contains(&EVERYONE));
-        assert!(viewing.contains(&MEMBER));
-
-        // Both source and dest gated identically -> subset holds (expansion allowed).
-        let source = viewing_roles(&ow, &roles, EVERYONE);
-        assert!(source.is_subset(&viewing));
+    fn public_channels_preserve_visibility() {
+        let v = visibility(&[], &[], &default_roles(&[MEMBER]));
+        assert!(v.roles_preserve_visibility());
+        assert!(v.members_to_verify().is_empty());
     }
 
     #[test]
-    fn narrower_target_is_rejected() {
-        let mut roles = HashMap::new();
-        roles.insert(EVERYONE, Permissions::empty());
-        roles.insert(MEMBER, Permissions::empty());
-        roles.insert(SPECIAL, Permissions::empty());
-
-        // Source: role-gated, visible to MEMBER.
-        let source_ow = [
-            role_ow(EVERYONE.get(), false, true),
-            role_ow(MEMBER.get(), true, false),
-        ];
-        let source = viewing_roles(&source_ow, &roles, EVERYONE);
-
-        // Dest: visible only to SPECIAL.
-        let dest_ow = [
-            role_ow(EVERYONE.get(), false, true),
-            role_ow(SPECIAL.get(), true, false),
-        ];
-        let dest = viewing_roles(&dest_ow, &roles, EVERYONE);
-
-        assert!(source.contains(&MEMBER));
-        assert!(!dest.contains(&MEMBER));
-        // MEMBER can see source but not dest -> leak -> not a subset.
-        assert!(!source.is_subset(&dest));
+    fn equally_gated_channels_preserve_visibility() {
+        let gate = gated_to(MEMBER);
+        let v = visibility(&gate, &gate, &default_roles(&[MEMBER]));
+        assert!(v.roles_preserve_visibility());
     }
 
     #[test]
-    fn administrator_always_views() {
-        let mut roles = HashMap::new();
-        roles.insert(EVERYONE, Permissions::empty());
+    fn target_gated_to_another_role_is_rejected() {
+        let v = visibility(
+            &gated_to(MEMBER),
+            &gated_to(SPECIAL),
+            &default_roles(&[MEMBER, SPECIAL]),
+        );
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn narrower_source_may_quote_wider_target() {
+        let v = visibility(&gated_to(SPECIAL), &[], &default_roles(&[SPECIAL]));
+        assert!(v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn member_granted_source_by_one_role_and_denied_target_by_another_is_rejected() {
+        // GHSA-9857-rwch-jhw6: each role alone views both channels or neither, but a
+        // member holding A and B views the source (B's allow follows A's deny) and
+        // not the target (A's deny is its only role overwrite).
+        let source = [
+            role_ow(ROLE_A.get(), false, true),
+            role_ow(ROLE_B.get(), true, false),
+        ];
+        let target = [role_ow(ROLE_A.get(), false, true)];
+        let v = visibility(&source, &target, &default_roles(&[ROLE_A, ROLE_B]));
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn role_denied_on_target_held_alongside_role_gating_source_is_rejected() {
+        // A member holding A views the gated source; adding B, denied on the
+        // otherwise public target, takes the target away.
+        let target = [role_ow(ROLE_B.get(), false, true)];
+        let v = visibility(
+            &gated_to(ROLE_A),
+            &target,
+            &default_roles(&[ROLE_A, ROLE_B]),
+        );
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn role_allow_on_target_outweighs_another_roles_deny() {
+        // Role allows are applied after role denies, so holding B as well cannot
+        // take the target away from a member who holds A.
+        let target = [
+            role_ow(ROLE_B.get(), false, true),
+            role_ow(ROLE_A.get(), true, false),
+        ];
+        let v = visibility(
+            &gated_to(ROLE_A),
+            &target,
+            &default_roles(&[ROLE_A, ROLE_B]),
+        );
+        assert!(v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn target_without_read_message_history_is_rejected() {
+        let target = [overwrite(
+            PermissionOverwriteType::Role,
+            EVERYONE.get(),
+            Permissions::empty(),
+            Permissions::READ_MESSAGE_HISTORY,
+        )];
+        let v = visibility(&[], &target, &default_roles(&[]));
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn source_without_read_message_history_still_counts_its_viewers() {
+        // The reply is a new message, so viewing the source is enough to read it.
+        let source = [overwrite(
+            PermissionOverwriteType::Role,
+            EVERYONE.get(),
+            Permissions::empty(),
+            Permissions::READ_MESSAGE_HISTORY,
+        )];
+        let restricted_target = gated_to(MEMBER);
+        let v = visibility(&source, &restricted_target, &default_roles(&[MEMBER]));
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn voice_and_stage_targets_also_require_connect() {
+        for kind in [ChannelType::GuildVoice, ChannelType::GuildStageVoice] {
+            assert_eq!(
+                read_target_requirement(kind),
+                READ_TARGET | Permissions::CONNECT
+            );
+        }
+        assert_eq!(read_target_requirement(ChannelType::GuildText), READ_TARGET);
+        assert_eq!(
+            read_target_requirement(ChannelType::PublicThread),
+            READ_TARGET
+        );
+    }
+
+    #[test]
+    fn voice_target_viewable_but_not_connectable_is_rejected() {
+        // A locked voice channel: everyone sees it, only ROLE_A may connect and
+        // so read its text chat.
+        let mut roles = default_roles(&[ROLE_A]);
+        roles.insert(EVERYONE, READ_TARGET | Permissions::CONNECT);
+        let target = [
+            overwrite(
+                PermissionOverwriteType::Role,
+                EVERYONE.get(),
+                Permissions::empty(),
+                Permissions::CONNECT,
+            ),
+            overwrite(
+                PermissionOverwriteType::Role,
+                ROLE_A.get(),
+                Permissions::CONNECT,
+                Permissions::empty(),
+            ),
+        ];
+        let read_voice = read_target_requirement(ChannelType::GuildVoice);
+        let v = Visibility::new(&[], &target, read_voice, roles.clone(), EVERYONE);
+        assert!(!v.roles_preserve_visibility());
+
+        let v = Visibility::new(&gated_to(ROLE_A), &target, read_voice, roles, EVERYONE);
+        assert!(v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn role_missing_from_role_permissions_still_restricts_its_holders() {
+        // ROLE_A is newer than the cached role permissions but already denied on
+        // the target.
+        let target = [role_ow(ROLE_A.get(), false, true)];
+        let v = visibility(&[], &target, &default_roles(&[]));
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn administrator_reads_any_target() {
+        let mut roles = default_roles(&[]);
         roles.insert(ADMIN, Permissions::ADMINISTRATOR);
-
-        // Even with @everyone denied, an ADMINISTRATOR role still views.
-        let ow = [role_ow(EVERYONE.get(), false, true)];
-        let viewing = viewing_roles(&ow, &roles, EVERYONE);
-        assert!(viewing.contains(&ADMIN));
-        assert!(!viewing.contains(&EVERYONE));
+        let nobody = [role_ow(EVERYONE.get(), false, true)];
+        // Only administrators view the source, and they read everything.
+        let v = visibility(&nobody, &[role_ow(ADMIN.get(), false, true)], &roles);
+        assert!(v.roles_preserve_visibility());
     }
 
     #[test]
-    fn other_role_overwrite_does_not_affect_role() {
-        let mut roles = HashMap::new();
-        roles.insert(EVERYONE, Permissions::VIEW_CHANNEL);
-        roles.insert(MEMBER, Permissions::empty());
-        roles.insert(SPECIAL, Permissions::empty());
-
-        // Only SPECIAL is denied; MEMBER should be unaffected.
-        let ow = [role_ow(SPECIAL.get(), false, true)];
-        let viewing = viewing_roles(&ow, &roles, EVERYONE);
-        assert!(viewing.contains(&MEMBER));
-        assert!(!viewing.contains(&SPECIAL));
+    fn missing_everyone_role_grants_no_base_permissions() {
+        // Nobody can view the source without a base grant, so nothing can leak.
+        let roles = HashMap::from([(MEMBER, Permissions::empty())]);
+        let v = visibility(&[], &gated_to(SPECIAL), &roles);
+        assert!(v.roles_preserve_visibility());
     }
 
     #[test]
-    fn missing_everyone_role_defaults_to_no_base() {
-        // @everyone absent from the role map -> base falls back to empty,
-        // so a role with no view permission and no overwrite cannot view.
-        let mut roles = HashMap::new();
-        roles.insert(MEMBER, Permissions::empty());
+    fn reachable_grants_stay_bounded_with_many_roles() {
+        let ids: Vec<Id<RoleMarker>> = (1000..1200).map(Id::new).collect();
+        let source: Vec<_> = ids
+            .iter()
+            .step_by(2)
+            .map(|id| role_ow(id.get(), true, false))
+            .collect();
+        let target: Vec<_> = ids
+            .iter()
+            .step_by(3)
+            .map(|id| role_ow(id.get(), false, true))
+            .collect();
+        let v = visibility(&source, &target, &default_roles(&ids));
+        // Base, source and target bits: 3 + 2 + 4.
+        assert!(v.reachable.len() <= 1 << 9);
+    }
 
-        let viewing = viewing_roles(&[], &roles, EVERYONE);
-        assert!(!viewing.contains(&MEMBER));
+    #[test]
+    fn member_granted_source_quoting_public_target_needs_no_lookup() {
+        let source = [
+            role_ow(EVERYONE.get(), false, true),
+            member_ow(USER.get(), true, false),
+        ];
+        let v = visibility(&source, &[], &default_roles(&[MEMBER]));
+        assert!(v.roles_preserve_visibility());
+        assert!(v.members_to_verify().is_empty());
+    }
 
-        // The same role gains access once an overwrite allows it.
-        let ow = [role_ow(MEMBER.get(), true, false)];
-        let viewing = viewing_roles(&ow, &roles, EVERYONE);
-        assert!(viewing.contains(&MEMBER));
+    #[test]
+    fn member_granted_source_quoting_restricted_target_looks_the_member_up() {
+        let source = [
+            role_ow(EVERYONE.get(), false, true),
+            member_ow(USER.get(), true, false),
+        ];
+        let v = visibility(&source, &gated_to(MEMBER), &default_roles(&[MEMBER]));
+        assert!(v.roles_preserve_visibility());
+        assert_eq!(v.members_to_verify(), [USER]);
+
+        // Judged on the roles they actually hold.
+        assert!(v.member_preserves_visibility(USER, &[MEMBER]));
+        assert!(!v.member_preserves_visibility(USER, &[]));
+    }
+
+    #[test]
+    fn member_denied_on_target_is_looked_up_and_rejected_if_they_view_the_source() {
+        let target = [member_ow(USER.get(), false, true)];
+        let v = visibility(&[], &target, &default_roles(&[]));
+        assert_eq!(v.members_to_verify(), [USER]);
+        assert!(!v.member_preserves_visibility(USER, &[]));
+    }
+
+    #[test]
+    fn member_denied_on_target_who_cannot_view_the_source_is_fine() {
+        let v = visibility(
+            &gated_to(MEMBER),
+            &[member_ow(USER.get(), false, true)],
+            &default_roles(&[MEMBER]),
+        );
+        assert_eq!(v.members_to_verify(), [USER]);
+        assert!(v.member_preserves_visibility(USER, &[]));
+        assert!(!v.member_preserves_visibility(USER, &[MEMBER]));
+    }
+
+    #[test]
+    fn member_shut_out_of_source_needs_no_lookup() {
+        let source = [member_ow(USER.get(), false, true)];
+        let target = [member_ow(USER.get(), false, true)];
+        let v = visibility(&source, &target, &default_roles(&[]));
+        assert!(v.members_to_verify().is_empty());
+    }
+
+    #[test]
+    fn member_allowed_only_on_target_needs_no_lookup() {
+        let v = visibility(
+            &gated_to(MEMBER),
+            &[
+                role_ow(EVERYONE.get(), false, true),
+                member_ow(USER.get(), true, false),
+            ],
+            &default_roles(&[MEMBER]),
+        );
+        // MEMBER views the source but not the target, whatever USER can do.
+        assert!(!v.roles_preserve_visibility());
+        assert!(v.members_to_verify().is_empty());
+    }
+
+    #[test]
+    fn member_granted_both_channels_needs_no_lookup() {
+        // A restricted channel quoted from one made private by adding the same
+        // members individually: their personal grant already covers the target.
+        let source = [
+            role_ow(EVERYONE.get(), false, true),
+            member_ow(USER.get(), true, false),
+        ];
+        let target = [
+            role_ow(EVERYONE.get(), false, true),
+            member_ow(USER.get(), true, false),
+        ];
+        let v = visibility(&source, &target, &default_roles(&[MEMBER]));
+        assert!(v.roles_preserve_visibility());
+        assert!(v.members_to_verify().is_empty());
+    }
+
+    #[test]
+    fn member_overwrite_outweighs_role_overwrites() {
+        // A personal allow is applied last, so it restores what a role denied.
+        let target = [
+            role_ow(MEMBER.get(), false, true),
+            overwrite(
+                PermissionOverwriteType::Member,
+                USER.get(),
+                READ_TARGET,
+                Permissions::empty(),
+            ),
+        ];
+        let v = visibility(
+            &[member_ow(USER.get(), true, false)],
+            &target,
+            &default_roles(&[MEMBER]),
+        );
+        assert!(v.member_preserves_visibility(USER, &[MEMBER]));
     }
 
     // --- Preview embed rendering ---

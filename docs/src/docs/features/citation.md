@@ -68,12 +68,14 @@ babyrite behaves as follows with respect to channel permissions.
 - Message links pointing to another server (guild) are not expanded.
   - Permissions are defined per server, so babyrite cannot judge whether a channel in another server is viewable.
 - Messages in private threads and DMs are not expanded.
-- The linked channel is only expanded if every member who can view the source channel can also view it.
-  - It is not expanded if the linked channel's visibility is narrower than the source channel's.
+- The linked message is only expanded if every member who can view the source channel can also read it.
+  - Reading the linked message requires both "View Channel" and "Read Message History" in its channel.
+  - In voice and stage channels, "Connect" is required as well.
+  - Permissions are evaluated the way Discord does, including members who hold several roles at once.
+  - It is not expanded if even one member could view the source channel but not read the linked message.
 - Public threads are judged based on their parent channel's permissions.
-- Channels that individually deny specific members access are not expanded, as a safety measure.
-- If the source channel individually grants specific members access, only channels everyone can view may be quoted there.
-  - Visibility is judged per role, so whether an individually added member can view a restricted channel cannot be determined.
+- Members granted or denied access individually are looked up and judged on their actual roles.
+  - If more than 10 such members would need to be looked up for one link, it is not expanded, as a safety measure.
 - If the target is the same channel as the source, the permission checks above are skipped and the link is expanded as-is.
 
 ## Supported message links
