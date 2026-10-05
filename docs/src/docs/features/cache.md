@@ -58,3 +58,5 @@ All operate with the following shared settings:
 3. If the target channel isn't found in the channel list, search active threads (threads aren't included in the channel list).
 4. The channel that's found is ultimately written into the cache as well.
 5. When a visibility check is needed, the guild's role permissions are taken from `GUILD_ROLE_CACHE` the same way (fetched from the Discord API on a miss).
+6. If some members are granted or denied access individually, their information is fetched from the Discord API every time.
+    - Member role changes cannot be observed without the privileged `GUILD_MEMBERS` intent, so member information is not cached.

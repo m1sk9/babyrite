@@ -6,6 +6,10 @@ layout: doc
 
 This page summarizes babyrite's configuration options and their default values. For how to point to a configuration file, see [Getting Started](./getting-started).
 
+- The configuration file is only read at startup. Restart babyrite after changing it.
+- If the file at `CONFIG_FILE_PATH` does not exist or is not valid TOML, babyrite exits without starting.
+- A sample listing every setting is available at [`config/config.toml`](https://github.com/m1sk9/babyrite/blob/main/config/config.toml).
+
 ## Default Configuration
 
 If you don't provide a configuration file, the following defaults are used.
