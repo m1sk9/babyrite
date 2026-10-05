@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.0.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.8...babyrite-v2.0.0) (2026-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* no configuration, environment variable, intent or permission changes, but runtime behaviour differs: Discord API requests now time out after 10 s (previously unbounded); gateway reconnects use exponential backoff capped at 255 s (previously a fixed 1-5 s); and the TLS/HTTP stack used for Discord moved from reqwest 0.11 + rustls 0.21 to hyper 1 + rustls 0.23 (platform verifier). Re-verify a deployment after upgrading. Closes #728.
+
+### Features
+
+* highlight more languages in GitHub code block expansions ([#734](https://github.com/m1sk9/babyrite/issues/734)) ([de588b2](https://github.com/m1sk9/babyrite/commit/de588b29090761ef71aa61cf39a01a4b090f085a))
+* migrate the Discord client from Serenity to twilight ([#730](https://github.com/m1sk9/babyrite/issues/730)) ([e759c84](https://github.com/m1sk9/babyrite/commit/e759c849cdb52c2121f197c18843b12706b7ce11))
+* send GitHub code block expansions as a reply to the triggering message ([#733](https://github.com/m1sk9/babyrite/issues/733)) ([371214a](https://github.com/m1sk9/babyrite/commit/371214a4f718c42e2f29079a721c2e8d9f5646a7))
+
+
+### Bug Fixes
+
+* preview GitHub files whose line past the display limit is huge ([#731](https://github.com/m1sk9/babyrite/issues/731)) ([b6bb011](https://github.com/m1sk9/babyrite/commit/b6bb01142bf9bd7538a2bf5bec0fe65c60253dad))
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.5.15 ([#725](https://github.com/m1sk9/babyrite/issues/725)) ([38c74cb](https://github.com/m1sk9/babyrite/commit/38c74cbfedf032981688cf05dd1888bd2c537cad))
+* **deps:** update dependency wrangler to v4.143.1 ([#722](https://github.com/m1sk9/babyrite/issues/722)) ([7bd0acc](https://github.com/m1sk9/babyrite/commit/7bd0acc5502015abcb7817900068a4c19a1cbe30))
+* **deps:** update dependency wrangler to v4.144.0 ([#724](https://github.com/m1sk9/babyrite/issues/724)) ([802f429](https://github.com/m1sk9/babyrite/commit/802f42950f399bc6ab617d4b06a36b01dd9ada47))
+* **deps:** update dependency wrangler to v4.145.0 ([#726](https://github.com/m1sk9/babyrite/issues/726)) ([5c9805d](https://github.com/m1sk9/babyrite/commit/5c9805dd9fa22d77eb504d9a8b41254d5c38f3a8))
+* **deps:** update dependency wrangler to v4.147.0 ([#727](https://github.com/m1sk9/babyrite/issues/727)) ([f198987](https://github.com/m1sk9/babyrite/commit/f1989876a29fdba3b63e114b4d777ad1a2973c76))
+* **deps:** update rust crate tokio to v1.53.2 ([#729](https://github.com/m1sk9/babyrite/issues/729)) ([7aff861](https://github.com/m1sk9/babyrite/commit/7aff8611e1555af8f2fc4372bbbf127124dd14cf))
+* **deps:** update taiki-e/install-action digest to e407f7b ([#721](https://github.com/m1sk9/babyrite/issues/721)) ([e817833](https://github.com/m1sk9/babyrite/commit/e817833b1dd91d61c51b69eb5917162afe665c34))
+
 ## [1.4.8](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.7...babyrite-v1.4.8) (2026-09-28)
 
 
