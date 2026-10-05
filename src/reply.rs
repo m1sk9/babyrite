@@ -25,8 +25,10 @@ pub struct OutgoingMessage {
 /// Builds the messages answering the message `request_id`, in the order they
 /// are sent.
 ///
-/// Embeds ride in a single reply, while each code block gets a message of its
-/// own: a block fills the message content, and a message carries only one.
+/// Every message replies to the request, so each expansion stays attached to the
+/// link it came from. Embeds ride in a single reply, while each code block gets a
+/// reply of its own: a block fills the message content, and a message carries
+/// only one.
 pub fn build_messages(
     request_id: Id<MessageMarker>,
     results: Vec<ExpandedContent>,
@@ -47,11 +49,13 @@ pub fn build_messages(
                 // Discord parses every mention in the content under the bot's
                 // permissions. The content is fetched from a repository the
                 // requester chose, so that would let it borrow mention rights
-                // the requester may not hold.
+                // the requester may not hold. That also leaves `replied_user`
+                // off: only the preview pings the requester, so a message with
+                // several permalinks does not ping them once per code block.
                 code_blocks.push(OutgoingMessage {
                     content: Some(format!("{metadata}\n```{language}\n{code}\n```")),
                     embeds: Vec::new(),
-                    reply_to: None,
+                    reply_to: Some(request_id),
                     allowed_mentions: AllowedMentions::default(),
                 });
             }
@@ -148,10 +152,16 @@ mod tests {
     }
 
     #[test]
-    fn a_code_block_mentions_nobody_and_replies_to_nothing() {
+    fn a_code_block_mentions_nobody() {
         let messages = build_messages(REQUEST, vec![code_block()]);
 
         assert_eq!(messages[0].allowed_mentions, AllowedMentions::default());
-        assert_eq!(messages[0].reply_to, None);
+    }
+
+    #[test]
+    fn every_message_replies_to_the_request() {
+        let messages = build_messages(REQUEST, vec![embed(), code_block(), code_block()]);
+
+        assert!(messages.iter().all(|m| m.reply_to == Some(REQUEST)));
     }
 }
