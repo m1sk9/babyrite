@@ -11,7 +11,7 @@ hero:
       link: /docs/getting-started
     - theme: alt
       text: GitHub
-      link: https://github.com/m1sk9/LunaticChat
+      link: https://github.com/m1sk9/babyrite
 
 features:
   - title: Lightweight
@@ -54,8 +54,8 @@ features:
   <div class="feature-showcase-text">
     <h2>GitHub Permalinks as Code Blocks</h2>
     <p>
-      babyrite detects GitHub permalinks pinned to a commit SHA and expands the linked file's
-      content directly as a syntax-highlighted code block.
+      babyrite detects links to files on GitHub and expands the linked file's content
+      as a syntax-highlighted code block.
     </p>
     <ul>
       <li>Supports line range specifications (<code>#L10-L20</code>)</li>

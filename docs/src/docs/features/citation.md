@@ -31,6 +31,27 @@ Follow these steps in your client to copy a message link.
 
 - Expands up to 3 links per message.
 - Content in NSFW channels is not expanded. The same applies to threads under an NSFW channel.
+- Links in messages sent by bots are ignored.
+- Links in DMs are ignored. Only messages in servers are handled.
+
+### What is shown
+
+The linked message is shown as an embed with the following content.
+
+| Item | Content |
+| --- | --- |
+| Author | The sender's name and avatar |
+| Description | The message content |
+| Image | The first file attached to the message |
+| Footer | The name of the linked channel |
+| Timestamp | When the message was sent |
+
+If a message contains several links, all embeds are posted together in a single reply.
+
+### Replies and mentions
+
+- The preview is posted as a reply to the original message, and only the user who sent the link is notified.
+- Even if the linked message contains `@everyone` or user or role mentions, no one is notified when it is expanded.
 
 ### Canceling a preview
 

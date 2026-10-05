@@ -12,10 +12,10 @@
 docker pull ghcr.io/m1sk9/babyrite:latest
 
 # Minor Release
-docker pull ghcr.io/m1sk9/babyrite:v1
+docker pull ghcr.io/m1sk9/babyrite:v2
 
 # Specific Release
-docker pull ghcr.io/m1sk9/babyrite:v1.0.0
+docker pull ghcr.io/m1sk9/babyrite:v2.0.0
 ```
 
 [_API Support: requires Discord API v10_](https://discord.com/developers/docs/reference#api-versioning)
@@ -48,64 +48,6 @@ Detects GitHub permalinks (blob URLs containing a commit SHA) and expands file c
 - Supports line range specifications (`#L10-L20`)
 - Expands up to 3 links per message
 - Display truncated to 50 lines by default (configurable); only the displayed lines are downloaded, up to a 1MB read limit
-
-<details>
-<summary>Supported languages</summary>
-
-| Extension                             | Language   |
-| ------------------------------------- | ---------- |
-| `.rs`                                 | Rust       |
-| `.py`                                 | Python     |
-| `.js`                                 | JavaScript |
-| `.ts`                                 | TypeScript |
-| `.jsx`                                | JSX        |
-| `.tsx`                                | TSX        |
-| `.rb`                                 | Ruby       |
-| `.go`                                 | Go         |
-| `.java`                               | Java       |
-| `.kt`, `.kts`                         | Kotlin     |
-| `.c`, `.h`                            | C          |
-| `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx` | C++        |
-| `.cs`                                 | C#         |
-| `.swift`                              | Swift      |
-| `.php`                                | PHP        |
-| `.scala`                              | Scala      |
-| `.sh`, `.bash`, `.zsh`, `.fish`       | Bash       |
-| `.ps1`                                | PowerShell |
-| `.html`, `.htm`                       | HTML       |
-| `.css`                                | CSS        |
-| `.scss`                               | SCSS       |
-| `.sass`                               | Sass       |
-| `.less`                               | Less       |
-| `.json`                               | JSON       |
-| `.yaml`, `.yml`                       | YAML       |
-| `.toml`                               | TOML       |
-| `.xml`                                | XML        |
-| `.sql`                                | SQL        |
-| `.md`, `.markdown`                    | Markdown   |
-| `.lua`                                | Lua        |
-| `.r`                                  | R          |
-| `.dart`                               | Dart       |
-| `.zig`                                | Zig        |
-| `.nim`                                | Nim        |
-| `.ex`, `.exs`                         | Elixir     |
-| `.erl`, `.hrl`                        | Erlang     |
-| `.hs`                                 | Haskell    |
-| `.ml`, `.mli`                         | OCaml      |
-| `.clj`, `.cljs`                       | Clojure    |
-| `.tf`                                 | HCL        |
-| `.vue`                                | Vue        |
-| `.svelte`                             | Svelte     |
-| `.graphql`, `.gql`                    | GraphQL    |
-| `.proto`                              | Protobuf   |
-| `.mk`, `Makefile`                     | Makefile   |
-| `Dockerfile`                          | Dockerfile |
-
-For extensions not listed above, the extension name is used as-is for the language hint.
-
-Note that Discord code blocks use [highlight.js](https://highlightjs.org/) for syntax highlighting, so languages not supported by highlight.js cannot be highlighted regardless of babyrite's configuration. If syntax highlighting does not work correctly for a supported language, please [open an issue](https://github.com/m1sk9/babyrite/issues/new).
-
-</details>
 
 ## Installation
 

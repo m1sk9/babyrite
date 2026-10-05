@@ -6,6 +6,10 @@ layout: doc
 
 babyrite の設定項目とデフォルト値についてまとめます．設定ファイルの指定方法については [はじめる](./getting-started) を参照してください．
 
+- 設定ファイルは起動時にのみ読み込まれます．変更した場合は babyrite を再起動してください．
+- `CONFIG_FILE_PATH` で指定したファイルが存在しない，または TOML として不正な場合，babyrite は起動せずに終了します．
+- すべての設定項目を記載したサンプルが [`config/config.toml`](https://github.com/m1sk9/babyrite/blob/main/config/config.toml) にあります．
+
 ## デフォルト設定
 
 設定ファイルを用意しない場合，以下のデフォルト設定が使用されます．

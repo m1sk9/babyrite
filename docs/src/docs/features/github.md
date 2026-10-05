@@ -4,15 +4,15 @@ layout: doc
 
 # GitHub Permalink Expansion <Badge type="tip" text="v1.0.0~" />
 
-When you expand a GitHub permalink pinned to a commit SHA, babyrite expands the linked file's content directly as a syntax-highlighted code block.
+When you send a link to a file on GitHub (a permalink), babyrite expands the linked file's content as a syntax-highlighted code block.
 
 ::: tip This feature is gated by a feature flag
 
-To use it, you need to enable the corresponding key under `[features]` in `config.toml`.
+It is enabled by default. To disable it, set the corresponding key under `[features]` in `config.toml` to `false`.
 
 ```toml
 [features]
-github_permalink = true
+github_permalink = false
 ```
 
 :::
@@ -32,6 +32,26 @@ You can copy a permalink with the following steps.
 
 - Expands up to 3 links per message.
 - Duplicate URLs are ignored.
+- Each link's expansion is posted separately as a reply to the original message.
+
+## How expansions are shown
+
+A single line with the file's information is shown above the code block.
+
+```md
+`src/main.rs` (L44-L50) - m1sk9/babyrite@52731e2
+```
+
+- The file path, line range and `{owner}/{repo}@{ref}` are shown in that order.
+- If `{ref}` is a commit SHA, it is shortened to its first 7 characters. Branch and tag names are shown as-is.
+- Without a line range, the file is shown from the beginning.
+- If the lines to show exceed `github.max_lines` (50 by default), they are truncated to the first `max_lines` lines and marked like `truncated to 50 lines`. The limit can be changed in [Configuration](../configuration).
+- If the line range runs past the end of the file, the lines up to the end are shown.
+
+::: info Mentions and special characters
+- Expansion replies mention no one. Even if the file contains `@everyone` or user mentions, no one is notified.
+- If the file contains ```` ``` ````, it is defused without changing how it looks, so the code block does not close early.
+:::
 
 ## Supported patterns
 
@@ -48,6 +68,7 @@ https://github.com/{owner}/{repo}/blob/{ref}/{path}#L{start}-L{end}
   - A branch name (e.g. `main` or `feat/add-github`)
   - A tag name (e.g. `release-v1.0`, `v2.9.0`)
 - Query strings are discarded.
+- Only public repositories are supported. babyrite fetches files without authentication, so files in private repositories cannot be expanded.
 
 ## Content fetch limits
 
@@ -66,3 +87,93 @@ If you don't want a link previewed, wrap it in `<>` and it will be ignored.
 ```md
 <https://github.com/m1sk9/babyrite/blob/52731e2a66c5647b3bd30b429af87c5e181e3434/src/main.rs#L44-L50>
 ```
+
+## Supported extensions
+
+The extensions supported for syntax highlighting are listed below.
+
+Note that Discord code blocks use [highlight.js](https://highlightjs.org/) for syntax highlighting, so languages not supported by highlight.js cannot be highlighted regardless of babyrite's configuration.
+
+If syntax highlighting does not work correctly for a supported language, please [open an issue](https://github.com/m1sk9/babyrite/issues/new).
+
+::: tip
+
+For extensions not listed, the extension name is used as-is for the language hint.
+
+:::
+
+::: tip About `.m`
+
+`.m` is used by both Objective-C and Matlab, but babyrite treats it as Objective-C, which is more common on GitHub. Matlab files are highlighted as Objective-C.
+
+:::
+
+::: details Extension table (click to expand)
+
+| Extension                                 | Language     |
+| ----------------------------------------- | ------------ |
+| `.rs`                                     | Rust         |
+| `.py`, `.pyi`, `.pyw`                     | Python       |
+| `.js`                                     | JavaScript   |
+| `.ts`                                     | TypeScript   |
+| `.jsx`                                    | JSX          |
+| `.tsx`                                    | TSX          |
+| `.rb`                                     | Ruby         |
+| `.go`                                     | Go           |
+| `.java`                                   | Java         |
+| `.kt`, `.kts`                             | Kotlin       |
+| `.c`, `.h`                                | C            |
+| `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx`     | C++          |
+| `.cs`                                     | C#           |
+| `.swift`                                  | Swift        |
+| `.php`                                    | PHP          |
+| `.scala`                                  | Scala        |
+| `.sh`, `.bash`, `.zsh`, `.fish`           | Bash         |
+| `.ps1`, `.psm1`                           | PowerShell   |
+| `.html`, `.htm`                           | HTML         |
+| `.css`                                    | CSS          |
+| `.scss`                                   | SCSS         |
+| `.sass`                                   | Sass         |
+| `.less`                                   | Less         |
+| `.json`                                   | JSON         |
+| `.yaml`, `.yml`                           | YAML         |
+| `.toml`                                   | TOML         |
+| `.xml`                                    | XML          |
+| `.sql`                                    | SQL          |
+| `.md`, `.markdown`                        | Markdown     |
+| `.lua`                                    | Lua          |
+| `.r`                                      | R            |
+| `.dart`                                   | Dart         |
+| `.zig`                                    | Zig          |
+| `.nim`                                    | Nim          |
+| `.ex`, `.exs`                             | Elixir       |
+| `.erl`, `.hrl`                            | Erlang       |
+| `.hs`                                     | Haskell      |
+| `.ml`, `.mli`                             | OCaml        |
+| `.clj`, `.cljs`, `.cljc`                  | Clojure      |
+| `.tf`                                     | HCL          |
+| `.vue`                                    | Vue          |
+| `.svelte`                                 | Svelte       |
+| `.graphql`, `.gql`                        | GraphQL      |
+| `.proto`                                  | Protobuf     |
+| `.jl`                                     | Julia        |
+| `.m`, `.mm`                               | Objective-C  |
+| `.f`, `.for`, `.f77`                      | Fortran      |
+| `.fs`, `.fsx`, `.fsi`                     | F#           |
+| `.adb`, `.ads`                            | Ada          |
+| `.asm`, `.s`                              | x86 Assembly |
+| `.lisp`, `.el`, `.cl`                     | Lisp         |
+| `.scm`, `.ss`, `.rkt`                     | Scheme       |
+| `.ll`                                     | LLVM IR      |
+| `.vhd`                                    | VHDL         |
+| `.vert`, `.frag`                          | GLSL         |
+| `.j2`                                     | Jinja        |
+| `.conf`                                   | Nginx        |
+| `.htaccess`, `httpd.conf`, `apache2.conf` | Apache       |
+| `.sty`                                    | LaTeX        |
+| `.wat`                                    | WebAssembly  |
+| `.mk`, `Makefile`                         | Makefile     |
+| `Dockerfile`                              | Dockerfile   |
+| `CMakeLists.txt`                          | CMake        |
+
+:::

@@ -19,6 +19,12 @@
     },
   },
   "lsp": {
+    "biome": {
+      "settings": {
+        "config_path": "docs/biome.jsonc",
+        "require_config_file": true,
+      },
+    },
     "rust-analyzer": {
       "initialization_options": {
         "check": {

@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/m1sk9/babyrite:v1
+    image: ghcr.io/m1sk9/babyrite:v2
     env_file:
       - .env
     volumes:
