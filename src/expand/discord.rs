@@ -142,12 +142,14 @@ pub enum PreviewError {
 }
 
 impl From<twilight_http::Error> for PreviewError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn from(e: twilight_http::Error) -> Self {
         Self::Discord(Box::new(e))
     }
 }
 
 impl From<twilight_http::response::DeserializeBodyError> for PreviewError {
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn from(e: twilight_http::response::DeserializeBodyError) -> Self {
         Self::Discord(Box::new(e))
     }
