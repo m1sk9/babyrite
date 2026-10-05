@@ -196,9 +196,14 @@ impl GitHubPermalink {
         }
 
         let limit = self.read_limit(max_lines);
-        let body = read_body_limited(response, limit)
-            .await
-            .inspect_err(|e| tracing::warn!(error = %e, ?limit, "failed to read body"))?;
+        let body = read_body_limited(response, limit).await.inspect_err(|e| {
+            tracing::warn!(
+                error = %e,
+                lines = limit.lines,
+                probe_bytes = limit.probe_bytes,
+                "failed to read body"
+            )
+        })?;
         tracing::debug!(
             bytes = body.len(),
             elapsed_ms = started.elapsed().as_millis(),
@@ -222,7 +227,7 @@ impl GitHubPermalink {
                 if range.end <= capped {
                     return ReadLimit {
                         lines: range.end,
-                        probe: false,
+                        probe_bytes: 0,
                     };
                 }
                 capped
@@ -231,7 +236,7 @@ impl GitHubPermalink {
         };
         ReadLimit {
             lines: displayed_end,
-            probe: true,
+            probe_bytes: PROBE_BYTES,
         }
     }
 
@@ -292,9 +297,8 @@ impl GitHubPermalink {
 struct ReadLimit {
     /// Number of leading lines read in full, including their terminating newline.
     lines: usize,
-    /// Whether [`PROBE_BYTES`] past those lines are also read, to tell whether more
-    /// follows.
-    probe: bool,
+    /// Number of bytes read past those lines, to tell whether more follows.
+    probe_bytes: usize,
 }
 
 /// Reads the response body chunk by chunk, stopping as soon as `limit` is met.
@@ -337,7 +341,7 @@ impl LimitedBody {
 
     /// Whether enough of the body has been received to build the code block.
     fn is_complete(&self) -> bool {
-        self.newlines >= self.limit.lines && (!self.limit.probe || self.probed >= PROBE_BYTES)
+        self.newlines >= self.limit.lines && self.probed >= self.limit.probe_bytes
     }
 
     /// Appends the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`].
@@ -361,8 +365,8 @@ impl LimitedBody {
             }
         }
         let mut probed = 0;
-        if newlines == wanted && self.limit.probe {
-            probed = (PROBE_BYTES - self.probed).min(chunk.len() - end);
+        if newlines == wanted {
+            probed = (self.limit.probe_bytes - self.probed).min(chunk.len() - end);
             end += probed;
         }
 
@@ -388,10 +392,11 @@ impl LimitedBody {
     /// the BOM is dropped instead of showing up as an invisible U+FEFF, and a
     /// UTF-16 BOM selects UTF-16 instead of decoding to mojibake.
     ///
-    /// A UTF-16 body only survives being read in full: [`Self::push`] counts lines in
-    /// raw bytes, so stopping at the `0A` of a UTF-16LE `\n` (`0A 00`) without a probe
-    /// leaves the final code unit incomplete. Counting lines in decoded text instead would mean
-    /// decoding incrementally, which is not worth it for how rare such files are.
+    /// A UTF-16 body only survives being read in full or with a probe: [`Self::push`]
+    /// counts lines in raw bytes, so stopping right at the `0A` of a UTF-16LE `\n`
+    /// (`0A 00`) leaves the final code unit incomplete. Counting lines in decoded text
+    /// instead would mean decoding incrementally, which is not worth it for how rare
+    /// such files are.
     ///
     /// Why not read the `Content-Type` charset like `Response::text` does: the header
     /// is gone by the time chunks are joined. `raw.githubusercontent.com` serves
@@ -851,12 +856,15 @@ mod tests {
     fn full(lines: usize) -> ReadLimit {
         ReadLimit {
             lines,
-            probe: false,
+            probe_bytes: 0,
         }
     }
 
     fn probed(lines: usize) -> ReadLimit {
-        ReadLimit { lines, probe: true }
+        ReadLimit {
+            lines,
+            probe_bytes: PROBE_BYTES,
+        }
     }
 
     #[test]
