@@ -6,7 +6,7 @@
 pub fn language_from_extension(extension: &str) -> &str {
     match extension.to_lowercase().as_str() {
         "rs" => "rust",
-        "py" => "python",
+        "py" | "pyi" | "pyw" => "python",
         "js" => "javascript",
         "ts" => "typescript",
         "jsx" => "jsx",
@@ -22,7 +22,7 @@ pub fn language_from_extension(extension: &str) -> &str {
         "php" => "php",
         "scala" => "scala",
         "sh" | "bash" | "zsh" | "fish" => "bash",
-        "ps1" => "powershell",
+        "ps1" | "psm1" => "powershell",
         "html" | "htm" => "html",
         "css" => "css",
         "scss" => "scss",
@@ -44,26 +44,56 @@ pub fn language_from_extension(extension: &str) -> &str {
         "erl" | "hrl" => "erlang",
         "hs" => "haskell",
         "ml" | "mli" => "ocaml",
-        "clj" | "cljs" => "clojure",
+        "clj" | "cljs" | "cljc" => "clojure",
         "tf" => "hcl",
         "vue" => "vue",
         "svelte" => "svelte",
         "graphql" | "gql" => "graphql",
         "proto" => "protobuf",
         "makefile" | "mk" => "makefile",
+        "jl" => "julia",
+        // `.m` is shared with Matlab; Objective-C is far more common on GitHub.
+        "m" | "mm" => "objectivec",
+        "f" | "for" | "f77" => "fortran",
+        "fs" | "fsx" | "fsi" => "fsharp",
+        "adb" | "ads" => "ada",
+        "asm" | "s" => "x86asm",
+        "lisp" | "el" | "cl" => "lisp",
+        "scm" | "ss" | "rkt" => "scheme",
+        "ll" => "llvm",
+        "vhd" => "vhdl",
+        "vert" | "frag" => "glsl",
+        "j2" => "django",
+        "conf" => "nginx",
+        "htaccess" => "apache",
+        "sty" => "latex",
+        "wat" => "wasm",
         _ => extension,
     }
 }
 
 /// Returns the language identifier for syntax highlighting based on a file path.
 ///
-/// Uses the file extension when present; extensionless filenames
+/// Filenames whose extension alone points to the wrong language
+/// (e.g. `CMakeLists.txt`) are looked up by name first. Otherwise the file
+/// extension is used when present; extensionless filenames
 /// (e.g. `Dockerfile`, `Makefile`) are looked up by name.
 pub fn language_for_path(path: &str) -> &str {
     let filename = path.rsplit('/').next().unwrap_or(path);
+    if let Some(language) = language_from_filename(filename) {
+        return language;
+    }
     match filename.rsplit_once('.') {
         Some((_, ext)) => language_from_extension(ext),
         None => language_from_extension(filename),
+    }
+}
+
+fn language_from_filename(filename: &str) -> Option<&'static str> {
+    match filename.to_lowercase().as_str() {
+        "cmakelists.txt" => Some("cmake"),
+        "httpd.conf" | "apache2.conf" => Some("apache"),
+        _ => None,
     }
 }
 
@@ -132,6 +162,65 @@ mod tests {
         assert_eq!(language_from_extension("proto"), "protobuf");
         assert_eq!(language_from_extension("graphql"), "graphql");
         assert_eq!(language_from_extension("gql"), "graphql");
+    }
+
+    #[test]
+    fn extensions_highlight_js_does_not_recognize() {
+        let cases = [
+            ("jl", "julia"),
+            ("m", "objectivec"),
+            ("mm", "objectivec"),
+            ("f", "fortran"),
+            ("for", "fortran"),
+            ("f77", "fortran"),
+            ("fsx", "fsharp"),
+            ("fsi", "fsharp"),
+            ("adb", "ada"),
+            ("ads", "ada"),
+            ("asm", "x86asm"),
+            ("s", "x86asm"),
+            ("el", "lisp"),
+            ("cl", "lisp"),
+            ("ss", "scheme"),
+            ("rkt", "scheme"),
+            ("ll", "llvm"),
+            ("vhd", "vhdl"),
+            ("vert", "glsl"),
+            ("frag", "glsl"),
+            ("j2", "django"),
+            ("conf", "nginx"),
+            ("cljc", "clojure"),
+            ("pyi", "python"),
+            ("pyw", "python"),
+            ("psm1", "powershell"),
+            ("sty", "latex"),
+            ("wat", "wasm"),
+        ];
+        for (extension, language) in cases {
+            assert_eq!(language_from_extension(extension), language, "{extension}");
+        }
+    }
+
+    #[test]
+    fn language_for_path_htaccess() {
+        assert_eq!(language_for_path("public/.htaccess"), "apache");
+    }
+
+    #[test]
+    fn language_for_path_apache_config() {
+        assert_eq!(language_for_path("conf/httpd.conf"), "apache");
+        assert_eq!(language_for_path("apache2/apache2.conf"), "apache");
+    }
+
+    #[test]
+    fn language_for_path_cmakelists_is_not_plaintext() {
+        assert_eq!(language_for_path("CMakeLists.txt"), "cmake");
+        assert_eq!(language_for_path("src/CMakeLists.txt"), "cmake");
+    }
+
+    #[test]
+    fn language_for_path_other_txt_is_unchanged() {
+        assert_eq!(language_for_path("docs/notes.txt"), "txt");
     }
 
     #[test]
