@@ -1,5 +1,5 @@
 [tools]
-bun = "1.4.2"
+bun = "1.4.3"
 wrangler = { version = "4.149.0", allow_builds = ["esbuild", "sharp", "workerd"] }
 
 [env]
