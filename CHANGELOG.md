@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.1](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.0...babyrite-v2.0.1) (2026-10-10)
+
+
+### Miscellaneous
+
+* **deps:** update dependency bun to v1.4.3 ([#742](https://github.com/m1sk9/babyrite/issues/742)) ([a5825d0](https://github.com/m1sk9/babyrite/commit/a5825d0606c9100761fc6514887d78bc61b93a30))
+* **deps:** update dependency wrangler to v4.148.0 ([#737](https://github.com/m1sk9/babyrite/issues/737)) ([ba44b16](https://github.com/m1sk9/babyrite/commit/ba44b160d455fc25301282d0d923ddad7306f51d))
+* **deps:** update dependency wrangler to v4.149.0 ([#740](https://github.com/m1sk9/babyrite/issues/740)) ([74ef4b0](https://github.com/m1sk9/babyrite/commit/74ef4b0b8dea07d4a05ca7965bad4ab81dbc8a63))
+* **deps:** update rust crate toml to v1.1.7 ([#739](https://github.com/m1sk9/babyrite/issues/739)) ([d008b8f](https://github.com/m1sk9/babyrite/commit/d008b8ff4e42c592df34ed5402135fe79741e681))
+* **deps:** update rust crate toml to v1.1.8 ([#741](https://github.com/m1sk9/babyrite/issues/741)) ([62bb140](https://github.com/m1sk9/babyrite/commit/62bb140e56c926a5b93400114585b0b345224f5e))
+
 ## [2.0.0](https://github.com/m1sk9/babyrite/compare/babyrite-v1.4.8...babyrite-v2.0.0) (2026-10-05)
 
 
