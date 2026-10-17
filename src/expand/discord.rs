@@ -300,15 +300,19 @@ fn is_cross_guild(link: Id<GuildMarker>, source: Id<GuildMarker>) -> bool {
     link != source
 }
 
-/// Returns `true` when the link's visibility must be validated against the
-/// request's source channel.
+/// Returns `true` when the readers of a channel of `kind` cannot be evaluated.
 ///
-/// A link pointing back into the same channel the request came from is always
-/// safe to expand: the reply lands in that very channel, so it cannot expose
-/// anything its readers cannot already see. Such links need no visibility
-/// checks, while links to any other channel do.
-fn requires_visibility_check(target: Id<ChannelMarker>, source: Id<ChannelMarker>) -> bool {
-    target != source
+/// The readers of a DM or private thread are its members, and listing them
+/// needs the `GUILD_MEMBERS` intent. A private thread quoted from within itself
+/// (`same_channel`) is the exception: the reply reaches only its members, who
+/// all view the parent, so judging it by the parent over-approximates the
+/// readers, which can only cause a refusal.
+fn has_unlisted_readers(kind: ChannelType, same_channel: bool) -> bool {
+    match kind {
+        ChannelType::Private => true,
+        ChannelType::PrivateThread => !same_channel,
+        _ => false,
+    }
 }
 
 /// Permissions a member needs to read the linked message in a text channel.
@@ -331,6 +335,21 @@ fn read_target_requirement(kind: ChannelType) -> Permissions {
             READ_TARGET | Permissions::CONNECT
         }
         _ => READ_TARGET,
+    }
+}
+
+/// Permissions a member needs to read the expanded reply in the source channel,
+/// when the link points to a channel of `target_kind`.
+///
+/// A link back into the source channel (`same_channel`) makes the source a
+/// channel of `target_kind` too, so reading the reply there takes what reading
+/// that channel does, short of `READ_MESSAGE_HISTORY`: the reply is a new
+/// message.
+fn read_source_requirement(target_kind: ChannelType, same_channel: bool) -> Permissions {
+    if same_channel {
+        read_target_requirement(target_kind) - Permissions::READ_MESSAGE_HISTORY
+    } else {
+        READ_SOURCE
     }
 }
 
@@ -448,6 +467,8 @@ fn channel_permissions(
 struct Visibility {
     source: ChannelOverwrites,
     target: ChannelOverwrites,
+    /// What a member needs in the source, from [`read_source_requirement`].
+    read_source: Permissions,
     /// What a member needs in the target, from [`read_target_requirement`].
     read_target: Permissions,
     everyone_role_id: Id<RoleMarker>,
@@ -460,13 +481,15 @@ impl Visibility {
     fn new(
         source_overwrites: &[PermissionOverwrite],
         target_overwrites: &[PermissionOverwrite],
+        read_source: Permissions,
         read_target: Permissions,
         role_perms: RolePermissions,
         everyone_role_id: Id<RoleMarker>,
     ) -> Self {
         let mut this = Self {
-            source: ChannelOverwrites::new(source_overwrites, everyone_role_id, READ_SOURCE),
+            source: ChannelOverwrites::new(source_overwrites, everyone_role_id, read_source),
             target: ChannelOverwrites::new(target_overwrites, everyone_role_id, read_target),
+            read_source,
             read_target,
             everyone_role_id,
             role_perms,
@@ -502,7 +525,7 @@ impl Visibility {
             .get(&role_id)
             .copied()
             .unwrap_or_else(Permissions::empty)
-            & (Permissions::ADMINISTRATOR | READ_SOURCE | self.read_target)
+            & (Permissions::ADMINISTRATOR | self.read_source | self.read_target)
     }
 
     /// Closes `@everyone`'s grant under union with every other role's grant.
@@ -554,7 +577,7 @@ impl Visibility {
         target_member: OverwritePair,
     ) -> bool {
         self.source_permissions(grant, source_member)
-            .contains(READ_SOURCE)
+            .contains(self.read_source)
             && !self
                 .target_permissions(grant, target_member)
                 .contains(self.read_target)
@@ -668,17 +691,19 @@ async fn member_roles(
 /// The expanded content is posted as a single message that all members of
 /// `source_channel` can read, so the linked channel must be at least as
 /// readable as the source channel to avoid leaking restricted content.
-/// "Readable" means `VIEW_CHANNEL` on the source, and on the target what
-/// [`read_target_requirement`] asks for. Permissions are evaluated by
-/// [`Visibility`] the way Discord does, so roles, role combinations, per-member
-/// overwrites and `ADMINISTRATOR` need no special cases.
+/// "Readable" means what [`read_source_requirement`] asks for on the source,
+/// and what [`read_target_requirement`] asks for on the target; a link back
+/// into `source_channel` is judged with that channel as both. Permissions are
+/// evaluated by [`Visibility`] the way Discord does, so roles, role
+/// combinations, per-member overwrites and `ADMINISTRATOR` need no special
+/// cases.
 ///
 /// What remains is refused because it cannot be evaluated:
 ///
 /// - Links into another guild, refused by [`Preview::get`] before this runs:
 ///   roles and overwrites are guild-local, and the bot may not be in that guild.
-/// - Private threads (and DMs): their readers are the thread's members, and
-///   listing them needs the `GUILD_MEMBERS` intent.
+/// - Private threads (and DMs), unless quoted from within the same private
+///   thread (see [`has_unlisted_readers`]).
 /// - Overwrites of a kind this library does not know.
 /// - More than [`MAX_MEMBER_LOOKUPS`] members needing a lookup.
 ///
@@ -694,10 +719,8 @@ async fn check_visibility(
     guild_id: Id<GuildMarker>,
     ctx: &BotContext,
 ) -> Result<(), PreviewError> {
-    if matches!(
-        channel.kind,
-        ChannelType::PrivateThread | ChannelType::Private
-    ) {
+    let same_channel = channel.id == source_channel.id;
+    if has_unlisted_readers(channel.kind, same_channel) {
         tracing::debug!(kind = ?channel.kind, "rejected: private channel or thread");
         return Err(PreviewError::Permission);
     }
@@ -717,6 +740,7 @@ async fn check_visibility(
     let visibility = Visibility::new(
         overwrites(&source_perm),
         overwrites(dest_perm),
+        read_source_requirement(channel.kind, same_channel),
         read_target_requirement(channel.kind),
         role_perms,
         guild_id.cast(),
@@ -754,10 +778,10 @@ impl Preview {
     ///
     /// Every rule deciding whether a link may be expanded lives here. In order,
     /// the link must point into `guild_id` — the guild of `source_channel` —
-    /// and the linked channel must not be NSFW, must not be a private thread or
-    /// DM, and must be readable by everyone who can view `source_channel`. The expanded
-    /// content is posted as a single message that all members of
-    /// `source_channel` can read, so the linked channel must be at least as
+    /// and the linked channel must not be NSFW, must not be a DM or a private
+    /// thread other than `source_channel`, and must be readable by everyone who
+    /// can view `source_channel`. The expanded content is posted as a single
+    /// message that all members of `source_channel` can read, so the linked channel must be at least as
     /// visible as the source channel to avoid leaking restricted content. Public
     /// and news threads are judged by their parent channel, which holds both the
     /// permission overwrites and the NSFW flag they inherit.
@@ -767,9 +791,9 @@ impl Preview {
     /// cannot be judged at all, and resolving it would spend rate limit on a
     /// guild the bot may not even be in.
     ///
-    /// When the link target is the same channel as `source_channel`, the
-    /// visibility checks are skipped entirely: the reply lands in that same
-    /// channel, so it cannot expose anything its readers cannot already see.
+    /// A link back into `source_channel` is not exempt: its readers may lack
+    /// `READ_MESSAGE_HISTORY` there, and the reply would show them an older
+    /// message.
     #[cfg_attr(coverage_nightly, coverage(off))]
     #[tracing::instrument(
         skip(args, ctx, guild_id, source_channel),
@@ -814,13 +838,7 @@ impl Preview {
             return Err(PreviewError::Nsfw);
         }
 
-        // When the link points to the same channel the request came from, the
-        // expansion is posted back into that very channel. Every member who can
-        // read the reply can already read the original message, so there is
-        // nothing to leak and the visibility checks can be skipped.
-        if requires_visibility_check(args.channel_id, source_channel.id) {
-            check_visibility(&channel, &age_gate, source_channel, guild_id, ctx).await?;
-        }
+        check_visibility(&channel, &age_gate, source_channel, guild_id, ctx).await?;
 
         let started = std::time::Instant::now();
         let message = ctx
@@ -1003,12 +1021,17 @@ mod tests {
     }
 
     #[test]
-    fn same_channel_skips_visibility_check() {
-        let chan = Id::new(42);
-        // Quoting within the same channel needs no visibility check.
-        assert!(!requires_visibility_check(chan, chan));
-        // A link to a different channel still requires validation.
-        assert!(requires_visibility_check(chan, Id::new(99)));
+    fn dms_are_never_judged() {
+        assert!(has_unlisted_readers(ChannelType::Private, false));
+        assert!(has_unlisted_readers(ChannelType::Private, true));
+    }
+
+    #[test]
+    fn private_threads_are_judged_only_when_quoted_from_within() {
+        assert!(has_unlisted_readers(ChannelType::PrivateThread, false));
+        assert!(!has_unlisted_readers(ChannelType::PrivateThread, true));
+        assert!(!has_unlisted_readers(ChannelType::PublicThread, false));
+        assert!(!has_unlisted_readers(ChannelType::GuildText, false));
     }
 
     #[test]
@@ -1067,7 +1090,14 @@ mod tests {
         target: &[PermissionOverwrite],
         roles: &HashMap<Id<RoleMarker>, Permissions>,
     ) -> Visibility {
-        Visibility::new(source, target, READ_TARGET, roles.clone(), EVERYONE)
+        Visibility::new(
+            source,
+            target,
+            READ_SOURCE,
+            READ_TARGET,
+            roles.clone(),
+            EVERYONE,
+        )
     }
 
     /// `@everyone` denied, `role` allowed: a channel only `role` can view.
@@ -1213,11 +1243,187 @@ mod tests {
             ),
         ];
         let read_voice = read_target_requirement(ChannelType::GuildVoice);
-        let v = Visibility::new(&[], &target, read_voice, roles.clone(), EVERYONE);
+        let v = Visibility::new(
+            &[],
+            &target,
+            READ_SOURCE,
+            read_voice,
+            roles.clone(),
+            EVERYONE,
+        );
         assert!(!v.roles_preserve_visibility());
 
-        let v = Visibility::new(&gated_to(ROLE_A), &target, read_voice, roles, EVERYONE);
+        let v = Visibility::new(
+            &gated_to(ROLE_A),
+            &target,
+            READ_SOURCE,
+            read_voice,
+            roles,
+            EVERYONE,
+        );
         assert!(v.roles_preserve_visibility());
+    }
+
+    // --- Links back into the source channel ---
+
+    #[test]
+    fn reply_in_another_channel_needs_only_view_channel() {
+        for kind in [ChannelType::GuildText, ChannelType::GuildVoice] {
+            assert_eq!(read_source_requirement(kind, false), READ_SOURCE);
+        }
+    }
+
+    #[test]
+    fn reply_in_the_linked_channel_needs_what_reading_it_does_except_history() {
+        for kind in [ChannelType::GuildText, ChannelType::PrivateThread] {
+            assert_eq!(
+                read_source_requirement(kind, true),
+                Permissions::VIEW_CHANNEL
+            );
+        }
+        for kind in [ChannelType::GuildVoice, ChannelType::GuildStageVoice] {
+            assert_eq!(
+                read_source_requirement(kind, true),
+                Permissions::VIEW_CHANNEL | Permissions::CONNECT
+            );
+        }
+    }
+
+    /// A link back into the channel of `kind` it is posted in, whose overwrites
+    /// are `channel` (its parent's, for a thread).
+    fn same_channel(
+        kind: ChannelType,
+        channel: &[PermissionOverwrite],
+        roles: &HashMap<Id<RoleMarker>, Permissions>,
+    ) -> Visibility {
+        Visibility::new(
+            channel,
+            channel,
+            read_source_requirement(kind, true),
+            read_target_requirement(kind),
+            roles.clone(),
+            EVERYONE,
+        )
+    }
+
+    fn history_denied(kind: PermissionOverwriteType, id: u64) -> PermissionOverwrite {
+        overwrite(
+            kind,
+            id,
+            Permissions::empty(),
+            Permissions::READ_MESSAGE_HISTORY,
+        )
+    }
+
+    #[test]
+    fn same_channel_without_read_message_history_for_everyone_is_rejected() {
+        let channel = [history_denied(
+            PermissionOverwriteType::Role,
+            EVERYONE.get(),
+        )];
+        let v = same_channel(ChannelType::GuildText, &channel, &default_roles(&[]));
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn same_channel_without_read_message_history_for_a_role_is_rejected() {
+        let channel = [history_denied(PermissionOverwriteType::Role, ROLE_A.get())];
+        let v = same_channel(ChannelType::GuildText, &channel, &default_roles(&[ROLE_A]));
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    #[test]
+    fn same_channel_without_read_message_history_for_a_member_looks_them_up_and_is_rejected() {
+        let channel = [history_denied(PermissionOverwriteType::Member, USER.get())];
+        let v = same_channel(ChannelType::GuildText, &channel, &default_roles(&[]));
+        assert!(v.roles_preserve_visibility());
+        assert_eq!(v.members_to_verify(), [USER]);
+        assert!(!v.member_preserves_visibility(USER, &[]));
+    }
+
+    #[test]
+    fn same_channel_whose_viewers_all_read_history_needs_no_lookup() {
+        let roles = default_roles(&[MEMBER]);
+        let opened_to_a_member = [
+            role_ow(EVERYONE.get(), false, true),
+            member_ow(USER.get(), true, false),
+        ];
+        for channel in [&[][..], &gated_to(MEMBER), &opened_to_a_member] {
+            let v = same_channel(ChannelType::GuildText, channel, &roles);
+            assert!(v.roles_preserve_visibility());
+            assert!(v.members_to_verify().is_empty());
+        }
+    }
+
+    #[test]
+    fn private_thread_quoted_from_within_is_judged_by_its_parent() {
+        let roles = default_roles(&[]);
+        let v = same_channel(ChannelType::PrivateThread, &[], &roles);
+        assert!(v.roles_preserve_visibility());
+
+        let parent = [history_denied(
+            PermissionOverwriteType::Role,
+            EVERYONE.get(),
+        )];
+        let v = same_channel(ChannelType::PrivateThread, &parent, &roles);
+        assert!(!v.roles_preserve_visibility());
+    }
+
+    /// Role permissions where `@everyone` may also connect to voice channels.
+    fn voice_roles() -> HashMap<Id<RoleMarker>, Permissions> {
+        let mut roles = default_roles(&[ROLE_A]);
+        roles.insert(EVERYONE, READ_TARGET | Permissions::CONNECT);
+        roles
+    }
+
+    /// A locked voice channel: `@everyone` is denied `CONNECT` and `denied`,
+    /// ROLE_A is allowed `CONNECT` and `allowed`.
+    fn locked_voice(denied: Permissions, allowed: Permissions) -> [PermissionOverwrite; 2] {
+        [
+            overwrite(
+                PermissionOverwriteType::Role,
+                EVERYONE.get(),
+                Permissions::empty(),
+                Permissions::CONNECT | denied,
+            ),
+            overwrite(
+                PermissionOverwriteType::Role,
+                ROLE_A.get(),
+                Permissions::CONNECT | allowed,
+                Permissions::empty(),
+            ),
+        ]
+    }
+
+    #[test]
+    fn locked_voice_channel_quoted_from_within_counts_only_members_who_connect() {
+        let history = Permissions::READ_MESSAGE_HISTORY;
+        for kind in [ChannelType::GuildVoice, ChannelType::GuildStageVoice] {
+            let v = same_channel(
+                kind,
+                &locked_voice(Permissions::empty(), Permissions::empty()),
+                &voice_roles(),
+            );
+            assert!(v.roles_preserve_visibility());
+
+            // Members who cannot connect lack the history too, but never see
+            // the reply.
+            let v = same_channel(kind, &locked_voice(history, history), &voice_roles());
+            assert!(v.roles_preserve_visibility());
+        }
+    }
+
+    #[test]
+    fn voice_channel_quoted_from_within_by_members_without_history_is_rejected() {
+        let history = Permissions::READ_MESSAGE_HISTORY;
+        for kind in [ChannelType::GuildVoice, ChannelType::GuildStageVoice] {
+            let v = same_channel(
+                kind,
+                &locked_voice(history, Permissions::empty()),
+                &voice_roles(),
+            );
+            assert!(!v.roles_preserve_visibility());
+        }
     }
 
     #[test]

@@ -39,7 +39,7 @@ To set it in the configuration file, use `log.level = "babyrite=debug"`. See [Co
 | Is it an NSFW channel? | NSFW channels and threads under them are not expanded. |
 | Can every member of the source channel read the target? | Every member who can view the source channel must have "View Channel" and "Read Message History" in the target channel. Voice and stage channels also require "Connect". |
 | Are there too many members with individual permissions? | If more than 10 of the members granted or denied access individually need to be checked for one link, it is not expanded. |
-| Is it a private thread? | Private threads are not expanded. |
+| Is it a private thread? | Private threads are not expanded, except for links posted in the same private thread. |
 | Can babyrite view the target? | babyrite cannot fetch messages from channels where it lacks View Channels and Read Message History (plus Connect in voice and stage channels). |
 
 See [Message Preview](./features/citation#behavior-with-channel-permissions) for details on how permissions are handled.
