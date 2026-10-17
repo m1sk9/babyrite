@@ -123,6 +123,52 @@ pub fn defuse_code_fences(text: &str) -> String {
     out
 }
 
+/// Returns `language` for use as a code fence's info string, or an empty info
+/// string when `language` contains a backtick.
+///
+/// Unknown extensions are passed through verbatim, and a backtick there would
+/// close the fence it is meant to open.
+pub fn fence_info(language: &str) -> &str {
+    if language.contains('`') { "" } else { language }
+}
+
+/// Escapes `text` so Discord renders it literally, on a single line.
+///
+/// Why not escape every punctuation character: `-` and `.` only act as markup
+/// at the start of a line and followed by a space, so leaving them alone keeps
+/// names such as `rust-lang/rust.vim@release-v1.0` unchanged. `:` is escaped
+/// because it is what turns a URL into a link.
+pub fn escape_markdown(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        if c.is_whitespace() {
+            out.push(' ');
+            continue;
+        }
+        if matches!(
+            c,
+            '\\' | '`' | '*' | '_' | '~' | '|' | '[' | ']' | '<' | '>' | '#' | ':'
+        ) {
+            out.push('\\');
+        }
+        out.push(c);
+    }
+    out
+}
+
+/// Formats `text` as inline code, or as escaped plain text when it contains a
+/// backtick.
+///
+/// Why not inline code throughout: a backtick closes the span early, and
+/// backslash escapes have no effect inside it.
+pub fn inline_code(text: &str) -> String {
+    if text.contains('`') {
+        escape_markdown(text)
+    } else {
+        format!("`{text}`")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,5 +361,59 @@ mod tests {
         assert!(defused.starts_with("before"));
         assert!(defused.ends_with("after"));
         assert_eq!(defused.matches('`').count(), 3);
+    }
+
+    #[test]
+    fn fence_info_keeps_languages_without_backticks() {
+        for language in ["rust", "c~", "%E8%A8%AD", "gitignore", ""] {
+            assert_eq!(fence_info(language), language);
+        }
+    }
+
+    #[test]
+    fn fence_info_is_empty_for_a_language_containing_a_backtick() {
+        assert_eq!(fence_info("a```"), "");
+        assert_eq!(fence_info("a`"), "");
+    }
+
+    #[test]
+    fn escape_markdown_leaves_github_names_unchanged() {
+        for name in ["rust-lang", "rust.vim", "release-v1.0", "v1.0.0", "abcdef1"] {
+            assert_eq!(escape_markdown(name), name);
+        }
+    }
+
+    #[test]
+    fn escape_markdown_escapes_markup_characters() {
+        assert_eq!(
+            escape_markdown("[x](https://evil.example)"),
+            r"\[x\](https\://evil.example)"
+        );
+        assert_eq!(
+            escape_markdown("**a** _b_ ~~c~~ ||d||"),
+            r"\*\*a\*\* \_b\_ \~\~c\~\~ \|\|d\|\|"
+        );
+        assert_eq!(escape_markdown("`x` <#1>"), r"\`x\` \<\#1\>");
+    }
+
+    #[test]
+    fn escape_markdown_escapes_backslashes_so_they_cannot_cancel_an_escape() {
+        assert_eq!(escape_markdown(r"\*"), r"\\\*");
+    }
+
+    #[test]
+    fn escape_markdown_keeps_text_on_one_line() {
+        assert_eq!(escape_markdown("a\n# b\r\n> c"), r"a \# b  \> c");
+    }
+
+    #[test]
+    fn inline_code_wraps_text_without_backticks() {
+        assert_eq!(inline_code("src/main.rs"), "`src/main.rs`");
+    }
+
+    #[test]
+    fn inline_code_falls_back_to_escaped_text_for_text_with_backticks() {
+        assert_eq!(inline_code("x.a```"), r"x.a\`\`\`");
+        assert_eq!(inline_code("x`[y](https://e)"), r"x\`\[y\](https\://e)");
     }
 }
