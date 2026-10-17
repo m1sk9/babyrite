@@ -1,6 +1,8 @@
 import { inBrowser, type Theme } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
+import CopyOrDownloadAsMarkdownButtons from 'vitepress-plugin-llms/vitepress-components/CopyOrDownloadAsMarkdownButtons.vue';
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client';
+import { h } from 'vue';
 import './custom.css';
 
 const LOCALE_REDIRECT_FLAG = 'babyrite-locale-redirected';
@@ -21,6 +23,10 @@ function redirectByBrowserLanguage() {
 
 export default {
   extends: DefaultTheme,
+  Layout: () =>
+    h(DefaultTheme.Layout, null, {
+      'doc-before': () => h(CopyOrDownloadAsMarkdownButtons),
+    }),
   enhanceApp({ app }) {
     redirectByBrowserLanguage();
     enhanceAppWithTabs(app);
