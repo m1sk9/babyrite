@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.2](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.1...babyrite-v2.0.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **deps:** bump rustls to 0.23.45 to address a TLS 1.3 handshake advisory ([#752](https://github.com/m1sk9/babyrite/issues/752)) ([c3a286a](https://github.com/m1sk9/babyrite/commit/c3a286a40503a871d1ed7b6b1aa7450cb6fa2a8c))
+* enforce READ_MESSAGE_HISTORY on same-channel message links ([#753](https://github.com/m1sk9/babyrite/issues/753)) ([c6d4d05](https://github.com/m1sk9/babyrite/commit/c6d4d05f0a7fc6a7c48a6b60ed274dc10daae9a9))
+* escape requester-controlled text in GitHub code block replies ([#754](https://github.com/m1sk9/babyrite/issues/754)) ([86af4e4](https://github.com/m1sk9/babyrite/commit/86af4e4aa70d24b19f485ade5b091c06c3b80a71))
+* stop serving channel data fetched before an invalidation ([#755](https://github.com/m1sk9/babyrite/issues/755)) ([f248570](https://github.com/m1sk9/babyrite/commit/f248570c560d3973f57999529ae0f16135174807))
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.151.0 ([#748](https://github.com/m1sk9/babyrite/issues/748)) ([2155eed](https://github.com/m1sk9/babyrite/commit/2155eed8b2e859ab40fcbb06325ed1cb75a21530))
+* **deps:** update dependency wrangler to v4.151.1 ([#749](https://github.com/m1sk9/babyrite/issues/749)) ([e19b439](https://github.com/m1sk9/babyrite/commit/e19b439d0b0aac071c0d09cc8f16394ca758d71f))
+* **deps:** update rust crate tokio to v1.53.3 ([#746](https://github.com/m1sk9/babyrite/issues/746)) ([bc2dd4a](https://github.com/m1sk9/babyrite/commit/bc2dd4a91a5ff399616dbc0554cc8af3a33206ba))
+
 ## [2.0.1](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.0...babyrite-v2.0.1) (2026-10-13)
 
 
