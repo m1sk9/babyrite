@@ -10,8 +10,9 @@
 
 use anyhow::Context as _;
 use moka::future::{Cache, CacheBuilder};
+use moka::ops::compute::Op;
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex, PoisonError};
 use twilight_http::Client;
 use twilight_model::channel::Channel;
 use twilight_model::guild::Permissions;
@@ -55,13 +56,60 @@ pub type ChannelMap = HashMap<Id<ChannelMarker>, Channel>;
 /// The base permissions of every role in a guild, by ID.
 pub type RolePermissions = HashMap<Id<RoleMarker>, Permissions>;
 
+/// Channel data together with the generation of its guild it was read under.
+///
+/// See [`GUILD_CHANNEL_GENERATIONS`] for why cached channels carry this.
+#[derive(Clone)]
+pub struct Stamped<V> {
+    generation: u64,
+    value: V,
+}
+
+impl<V> Stamped<V> {
+    /// Returns `true` when no channel change in `guild_id` has been reported
+    /// since this value was read.
+    fn is_current(&self, guild_id: Id<GuildMarker>) -> bool {
+        self.generation == channel_generation(guild_id)
+    }
+}
+
 /// Cache for guild channel lists, mapping guild IDs to their channel lists.
-pub static GUILD_CHANNEL_LIST_CACHE: LazyLock<Cache<Id<GuildMarker>, ChannelMap>> =
+pub static GUILD_CHANNEL_LIST_CACHE: LazyLock<Cache<Id<GuildMarker>, Stamped<ChannelMap>>> =
     LazyLock::new(|| bounded_cache("guild_channel_list_cache"));
 
 /// Cache for individual guild channels, mapping channel IDs to their channel data.
-pub static GUILD_CHANNEL_CACHE: LazyLock<Cache<Id<ChannelMarker>, Channel>> =
+pub static GUILD_CHANNEL_CACHE: LazyLock<Cache<Id<ChannelMarker>, Stamped<Channel>>> =
     LazyLock::new(|| bounded_cache("guild_channel_cache"));
+
+/// How many channel changes Discord has reported for each guild.
+///
+/// Why not rely on dropping cache entries alone: a lookup already in flight
+/// when a change is reported inserts what it read afterwards, and the cache
+/// cannot tell that apart from fresh data. Cached channels instead record the
+/// generation from before they were read, and only the current generation's
+/// are served.
+///
+/// Why entries are never removed: a counter restarting from zero would make
+/// data read under the earlier zero look current again.
+static GUILD_CHANNEL_GENERATIONS: LazyLock<Mutex<HashMap<Id<GuildMarker>, u64>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+fn channel_generation(guild_id: Id<GuildMarker>) -> u64 {
+    GUILD_CHANNEL_GENERATIONS
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .get(&guild_id)
+        .copied()
+        .unwrap_or_default()
+}
+
+fn advance_channel_generation(guild_id: Id<GuildMarker>) {
+    *GUILD_CHANNEL_GENERATIONS
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .entry(guild_id)
+        .or_default() += 1;
+}
 
 /// Cache for role permissions, mapping guild IDs to each role's base permissions.
 pub static GUILD_ROLE_CACHE: LazyLock<Cache<Id<GuildMarker>, RolePermissions>> =
@@ -83,7 +131,12 @@ fn belongs_to_guild(channel: &Channel, guild_id: Id<GuildMarker>) -> bool {
 /// The whole guild's channel list goes too, not just the one entry: the list is a
 /// single cached value holding every channel's overwrites, so there is no way to
 /// replace one member of it.
+///
+/// The guild's generation advances before anything is dropped. That, not the
+/// dropping, is what keeps data read before this call from being served again,
+/// including what a lookup still in flight inserts afterwards.
 pub async fn invalidate_channel(guild_id: Id<GuildMarker>, channel_id: Id<ChannelMarker>) {
+    advance_channel_generation(guild_id);
     GUILD_CHANNEL_CACHE.invalidate(&channel_id).await;
     GUILD_CHANNEL_LIST_CACHE.invalidate(&guild_id).await;
     tracing::debug!(%guild_id, %channel_id, "invalidated channel caches");
@@ -149,33 +202,15 @@ impl CacheArgs {
         fields(guild_id = %self.guild_id, channel_id = %self.channel_id)
     )]
     pub async fn get(&self, http: &Client) -> anyhow::Result<Channel> {
-        if let Some(channel) = GUILD_CHANNEL_CACHE.get(&self.channel_id).await {
-            // Channel ids are globally unique snowflakes, so a hit for another
-            // guild is not a stale entry to refresh — the caller asked for a
-            // channel that is not in the guild it named. Refuse rather than
-            // return it: the result feeds visibility checks whose role data is
-            // guild-local and would silently compare against the wrong guild.
-            if !belongs_to_guild(&channel, self.guild_id) {
-                tracing::warn!(
-                    cached_guild_id = ?channel.guild_id,
-                    "channel cache hit belongs to another guild"
-                );
-                anyhow::bail!("Channel does not belong to the requested guild");
-            }
+        if let Some(channel) = self.cached().await? {
             tracing::debug!("channel cache hit");
             return Ok(channel);
         }
         tracing::debug!("channel cache miss");
 
-        // `try_get_with` coalesces concurrent misses for the same guild into a
-        // single fetch, so `join_all`-ing several link expansions no longer
-        // fires one identical `channels` request per link.
-        let channel_list = GUILD_CHANNEL_LIST_CACHE
-            .try_get_with(self.guild_id, self.get_channel_list_from_api(http))
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to get channel list: {e}"))?;
+        let channel_list = self.channel_list(http).await?;
 
-        let channel = match channel_list.get(&self.channel_id).cloned() {
+        let channel = match channel_list.value.get(&self.channel_id).cloned() {
             Some(c) => c,
             None => {
                 // Not in the channel list — it may be an active thread,
@@ -199,17 +234,76 @@ impl CacheArgs {
             }
         };
 
+        // Why not the current generation: the channel is no newer than the list
+        // it was resolved alongside, and a change reported since that list was
+        // read must leave this entry stale even though it is inserted later.
         GUILD_CHANNEL_CACHE
-            .insert(self.channel_id, channel.clone())
+            .insert(
+                self.channel_id,
+                Stamped {
+                    generation: channel_list.generation,
+                    value: channel.clone(),
+                },
+            )
             .await;
         tracing::trace!("inserted channel into cache");
         Ok(channel)
     }
 
+    /// Returns the cached channel, or `None` when nothing is cached for it or
+    /// what is cached was read before the latest channel change in the guild.
+    async fn cached(&self) -> anyhow::Result<Option<Channel>> {
+        let Some(cached) = GUILD_CHANNEL_CACHE.get(&self.channel_id).await else {
+            return Ok(None);
+        };
+        // Channel ids are globally unique snowflakes, so a hit for another
+        // guild is not a stale entry to refresh — the caller asked for a
+        // channel that is not in the guild it named. Refuse rather than
+        // return it: the result feeds visibility checks whose role data is
+        // guild-local and would silently compare against the wrong guild.
+        if !belongs_to_guild(&cached.value, self.guild_id) {
+            tracing::warn!(
+                cached_guild_id = ?cached.value.guild_id,
+                "channel cache hit belongs to another guild"
+            );
+            anyhow::bail!("Channel does not belong to the requested guild");
+        }
+        if !cached.is_current(self.guild_id) {
+            tracing::debug!("cached channel predates a reported channel change");
+            return Ok(None);
+        }
+        Ok(Some(cached.value))
+    }
+
+    /// Returns the guild's channel list from cache, or from the Discord API when
+    /// none is cached or the cached one predates a reported channel change.
+    async fn channel_list(&self, http: &Client) -> anyhow::Result<Stamped<ChannelMap>> {
+        // Lookups on the same key run one at a time, so concurrent misses from
+        // `join_all`-ed link expansions wait for the first fetch and find its
+        // result current instead of each firing an identical `channels` request.
+        GUILD_CHANNEL_LIST_CACHE
+            .entry(self.guild_id)
+            .and_try_compute_with(|cached| async move {
+                if cached.is_some_and(|entry| entry.value().is_current(self.guild_id)) {
+                    return anyhow::Ok(Op::Nop);
+                }
+                let generation = channel_generation(self.guild_id);
+                let channels = self.get_channel_list_from_api(http).await?;
+                anyhow::Ok(Op::Put(Stamped {
+                    generation,
+                    value: channels,
+                }))
+            })
+            .await?
+            .into_entry()
+            .map(|entry| entry.into_value())
+            .context("Failed to get channel list")
+    }
+
     /// Fetches the channel list from the Discord API.
     ///
-    /// The caller inserts the result into [`GUILD_CHANNEL_LIST_CACHE`] via
-    /// `try_get_with`, so this does not touch the cache itself.
+    /// [`Self::channel_list`] stamps the result and inserts it into
+    /// [`GUILD_CHANNEL_LIST_CACHE`], so this does not touch the cache itself.
     #[tracing::instrument(skip(self, http), fields(guild_id = %self.guild_id))]
     async fn get_channel_list_from_api(&self, http: &Client) -> anyhow::Result<ChannelMap> {
         tracing::debug!("fetching channel list from Discord API");
@@ -249,6 +343,14 @@ mod tests {
         .unwrap()
     }
 
+    // Stamps `value` as if it had just been read from Discord.
+    fn read_now<V>(guild_id: Id<GuildMarker>, value: V) -> Stamped<V> {
+        Stamped {
+            generation: channel_generation(guild_id),
+            value,
+        }
+    }
+
     #[test]
     fn channel_from_the_requested_guild_is_accepted() {
         let guild = Id::new(1);
@@ -267,7 +369,9 @@ mod tests {
     async fn invalidating_drops_the_individual_channel() {
         let guild = Id::new(900);
         let channel = Id::new(901);
-        GUILD_CHANNEL_CACHE.insert(channel, channel_in(guild)).await;
+        GUILD_CHANNEL_CACHE
+            .insert(channel, read_now(guild, channel_in(guild)))
+            .await;
 
         invalidate_channel(guild, channel).await;
 
@@ -284,7 +388,9 @@ mod tests {
         let mut list = HashMap::new();
         list.insert(channel, channel_in(guild));
         list.insert(other, channel_in(guild));
-        GUILD_CHANNEL_LIST_CACHE.insert(guild, list).await;
+        GUILD_CHANNEL_LIST_CACHE
+            .insert(guild, read_now(guild, list))
+            .await;
 
         invalidate_channel(guild, channel).await;
 
@@ -297,16 +403,74 @@ mod tests {
         let bystander = Id::new(921);
         let bystander_channel = Id::new(922);
         GUILD_CHANNEL_LIST_CACHE
-            .insert(bystander, HashMap::new())
+            .insert(bystander, read_now(bystander, HashMap::new()))
             .await;
         GUILD_CHANNEL_CACHE
-            .insert(bystander_channel, channel_in(bystander))
+            .insert(
+                bystander_channel,
+                read_now(bystander, channel_in(bystander)),
+            )
             .await;
 
         invalidate_channel(target, Id::new(923)).await;
 
         assert!(GUILD_CHANNEL_LIST_CACHE.get(&bystander).await.is_some());
         assert!(GUILD_CHANNEL_CACHE.get(&bystander_channel).await.is_some());
+    }
+
+    #[tokio::test]
+    async fn channel_read_before_invalidation_is_not_served_even_if_cached_after_it() {
+        let guild = Id::new(940);
+        let channel = Id::new(941);
+        let read_before = read_now(guild, channel_in(guild));
+
+        invalidate_channel(guild, channel).await;
+        // A lookup in flight across the invalidation inserts once it is over.
+        GUILD_CHANNEL_CACHE.insert(channel, read_before).await;
+
+        let lookup = CacheArgs {
+            guild_id: guild,
+            channel_id: channel,
+        };
+        assert!(lookup.cached().await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn channel_read_after_invalidation_is_served() {
+        let guild = Id::new(950);
+        let channel = Id::new(951);
+
+        invalidate_channel(guild, channel).await;
+        GUILD_CHANNEL_CACHE
+            .insert(channel, read_now(guild, channel_in(guild)))
+            .await;
+
+        let lookup = CacheArgs {
+            guild_id: guild,
+            channel_id: channel,
+        };
+        assert!(lookup.cached().await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn channel_list_read_before_invalidation_is_not_current() {
+        let guild = Id::new(960);
+        let read_before = read_now(guild, ChannelMap::new());
+
+        invalidate_channel(guild, Id::new(961)).await;
+
+        assert!(!read_before.is_current(guild));
+    }
+
+    #[tokio::test]
+    async fn invalidating_keeps_other_guilds_reads_current() {
+        let target = Id::new(970);
+        let bystander = Id::new(971);
+        let bystander_list = read_now(bystander, ChannelMap::new());
+
+        invalidate_channel(target, Id::new(972)).await;
+
+        assert!(bystander_list.is_current(bystander));
     }
 
     #[test]
