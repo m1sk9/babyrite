@@ -9,7 +9,7 @@ use std::sync::LazyLock;
 
 use super::{ExpandContext, ExpandError, ExpandedContent, LinkExpander};
 use crate::config::BabyriteConfig;
-use crate::utils::language_for_path;
+use crate::utils::{escape_markdown, inline_code, language_for_path};
 
 /// Regex pattern for matching GitHub blob URLs.
 ///
@@ -280,8 +280,12 @@ impl GitHubPermalink {
             format!(" ({line_info})")
         };
         let metadata = format!(
-            "`{}`{} - {}/{}@{}",
-            self.path, line_part, self.owner, self.repo, display_ref
+            "{}{} - {}/{}@{}",
+            inline_code(&self.path),
+            line_part,
+            escape_markdown(&self.owner),
+            escape_markdown(&self.repo),
+            escape_markdown(display_ref)
         );
 
         ExpandedContent::CodeBlock {
@@ -849,6 +853,68 @@ mod tests {
             }
             _ => panic!("expected CodeBlock"),
         }
+    }
+
+    fn metadata_of(owner: &str, repo: &str, git_ref: &str, path: &str) -> String {
+        let permalink = GitHubPermalink {
+            owner: owner.to_string(),
+            repo: repo.to_string(),
+            git_ref: git_ref.to_string(),
+            path: path.to_string(),
+            line_range: Some(LineRange { start: 1, end: 2 }),
+        };
+        code_block_parts(permalink.build_code_block("a\nb", 50)).2
+    }
+
+    #[test]
+    fn build_code_block_metadata_keeps_hyphens_and_dots_unescaped() {
+        assert_eq!(
+            metadata_of("rust-lang", "rust.vim", "release-v1.0", "src/main.rs"),
+            "`src/main.rs` (L1-L2) - rust-lang/rust.vim@release-v1.0"
+        );
+        assert_eq!(
+            metadata_of(
+                "rust-lang",
+                "cargo",
+                "v1.0.0",
+                "private_dot_claude/CLAUDE.md"
+            ),
+            "`private_dot_claude/CLAUDE.md` (L1-L2) - rust-lang/cargo@v1.0.0"
+        );
+    }
+
+    #[test]
+    fn build_code_block_metadata_escapes_markdown_in_owner_repo_and_ref() {
+        assert_eq!(
+            metadata_of("my_org", "**repo**", "[x](https://evil.example)", "f.rs"),
+            r"`f.rs` (L1-L2) - my\_org/\*\*repo\*\*@\[x\](https\://evil.example)"
+        );
+    }
+
+    #[test]
+    fn build_code_block_metadata_stays_on_one_line() {
+        let metadata = metadata_of("o\n# Announcement", "r", "main\n> quote", "f.rs");
+
+        assert_eq!(
+            metadata,
+            r"`f.rs` (L1-L2) - o \# Announcement/r@main \> quote"
+        );
+    }
+
+    #[test]
+    fn build_code_block_metadata_cannot_be_closed_by_a_backtick_in_the_path() {
+        // The permalink from the report: everything after `#` in the ref is a
+        // fragment, so the displayed path is never fetched and can be anything.
+        let permalink = GitHubPermalink::parse_all(
+            r"https://github.com/att/repo/blob/main\payload.md#/x`[y](https://evil.example)",
+        )
+        .remove(0);
+
+        let (_, _, metadata) = code_block_parts(permalink.build_code_block("a", 50));
+        assert_eq!(
+            metadata,
+            r"x\`\[y\](https\://evil.example) - att/repo@main\\payload.md\#"
+        );
     }
 
     // --- GitHubPermalink::read_limit ---

@@ -5,7 +5,7 @@
 //! is decided in one place instead of at each call site.
 
 use crate::expand::ExpandedContent;
-use crate::utils::defuse_code_fences;
+use crate::utils::{defuse_code_fences, fence_info};
 use twilight_model::channel::message::{AllowedMentions, Embed};
 use twilight_model::id::{Id, marker::MessageMarker};
 
@@ -45,6 +45,7 @@ pub fn build_messages(
                 metadata,
             } => {
                 let code = defuse_code_fences(&code);
+                let language = fence_info(&language);
                 // `allowed_mentions` is set explicitly, and empty: left unset,
                 // Discord parses every mention in the content under the bot's
                 // permissions. The content is fetched from a repository the
@@ -129,6 +130,33 @@ mod tests {
             messages[0].content.as_deref(),
             Some("src/main.rs L1\n```rust\nfn main() {}\n```")
         );
+    }
+
+    fn code_block_in(language: &str) -> ExpandedContent {
+        ExpandedContent::CodeBlock {
+            language: language.to_string(),
+            code: "x".to_string(),
+            metadata: "m".to_string(),
+        }
+    }
+
+    #[test]
+    fn an_unknown_language_is_kept_as_the_info_string() {
+        for language in ["c~", "%E8%A8%AD"] {
+            let messages = build_messages(REQUEST, vec![code_block_in(language)]);
+
+            assert_eq!(
+                messages[0].content.as_deref(),
+                Some(format!("m\n```{language}\nx\n```").as_str())
+            );
+        }
+    }
+
+    #[test]
+    fn a_language_containing_a_backtick_cannot_close_the_fence() {
+        let messages = build_messages(REQUEST, vec![code_block_in("a```")]);
+
+        assert_eq!(messages[0].content.as_deref(), Some("m\n```\nx\n```"));
     }
 
     #[test]
