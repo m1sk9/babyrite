@@ -45,7 +45,12 @@ export default defineConfig({
   title: 'babyrite',
   titleTemplate: 'babyrite',
   vite: {
-    plugins: [llmstxt()],
+    plugins: [
+      llmstxt({
+        // Keep the English site only: the Japanese pages would double llms-full.txt.
+        ignoreFiles: ['ja/**'],
+      }),
+    ],
   },
   themeConfig: {
     socialLinks: [
