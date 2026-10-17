@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.2](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.1...babyrite-v2.0.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **deps:** bump rustls to 0.23.45 to address a TLS 1.3 handshake advisory ([#752](https://github.com/m1sk9/babyrite/issues/752)) ([c3a286a](https://github.com/m1sk9/babyrite/commit/c3a286a40503a871d1ed7b6b1aa7450cb6fa2a8c))
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.151.0 ([#748](https://github.com/m1sk9/babyrite/issues/748)) ([2155eed](https://github.com/m1sk9/babyrite/commit/2155eed8b2e859ab40fcbb06325ed1cb75a21530))
+* **deps:** update dependency wrangler to v4.151.1 ([#749](https://github.com/m1sk9/babyrite/issues/749)) ([e19b439](https://github.com/m1sk9/babyrite/commit/e19b439d0b0aac071c0d09cc8f16394ca758d71f))
+* **deps:** update rust crate tokio to v1.53.3 ([#746](https://github.com/m1sk9/babyrite/issues/746)) ([bc2dd4a](https://github.com/m1sk9/babyrite/commit/bc2dd4a91a5ff399616dbc0554cc8af3a33206ba))
+
 ## [2.0.1](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.0...babyrite-v2.0.1) (2026-10-13)
 
 
