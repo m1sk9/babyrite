@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.3](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.2...babyrite-v2.0.3) (2026-10-21)
+
+
+### Bug Fixes
+
+* **docker:** move base images to Debian 13 distroless to drop the compromised eMudhra cross-sign root ([#761](https://github.com/m1sk9/babyrite/issues/761)) ([9671cab](https://github.com/m1sk9/babyrite/commit/9671caba0c174165b99d103911d2bdaab9ef6d74))
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.151.2 ([#756](https://github.com/m1sk9/babyrite/issues/756)) ([98e1318](https://github.com/m1sk9/babyrite/commit/98e13180af9156215233fb15cbd1c2c40e1144f5))
+* **deps:** update dependency wrangler to v4.151.3 ([#759](https://github.com/m1sk9/babyrite/issues/759)) ([9c537f9](https://github.com/m1sk9/babyrite/commit/9c537f902adeea6f11595d66d7bcc9c20f9c0539))
+* **deps:** update rust crate tokio to v1.54.0 ([#757](https://github.com/m1sk9/babyrite/issues/757)) ([d6932d1](https://github.com/m1sk9/babyrite/commit/d6932d1c3d7d0d194f8516876328beea088e9f36))
+* **deps:** update swatinem/rust-cache action to v2.9.3 ([#760](https://github.com/m1sk9/babyrite/issues/760)) ([2c24376](https://github.com/m1sk9/babyrite/commit/2c243769688b4df5b7626fe5716273a580e97bf3))
+
 ## [2.0.2](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.1...babyrite-v2.0.2) (2026-10-17)
 
 
