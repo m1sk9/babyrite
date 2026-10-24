@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.4](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.3...babyrite-v2.0.4) (2026-10-24)
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.6.1 ([#762](https://github.com/m1sk9/babyrite/issues/762)) ([c60248b](https://github.com/m1sk9/babyrite/commit/c60248bbb891897466c7b06ad19f6211e16f8176))
+* **deps:** update dependency @biomejs/biome to v2.6.3 ([#767](https://github.com/m1sk9/babyrite/issues/767)) ([b8dae78](https://github.com/m1sk9/babyrite/commit/b8dae789b034c497dc4493c5a042e958f2b131eb))
+* **deps:** update dependency bun to v1.4.4 ([#765](https://github.com/m1sk9/babyrite/issues/765)) ([ac4d187](https://github.com/m1sk9/babyrite/commit/ac4d187632e5633a901d8b7540ba73c12cab654c))
+* **deps:** update dependency wrangler to v4.152.0 ([#766](https://github.com/m1sk9/babyrite/issues/766)) ([682a7f1](https://github.com/m1sk9/babyrite/commit/682a7f16d54bd1de6bd93e807377ac99aee7c2f9))
+* **deps:** update rust crate tokio to v1.54.1 ([#764](https://github.com/m1sk9/babyrite/issues/764)) ([033ae9c](https://github.com/m1sk9/babyrite/commit/033ae9c2d7541bd62188d6c4848be1c1853cf829))
+
 ## [2.0.3](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.2...babyrite-v2.0.3) (2026-10-21)
 
 
