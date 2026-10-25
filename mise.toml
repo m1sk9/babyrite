@@ -1,6 +1,5 @@
 [tools]
 bun = "1.4.4"
-wrangler = { version = "4.152.0", allow_builds = ["esbuild", "sharp", "workerd"] }
 
 [env]
 _.path = ["docs/node_modules/.bin"]
