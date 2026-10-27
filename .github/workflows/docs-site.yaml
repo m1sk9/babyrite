@@ -65,6 +65,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.153.0"
+          wranglerVersion: "4.154.0"
           workingDirectory: docs
           packageManager: bun
