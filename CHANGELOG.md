@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.0.4](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.3...babyrite-v2.0.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **deps:** bump rustls from 0.23.45 to 0.23.46 ([#771](https://github.com/m1sk9/babyrite/issues/771)) ([6c4ca4b](https://github.com/m1sk9/babyrite/commit/6c4ca4b9e9084a104094fcc8aa86a780114a2987))
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.6.1 ([#762](https://github.com/m1sk9/babyrite/issues/762)) ([c60248b](https://github.com/m1sk9/babyrite/commit/c60248bbb891897466c7b06ad19f6211e16f8176))
+* **deps:** update dependency @biomejs/biome to v2.6.3 ([#767](https://github.com/m1sk9/babyrite/issues/767)) ([b8dae78](https://github.com/m1sk9/babyrite/commit/b8dae789b034c497dc4493c5a042e958f2b131eb))
+* **deps:** update dependency @biomejs/biome to v2.6.4 ([#773](https://github.com/m1sk9/babyrite/issues/773)) ([04fd485](https://github.com/m1sk9/babyrite/commit/04fd485c07a7e8626888ae7c924aaf1dae4a48b0))
+* **deps:** update dependency bun to v1.4.4 ([#765](https://github.com/m1sk9/babyrite/issues/765)) ([ac4d187](https://github.com/m1sk9/babyrite/commit/ac4d187632e5633a901d8b7540ba73c12cab654c))
+* **deps:** update dependency wrangler to v4.152.0 ([#766](https://github.com/m1sk9/babyrite/issues/766)) ([682a7f1](https://github.com/m1sk9/babyrite/commit/682a7f16d54bd1de6bd93e807377ac99aee7c2f9))
+* **deps:** update dependency wrangler to v4.153.0 ([#769](https://github.com/m1sk9/babyrite/issues/769)) ([d2e3455](https://github.com/m1sk9/babyrite/commit/d2e3455505bfe004bf408f3dc90112f858fd60b6))
+* **deps:** update dependency wrangler to v4.154.0 ([#770](https://github.com/m1sk9/babyrite/issues/770)) ([1014caa](https://github.com/m1sk9/babyrite/commit/1014caa4af28db108a4338c2f1d9c91c66f99571))
+* **deps:** update dependency wrangler to v4.155.0 ([#772](https://github.com/m1sk9/babyrite/issues/772)) ([cc4804c](https://github.com/m1sk9/babyrite/commit/cc4804c402be05a591f6dec6ec3712ec5eb2e17b))
+* **deps:** update dependency wrangler to v4.156.0 ([#774](https://github.com/m1sk9/babyrite/issues/774)) ([08bddb7](https://github.com/m1sk9/babyrite/commit/08bddb78f0a4124a1c8fcfcc6fcacb7618a688e7))
+* **deps:** update rust crate encoding_rs to v0.8.43 ([#775](https://github.com/m1sk9/babyrite/issues/775)) ([965d795](https://github.com/m1sk9/babyrite/commit/965d795d26e60eca85753af458f4d64219b3073c))
+* **deps:** update rust crate encoding_rs to v0.8.44 ([#776](https://github.com/m1sk9/babyrite/issues/776)) ([1d692e0](https://github.com/m1sk9/babyrite/commit/1d692e058dc7957379a2ce361c8cc13c1e9d041d))
+* **deps:** update rust crate tokio to v1.54.1 ([#764](https://github.com/m1sk9/babyrite/issues/764)) ([033ae9c](https://github.com/m1sk9/babyrite/commit/033ae9c2d7541bd62188d6c4848be1c1853cf829))
+* **deps:** update taiki-e/install-action digest to 86f7a0f ([#750](https://github.com/m1sk9/babyrite/issues/750)) ([887142e](https://github.com/m1sk9/babyrite/commit/887142eed238268b3b5946dd4c2b8657e726ed03))
+* drop wrangler from local toolchain and docs dependencies ([#768](https://github.com/m1sk9/babyrite/issues/768)) ([a226c9d](https://github.com/m1sk9/babyrite/commit/a226c9d0f97e331d99eea5614977b764839440a4))
+
 ## [2.0.3](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.2...babyrite-v2.0.3) (2026-10-21)
 
 
