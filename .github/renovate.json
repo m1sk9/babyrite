@@ -1,6 +1,12 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "github>m1sk9/renovate-config"
-    ]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>m1sk9/renovate-config"],
+  "packageRules": [
+    {
+      "description": "twilight crates share types, so a partial bump fails to compile",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["twilight-*"],
+      "groupName": "twilight"
+    }
+  ]
 }
