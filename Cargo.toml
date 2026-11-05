@@ -25,10 +25,10 @@ tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
 toml = "1.0.0"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
-twilight-gateway = { version = "0.17.1", default-features = false, features = ["rustls-platform-verifier", "zlib"] }
-twilight-http = "0.17.1"
-twilight-model = "0.17.1"
-twilight-util = { version = "0.17.0", features = ["builder"] }
+twilight-gateway = { version = "0.18.0", default-features = false, features = ["rustls-platform-verifier", "zlib"] }
+twilight-http = "0.18.0"
+twilight-model = "0.18.0"
+twilight-util = { version = "0.18.0", features = ["builder"] }
 
 [dev-dependencies]
 serde_json = "1.0.151"
