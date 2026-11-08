@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.0.5](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.4...babyrite-v2.0.5) (2026-11-08)
+
+
+### Bug Fixes
+
+* **deps:** update twilight crates to 0.18.0 ([#789](https://github.com/m1sk9/babyrite/issues/789)) ([aac0999](https://github.com/m1sk9/babyrite/commit/aac0999db7f188f76a0dd6c524d6301c97831c1b))
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.6.5 ([#788](https://github.com/m1sk9/babyrite/issues/788)) ([35a7c4c](https://github.com/m1sk9/babyrite/commit/35a7c4c1ece734a279702784ff07211966f1d003))
+* **deps:** update dependency @biomejs/biome to v2.6.6 ([#793](https://github.com/m1sk9/babyrite/issues/793)) ([d249c92](https://github.com/m1sk9/babyrite/commit/d249c927926d3e568fb7697e780c53235ac550e8))
+* **deps:** update dependency ubuntu to v26 ([#796](https://github.com/m1sk9/babyrite/issues/796)) ([80dce63](https://github.com/m1sk9/babyrite/commit/80dce63c6ec124d8671dcb412e6253c9e9cfa6ee))
+* **deps:** update dependency wrangler to v4.156.1 ([#783](https://github.com/m1sk9/babyrite/issues/783)) ([39df145](https://github.com/m1sk9/babyrite/commit/39df145e2565d30baf2a1c95001b20c91d1d4e6b))
+* **deps:** update dependency wrangler to v4.156.2 ([#785](https://github.com/m1sk9/babyrite/issues/785)) ([6e63cbe](https://github.com/m1sk9/babyrite/commit/6e63cbea8598847d09cff2786d8cd2946aaf6313))
+* **deps:** update dependency wrangler to v4.157.0 ([#786](https://github.com/m1sk9/babyrite/issues/786)) ([cdb1a91](https://github.com/m1sk9/babyrite/commit/cdb1a91afb0cf812e0e3f72aabbe27c81926459d))
+* **deps:** update dependency wrangler to v4.158.0 ([#792](https://github.com/m1sk9/babyrite/issues/792)) ([1f92c74](https://github.com/m1sk9/babyrite/commit/1f92c74f260b517636a6d7f72797390185550ac5))
+* **deps:** update rust crate toml to v1.2.0 ([#787](https://github.com/m1sk9/babyrite/issues/787)) ([8e621a0](https://github.com/m1sk9/babyrite/commit/8e621a07d6dd33e4c07aab10495cc34062b16394))
+* **deps:** update rust crate toml to v1.2.1 ([#794](https://github.com/m1sk9/babyrite/issues/794)) ([299e7e3](https://github.com/m1sk9/babyrite/commit/299e7e3d617e6f611ff906553851f70431930a79))
+* **deps:** update taiki-e/install-action digest to 3a3daaf ([#795](https://github.com/m1sk9/babyrite/issues/795)) ([9db4ce2](https://github.com/m1sk9/babyrite/commit/9db4ce287a19d1a94b801b5b11f31009dcd28a15))
+* **deps:** update taiki-e/install-action digest to c509219 ([#782](https://github.com/m1sk9/babyrite/issues/782)) ([842dd97](https://github.com/m1sk9/babyrite/commit/842dd9736bbea00a71611ca488891f1173efd9fb))
+* fix renovate configuration ([#791](https://github.com/m1sk9/babyrite/issues/791)) ([183e51c](https://github.com/m1sk9/babyrite/commit/183e51c4f8ee93ccea279046ebef491afc418780))
+
+
+### CI
+
+* group twilight crates in a single Renovate PR ([#790](https://github.com/m1sk9/babyrite/issues/790)) ([0ba20c9](https://github.com/m1sk9/babyrite/commit/0ba20c9993045405095b421a841c08db6e667c32))
+
 ## [2.0.4](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.3...babyrite-v2.0.4) (2026-11-01)
 
 
