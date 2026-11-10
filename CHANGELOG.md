@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.6](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.5...babyrite-v2.0.6) (2026-11-10)
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.159.0 ([#798](https://github.com/m1sk9/babyrite/issues/798)) ([e8fb63c](https://github.com/m1sk9/babyrite/commit/e8fb63cb1713181856410d6a58d37a18abaf9abb))
+* **deps:** update taiki-e/install-action digest to cfdb7ed ([#797](https://github.com/m1sk9/babyrite/issues/797)) ([e38c4e1](https://github.com/m1sk9/babyrite/commit/e38c4e1729e128420aaaf836ca142d954099283b))
+
 ## [2.0.5](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.4...babyrite-v2.0.5) (2026-11-08)
 
 
