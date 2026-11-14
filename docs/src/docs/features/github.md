@@ -77,7 +77,9 @@ Content is fetched from `https://raw.githubusercontent.com/`.
 
 The response body is read incrementally and the transfer is aborted as soon as enough lines for the code block have arrived, so the rest of the file is never downloaded. A file larger than 1MB can therefore still be previewed, as long as the lines that are actually displayed fit within the limit.
 
-If the bytes read up to the last displayed line exceed 1MB (`1_048_576` bytes), the fetch is aborted and an error is returned. The limit is applied to the bytes actually received rather than to `Content-Length`, because `raw.githubusercontent.com` may respond with chunked transfer encoding, in which case that header is absent.
+If the bytes kept up to the last displayed line exceed 1MB (`1_048_576` bytes), the fetch is aborted and an error is returned. The limit is applied to the bytes actually received rather than to `Content-Length`, because `raw.githubusercontent.com` may respond with chunked transfer encoding, in which case that header is absent.
+
+For a permalink with a line range (`#L{start}-L{end}`), the lines before `{start}` are downloaded only to find where the range begins and are not kept, so they do not count toward the 1MB limit. They are bounded separately: if more than 8MB (`8_388_608` bytes) are read before the range begins, the fetch is aborted and an error is returned.
 
 The whole request (connect, response, and body read) is bounded by a 10 second timeout.
 

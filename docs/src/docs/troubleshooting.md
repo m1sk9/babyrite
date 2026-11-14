@@ -57,7 +57,7 @@ babyrite discards its cache when Discord reports a channel or role change, so ch
 | Is the feature enabled? | Check that `features.github_permalink = false` is not set in `config.toml`. |
 | Does the URL contain `blob`? | Only URLs of the form `https://github.com/{owner}/{repo}/blob/{ref}/{path}` are supported. Repository top pages and directory URLs are not expanded. |
 | Is it a public repository? | babyrite fetches files without authentication, so files in private repositories cannot be expanded. |
-| Is the file too large? | It is not expanded if more than 1MB is read before the last displayed line. |
+| Is the file too large? | It is not expanded if more than 1MB is kept up to the last displayed line, or, for a line range, if more than 8MB is read before the range begins. |
 | Does the message contain 4 or more links? | Only the first 3 are expanded. |
 
 See [GitHub Permalink Expansion](./features/github) for details.
