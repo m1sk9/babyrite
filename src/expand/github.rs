@@ -220,7 +220,15 @@ impl GitHubPermalink {
             "body read"
         );
 
-        let content = ensure_not_empty(self.build_code_block(&body, max_lines))?;
+        // Logged here rather than in `ensure_not_empty`: a `tracing` macro in a unit-tested
+        // function leaves a partially covered line, as no subscriber is installed in tests.
+        let content = match ensure_not_empty(self.build_code_block(&body, max_lines)) {
+            Ok(content) => content,
+            Err(e) => {
+                tracing::debug!("skipped permalink with nothing to show");
+                return Err(e.into());
+            }
+        };
         tracing::debug!("code block built");
         Ok(content)
     }
@@ -428,7 +436,6 @@ impl LimitedBody {
 fn ensure_not_empty(content: ExpandedContent) -> Result<ExpandedContent, GitHubExpandError> {
     match &content {
         ExpandedContent::CodeBlock { code, .. } if code.trim().is_empty() => {
-            tracing::debug!("skipped permalink with nothing to show");
             Err(GitHubExpandError::ContentEmpty)
         }
         _ => Ok(content),
