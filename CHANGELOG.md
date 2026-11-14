@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.7](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.6...babyrite-v2.0.7) (2026-11-14)
+
+
+### Bug Fixes
+
+* **expand:** normalize reversed GitHub permalink line ranges ([#809](https://github.com/m1sk9/babyrite/issues/809)) ([67e7918](https://github.com/m1sk9/babyrite/commit/67e791874b60b683be20dbfde77076635c220b61))
+* **expand:** skip GitHub permalinks that expand to empty content ([#808](https://github.com/m1sk9/babyrite/issues/808)) ([d4ec528](https://github.com/m1sk9/babyrite/commit/d4ec528b78c7c0e8c532cb63b40e6450c318af9d))
+* **github:** skip lines before the range start when reading raw content ([#807](https://github.com/m1sk9/babyrite/issues/807)) ([b636f51](https://github.com/m1sk9/babyrite/commit/b636f519b9540442f6091671f42f53854fa1cc97))
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.6.7 ([#803](https://github.com/m1sk9/babyrite/issues/803)) ([016bb6f](https://github.com/m1sk9/babyrite/commit/016bb6f0e1a139ea07f3d6a4b3657086a2f872f1))
+* **deps:** update dependency wrangler to v4.160.0 ([#800](https://github.com/m1sk9/babyrite/issues/800)) ([d30f2aa](https://github.com/m1sk9/babyrite/commit/d30f2aacfde7c0c04b8f6c23956f96d2f7f236ca))
+* **deps:** update dependency wrangler to v4.160.1 ([#802](https://github.com/m1sk9/babyrite/issues/802)) ([3080848](https://github.com/m1sk9/babyrite/commit/3080848ad578b9897b56004dc560f4fedca6105f))
+* **deps:** update dependency wrangler to v4.161.0 ([#804](https://github.com/m1sk9/babyrite/issues/804)) ([e53ade8](https://github.com/m1sk9/babyrite/commit/e53ade86372aa6e7214b959d0c01555f497b338e))
+* **deps:** update dependency wrangler to v4.162.0 ([#806](https://github.com/m1sk9/babyrite/issues/806)) ([73b1528](https://github.com/m1sk9/babyrite/commit/73b15281e66b33b07d2b8a895622cd52b94c2ad0))
+
 ## [2.0.6](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.5...babyrite-v2.0.6) (2026-11-10)
 
 
