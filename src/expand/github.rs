@@ -1597,7 +1597,10 @@ mod tests {
     #[test]
     fn ensure_not_empty_rejects_line_range_past_end_of_file() {
         let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 20 }));
-        let result = ensure_not_empty(permalink.build_code_block("a\nb\n", 50));
+        // The body is read the way `expand` reads it: the lines before the range are
+        // skipped, so a range past the end of the file leaves nothing.
+        let read = read_chunks(&[b"a\nb\n"], permalink.read_limit(50)).unwrap();
+        let result = ensure_not_empty(permalink.build_code_block(&read, 50));
         assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
     }
 
