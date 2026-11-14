@@ -220,8 +220,7 @@ impl GitHubPermalink {
             "body read"
         );
 
-        let content = ensure_not_empty(self.build_code_block(&body, max_lines))
-            .inspect_err(|_| tracing::debug!("skipped permalink with nothing to show"))?;
+        let content = ensure_not_empty(self.build_code_block(&body, max_lines))?;
         tracing::debug!("code block built");
         Ok(content)
     }
@@ -429,6 +428,7 @@ impl LimitedBody {
 fn ensure_not_empty(content: ExpandedContent) -> Result<ExpandedContent, GitHubExpandError> {
     match &content {
         ExpandedContent::CodeBlock { code, .. } if code.trim().is_empty() => {
+            tracing::debug!("skipped permalink with nothing to show");
             Err(GitHubExpandError::ContentEmpty)
         }
         _ => Ok(content),
