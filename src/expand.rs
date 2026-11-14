@@ -36,9 +36,10 @@ pub trait LinkExpander: Send + Sync {
     /// Parses and expands all links of this expander's type in the message.
     ///
     /// Failures are logged per link and never abort the other links or
-    /// expanders, so this returns only the successful expansions. Links refused
+    /// expanders, so this returns only the successful expansions. Links skipped
     /// on purpose — because expanding them would leak content the audience
-    /// cannot see — are logged at `debug` rather than `error`.
+    /// cannot see, or because there is nothing to show — are logged at `debug`
+    /// rather than `error`.
     async fn expand_all(&self, cx: &ExpandContext<'_>) -> Vec<ExpandedContent>;
 }
 

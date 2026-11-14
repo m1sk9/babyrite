@@ -93,6 +93,8 @@ impl LinkExpander for GitHubExpander {
             .into_iter()
             .filter_map(|result| match result {
                 Ok(content) => Some(content),
+                // Logged at `debug` by `fetch`, where the permalink's span is active.
+                Err(ExpandError::GitHub(GitHubExpandError::ContentEmpty)) => None,
                 Err(e) => {
                     tracing::error!(error = %e, "failed to expand GitHub permalink");
                     None
@@ -111,7 +113,8 @@ pub enum GitHubExpandError {
     /// The fetched content exceeds the maximum allowed size.
     #[error("Content exceeds size limit")]
     ContentTooLarge,
-    /// The retrieved content is empty.
+    /// The lines to show are empty or whitespace-only, e.g. an empty file or a line
+    /// range that selects no lines or only blank ones.
     #[error("Content is empty")]
     ContentEmpty,
     /// An HTTP error occurred.
@@ -213,7 +216,8 @@ impl GitHubPermalink {
             "body read"
         );
 
-        let content = ensure_not_empty(self.build_code_block(&body, max_lines))?;
+        let content = ensure_not_empty(self.build_code_block(&body, max_lines))
+            .inspect_err(|_| tracing::debug!("skipped permalink with nothing to show"))?;
         tracing::debug!("code block built");
         Ok(content)
     }
@@ -1289,6 +1293,13 @@ mod tests {
     fn ensure_not_empty_rejects_line_range_past_end_of_file() {
         let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 20 }));
         let result = ensure_not_empty(permalink.build_code_block("a\nb\n", 50));
+        assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
+    }
+
+    #[test]
+    fn ensure_not_empty_rejects_reversed_line_range() {
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 3, end: 1 }));
+        let result = ensure_not_empty(permalink.build_code_block("a\nb\nc\n", 50));
         assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
     }
 

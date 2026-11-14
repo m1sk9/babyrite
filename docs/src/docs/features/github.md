@@ -47,6 +47,7 @@ A single line with the file's information is shown above the code block.
 - Without a line range, the file is shown from the beginning.
 - If the lines to show exceed `github.max_lines` (50 by default), they are truncated to the first `max_lines` lines and marked like `truncated to 50 lines`. The limit can be changed in [Configuration](../configuration).
 - If the line range runs past the end of the file, the lines up to the end are shown.
+- If the lines to show are empty or contain only whitespace (for example an empty file, or a line range that selects only blank lines), the link is not expanded and no reply is posted.
 
 ::: info Mentions and special characters
 - Expansion replies mention no one. Even if the file contains `@everyone` or user mentions, no one is notified.
