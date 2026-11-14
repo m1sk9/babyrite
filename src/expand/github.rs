@@ -39,6 +39,16 @@ static GITHUB_PERMALINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 /// pass unconditionally (#625). The limit is enforced on bytes actually received.
 const MAX_BODY_BYTES: usize = 1_048_576;
 
+/// Maximum number of bytes discarded before the first displayed line.
+///
+/// Skipped bytes are not retained, so [`MAX_BODY_BYTES`] does not apply to them (#732).
+/// They still have to be downloaded to find the line boundary, so this bounds the
+/// transfer; the client timeout bounds the time.
+const MAX_SKIPPED_BYTES: usize = 8 * 1_048_576;
+
+/// Number of leading bytes needed to tell a UTF-16 BOM from anything else.
+const BOM_SNIFF_BYTES: usize = 2;
+
 /// Number of bytes read past the last needed line to tell whether more follows.
 ///
 /// Why not one byte: lines are counted at the `0A` byte, and in UTF-16LE the byte
@@ -209,6 +219,7 @@ impl GitHubPermalink {
         let body = read_body_limited(response, limit).await.inspect_err(|e| {
             tracing::warn!(
                 error = %e,
+                skip_lines = limit.skip_lines,
                 lines = limit.lines,
                 probe_bytes = limit.probe_bytes,
                 "failed to read body"
@@ -239,11 +250,15 @@ impl GitHubPermalink {
     /// limit" apart from "truncated" by whether a further line exists. The start of
     /// that line is enough to make it exist, so it is probed rather than read in full.
     fn read_limit(&self, max_lines: usize) -> ReadLimit {
+        let skip_lines = self
+            .line_range
+            .map_or(0, |range| range.start.saturating_sub(1));
         let displayed_end = match self.line_range {
             Some(range) => {
-                let capped = range.start.saturating_sub(1).saturating_add(max_lines);
+                let capped = skip_lines.saturating_add(max_lines);
                 if range.end <= capped {
                     return ReadLimit {
+                        skip_lines,
                         lines: range.end,
                         probe_bytes: 0,
                     };
@@ -253,19 +268,25 @@ impl GitHubPermalink {
             None => max_lines,
         };
         ReadLimit {
+            skip_lines,
             lines: displayed_end,
             probe_bytes: PROBE_BYTES,
         }
     }
 
     /// Builds an `ExpandedContent::CodeBlock` from raw file content.
+    ///
+    /// With a line range, `body` starts at the range's first line: the lines before
+    /// it are skipped while reading (see [`ReadLimit::skip_lines`]).
     fn build_code_block(&self, body: &str, max_lines: usize) -> ExpandedContent {
         let all_lines: Vec<&str> = body.lines().collect();
         let (code, line_info) = match self.line_range {
             Some(range) => {
-                let start = range.start.saturating_sub(1); // 0-indexed
-                let end = range.end.min(all_lines.len());
-                let selected = all_lines.get(start..end).unwrap_or_default();
+                let count = range
+                    .end
+                    .saturating_sub(range.start.saturating_sub(1))
+                    .min(all_lines.len());
+                let selected = &all_lines[..count];
 
                 let (code, truncated) = truncate_lines(selected, max_lines);
                 let info = if truncated {
@@ -317,7 +338,10 @@ impl GitHubPermalink {
 /// The leading part of a body that needs to be read.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ReadLimit {
-    /// Number of leading lines read in full, including their terminating newline.
+    /// Number of leading lines discarded instead of retained, because they are
+    /// not displayed.
+    skip_lines: usize,
+    /// Number of leading lines (skipped ones included) read in full, including their terminating newline.
     lines: usize,
     /// Number of bytes read past those lines, to tell whether more follows.
     probe_bytes: usize,
@@ -339,16 +363,23 @@ async fn read_body_limited(
         };
         body.push(&chunk)?;
     }
-    Ok(body.finish())
+    body.finish()
 }
 
-/// Accumulates response chunks until its [`ReadLimit`] is met or [`MAX_BODY_BYTES`]
-/// is exceeded.
+/// Accumulates response chunks until its [`ReadLimit`] is met, [`MAX_BODY_BYTES`] is
+/// exceeded by the retained bytes, or [`MAX_SKIPPED_BYTES`] is exceeded by the
+/// skipped ones.
 struct LimitedBody {
     buf: Vec<u8>,
     newlines: usize,
     probed: usize,
+    skipped_bytes: usize,
     limit: ReadLimit,
+    /// Lines actually skipped; `limit.skip_lines`, or 0 for a UTF-16 body.
+    skip_lines: usize,
+    /// Leading bytes held back until the encoding is known. Only used while
+    /// skipping, since that is the only time it matters.
+    sniffing: Option<Vec<u8>>,
 }
 
 impl LimitedBody {
@@ -357,6 +388,9 @@ impl LimitedBody {
             buf: Vec::new(),
             newlines: 0,
             probed: 0,
+            skipped_bytes: 0,
+            skip_lines: limit.skip_lines,
+            sniffing: (limit.skip_lines > 0).then(Vec::new),
             limit,
         }
     }
@@ -366,19 +400,59 @@ impl LimitedBody {
         self.newlines >= self.limit.lines && self.probed >= self.limit.probe_bytes
     }
 
-    /// Appends the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`].
+    /// Feeds `chunk` to [`Self::consume`], holding back the first bytes while the
+    /// encoding is sniffed.
     fn push(&mut self, chunk: &[u8]) -> Result<(), GitHubExpandError> {
+        let Some(sniffing) = self.sniffing.as_mut() else {
+            return self.consume(chunk);
+        };
+        let take = (BOM_SNIFF_BYTES - sniffing.len()).min(chunk.len());
+        sniffing.extend_from_slice(&chunk[..take]);
+        if sniffing.len() < BOM_SNIFF_BYTES {
+            return Ok(());
+        }
+        self.resolve_sniffing()?;
+        self.consume(&chunk[take..])
+    }
+
+    /// Ends the sniffing phase and feeds the held-back bytes through [`Self::consume`].
+    ///
+    /// Why not skip right away: lines are counted in raw bytes, so in UTF-16LE the
+    /// `00` completing a `\n` code unit would start the retained body and misalign
+    /// every following code unit. A UTF-16 body is therefore read from its start and
+    /// trimmed after decoding (see [`Self::finish`]).
+    fn resolve_sniffing(&mut self) -> Result<(), GitHubExpandError> {
+        let Some(held) = self.sniffing.take() else {
+            return Ok(());
+        };
+        if held.starts_with(&[0xff, 0xfe]) || held.starts_with(&[0xfe, 0xff]) {
+            self.skip_lines = 0;
+        }
+        self.consume(&held)
+    }
+
+    /// Retains the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`]
+    /// retained and [`MAX_SKIPPED_BYTES`] skipped.
+    fn consume(&mut self, chunk: &[u8]) -> Result<(), GitHubExpandError> {
         if self.is_complete() {
             return Ok(());
         }
         let wanted = self.limit.lines - self.newlines;
         let mut newlines = 0;
+        let mut start = if self.newlines >= self.skip_lines {
+            0
+        } else {
+            chunk.len()
+        };
         let mut end = 0;
         if wanted > 0 {
             end = chunk.len();
             for (i, byte) in chunk.iter().enumerate() {
                 if *byte == b'\n' {
                     newlines += 1;
+                    if self.newlines + newlines == self.skip_lines {
+                        start = i + 1;
+                    }
                     if newlines == wanted {
                         end = i + 1;
                         break;
@@ -392,13 +466,20 @@ impl LimitedBody {
             end += probed;
         }
 
+        // A reversed range (`#L10-L2`) ends before the skip boundary, so the boundary
+        // is never found and `start` would stay past `end`. Nothing is displayed then.
+        let start = start.min(end);
+
         // The limit is checked against the retained slice, not the whole chunk: a
         // chunk that overshoots the limit only past the last needed byte is fine.
-        if self.buf.len() + end > MAX_BODY_BYTES {
+        if self.buf.len() + (end - start) > MAX_BODY_BYTES
+            || self.skipped_bytes + start > MAX_SKIPPED_BYTES
+        {
             return Err(GitHubExpandError::ContentTooLarge);
         }
 
-        self.buf.extend_from_slice(&chunk[..end]);
+        self.skipped_bytes += start;
+        self.buf.extend_from_slice(&chunk[start..end]);
         self.newlines += newlines;
         self.probed += probed;
         Ok(())
@@ -423,8 +504,27 @@ impl LimitedBody {
     /// Why not read the `Content-Type` charset like `Response::text` does: the header
     /// is gone by the time chunks are joined. `raw.githubusercontent.com` serves
     /// `charset=utf-8`, which is also what `text` assumes when the charset is absent.
-    fn finish(self) -> String {
-        encoding_rs::UTF_8.decode(&self.buf).0.into_owned()
+    ///
+    /// When lines were skipped the body starts mid-file, so a U+FEFF at its start is
+    /// ordinary content and is decoded as such.
+    ///
+    /// A UTF-16 body was read from its start, so the lines that were not skipped on
+    /// the raw bytes are dropped from the decoded text instead. This keeps the
+    /// contract that the result starts at the first displayed line.
+    fn finish(mut self) -> Result<String, GitHubExpandError> {
+        self.resolve_sniffing()?;
+        if self.skip_lines > 0 {
+            let decoded = encoding_rs::UTF_8.decode_without_bom_handling(&self.buf).0;
+            return Ok(decoded.into_owned());
+        }
+        let decoded = encoding_rs::UTF_8.decode(&self.buf).0;
+        if self.limit.skip_lines == 0 {
+            return Ok(decoded.into_owned());
+        }
+        Ok(decoded
+            .split_inclusive('\n')
+            .skip(self.limit.skip_lines)
+            .collect())
     }
 }
 
@@ -788,7 +888,7 @@ mod tests {
     #[test]
     fn build_code_block_with_line_range() {
         let permalink = make_permalink("src/lib.rs", Some(LineRange { start: 2, end: 3 }));
-        let body = "line1\nline2\nline3\nline4";
+        let body = "line2\nline3\nline4";
         let result = permalink.build_code_block(body, 50);
 
         match result {
@@ -898,7 +998,7 @@ mod tests {
             path: "src/lib.rs".to_string(),
             line_range: Some(LineRange { start: 3, end: 5 }),
         };
-        let body = "a\nb\nc\nd\ne\nf";
+        let body = "c\nd\ne\nf";
         let result = permalink.build_code_block(body, 50);
 
         match result {
@@ -977,6 +1077,7 @@ mod tests {
 
     fn full(lines: usize) -> ReadLimit {
         ReadLimit {
+            skip_lines: 0,
             lines,
             probe_bytes: 0,
         }
@@ -984,8 +1085,16 @@ mod tests {
 
     fn probed(lines: usize) -> ReadLimit {
         ReadLimit {
+            skip_lines: 0,
             lines,
             probe_bytes: PROBE_BYTES,
+        }
+    }
+
+    fn skipping(skip_lines: usize, limit: ReadLimit) -> ReadLimit {
+        ReadLimit {
+            skip_lines,
+            ..limit
         }
     }
 
@@ -998,13 +1107,13 @@ mod tests {
     #[test]
     fn read_limit_with_range_capped_by_range_end_reads_end_in_full() {
         let permalink = make_permalink("f.rs", Some(LineRange { start: 3, end: 5 }));
-        assert_eq!(permalink.read_limit(50), full(5));
+        assert_eq!(permalink.read_limit(50), skipping(2, full(5)));
     }
 
     #[test]
     fn read_limit_with_range_ending_exactly_at_max_lines_reads_end_in_full() {
         let permalink = make_permalink("f.rs", Some(LineRange { start: 3, end: 52 }));
-        assert_eq!(permalink.read_limit(50), full(52));
+        assert_eq!(permalink.read_limit(50), skipping(2, full(52)));
     }
 
     #[test]
@@ -1017,7 +1126,7 @@ mod tests {
             }),
         );
         // Lines 10..=59 are displayed; line 60 only decides the truncation flag.
-        assert_eq!(permalink.read_limit(50), probed(59));
+        assert_eq!(permalink.read_limit(50), skipping(9, probed(59)));
     }
 
     #[test]
@@ -1040,7 +1149,7 @@ mod tests {
             }
             body.push(chunk)?;
         }
-        Ok(body.finish())
+        body.finish()
     }
 
     #[test]
@@ -1206,6 +1315,133 @@ mod tests {
         assert!(matches!(err, GitHubExpandError::ContentTooLarge));
     }
 
+    // --- LimitedBody: skipping lines before the range (#732) ---
+
+    #[test]
+    fn limited_body_skip_drops_lines_before_start() {
+        let result = read_chunks(&[b"a\nb\nc\nd\n"], skipping(2, full(3))).unwrap();
+        assert_eq!(result, "c\n");
+    }
+
+    #[test]
+    fn limited_body_skip_boundary_inside_chunk_keeps_rest_of_chunk() {
+        let result = read_chunks(&[b"a\nb\nc\nd\ne\n"], skipping(1, full(3))).unwrap();
+        assert_eq!(result, "b\nc\n");
+    }
+
+    #[test]
+    fn limited_body_skip_boundary_at_chunk_boundary() {
+        let result = read_chunks(&[b"a\nb\n", b"c\nd\n"], skipping(2, full(3))).unwrap();
+        assert_eq!(result, "c\n");
+    }
+
+    #[test]
+    fn limited_body_skip_boundary_across_many_chunks() {
+        let result = read_chunks(
+            &[b"aa", b"a\nb", b"", b"bb\nc", b"cc\nd\n"],
+            skipping(2, full(4)),
+        )
+        .unwrap();
+        assert_eq!(result, "ccc\nd\n");
+    }
+
+    #[test]
+    fn limited_body_skip_with_single_byte_chunks() {
+        let chunks: Vec<&[u8]> = b"a\nb\nc\n".chunks(1).collect();
+        let result = read_chunks(&chunks, skipping(2, full(3))).unwrap();
+        assert_eq!(result, "c\n");
+    }
+
+    #[test]
+    fn limited_body_skip_past_end_of_body_retains_nothing() {
+        let result = read_chunks(&[b"a\nb"], skipping(5, full(8))).unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn limited_body_skip_with_probe_reads_probe_after_last_line() {
+        let result = read_chunks(&[b"a\nb\nccc\nd\n"], skipping(1, probed(2))).unwrap();
+        assert_eq!(result, "b\ncc");
+    }
+
+    #[test]
+    fn limited_body_skip_ignores_huge_skipped_line() {
+        // #732: a line before the range start is not displayed, so its size must not
+        // count toward the retained-bytes limit.
+        let mut chunk = vec![b'x'; MAX_BODY_BYTES + 1];
+        chunk.extend_from_slice(b"\nb\nc\n");
+
+        let result = read_chunks(&[&chunk], skipping(1, full(3))).unwrap();
+        assert_eq!(result, "b\nc\n");
+    }
+
+    #[test]
+    fn limited_body_skip_ignores_huge_skipped_line_across_chunks() {
+        let half = vec![b'x'; MAX_BODY_BYTES / 2 + 1];
+        let result = read_chunks(&[&half, &half, b"\nb\n"], skipping(1, full(2))).unwrap();
+        assert_eq!(result, "b\n");
+    }
+
+    #[test]
+    fn limited_body_skip_applies_body_limit_to_retained_bytes() {
+        let mut chunk = b"a\n".to_vec();
+        chunk.extend_from_slice(&vec![b'x'; MAX_BODY_BYTES + 1]);
+
+        let err = read_chunks(&[&chunk], skipping(1, full(3))).unwrap_err();
+        assert!(matches!(err, GitHubExpandError::ContentTooLarge));
+    }
+
+    #[test]
+    fn limited_body_skip_rejects_over_skipped_limit() {
+        let chunk = vec![b'x'; MAX_SKIPPED_BYTES + 1];
+        let err = read_chunks(&[&chunk], skipping(1, full(2))).unwrap_err();
+        assert!(matches!(err, GitHubExpandError::ContentTooLarge));
+    }
+
+    #[test]
+    fn limited_body_skip_rejects_over_skipped_limit_across_chunks() {
+        let chunk = vec![b'x'; MAX_SKIPPED_BYTES / 2 + 1];
+        let err = read_chunks(&[&chunk, &chunk, b"\nb\n"], skipping(1, full(2))).unwrap_err();
+        assert!(matches!(err, GitHubExpandError::ContentTooLarge));
+    }
+
+    #[test]
+    fn limited_body_skip_accepts_skipped_bytes_up_to_limit() {
+        let mut chunk = vec![b'x'; MAX_SKIPPED_BYTES - 1];
+        chunk.extend_from_slice(b"\nb\n");
+
+        let result = read_chunks(&[&chunk], skipping(1, full(2))).unwrap();
+        assert_eq!(result, "b\n");
+    }
+
+    #[test]
+    fn limited_body_skip_drops_leading_bom_with_the_skipped_line() {
+        let result = read_chunks(&[b"\xef\xbb\xbfa\nb\n"], skipping(1, full(2))).unwrap();
+        assert_eq!(result, "b\n");
+    }
+
+    #[test]
+    fn limited_body_skip_keeps_bom_at_start_of_first_retained_line() {
+        let result = read_chunks(&["a\n\u{feff}b\n".as_bytes()], skipping(1, full(2))).unwrap();
+        assert_eq!(result, "\u{feff}b\n");
+    }
+
+    #[test]
+    fn limited_body_skip_reads_utf16_from_its_start_and_drops_skipped_lines_after_decoding() {
+        // Skipping at the `0A` of a UTF-16LE `\n` would leave a stray `00` at the
+        // start of the retained body, so the raw bytes are kept and the BOM still
+        // applies; the skipped line is dropped from the decoded text.
+        let result = read_chunks(&[b"\xff\xfeh\0i\0\n\0j\0\n\0"], skipping(1, full(2))).unwrap();
+        assert_eq!(result, "j\u{fffd}");
+    }
+
+    #[test]
+    fn limited_body_skip_detects_utf16_bom_split_across_chunks() {
+        let result =
+            read_chunks(&[b"\xff", b"\xfeh\0i\0\n\0j\0\n\0"], skipping(1, full(5))).unwrap();
+        assert_eq!(result, "j\n");
+    }
+
     // --- early truncation equivalence ---
 
     fn code_block_parts(content: ExpandedContent) -> (String, String, String) {
@@ -1227,9 +1463,13 @@ mod tests {
         max_lines: usize,
     ) {
         let truncated = read_chunks(&[body.as_bytes()], permalink.read_limit(max_lines)).unwrap();
+        let skip = permalink
+            .line_range
+            .map_or(0, |range| range.start.saturating_sub(1));
+        let from_start: String = body.split_inclusive('\n').skip(skip).collect();
         assert_eq!(
             code_block_parts(permalink.build_code_block(&truncated, max_lines)),
-            code_block_parts(permalink.build_code_block(body, max_lines)),
+            code_block_parts(permalink.build_code_block(&from_start, max_lines)),
             "body: {body:?}, max_lines: {max_lines}"
         );
     }
@@ -1296,6 +1536,36 @@ mod tests {
     }
 
     #[test]
+    fn early_read_previews_range_after_huge_line_before_start() {
+        // #732: a huge line before the range start used to fail the whole preview.
+        let permalink = make_permalink("f.js", Some(LineRange { start: 3, end: 4 }));
+        let body = format!("a\n{}\nc\nd\ne\n", "x".repeat(MAX_BODY_BYTES + 1));
+        let read = read_chunks(&[body.as_bytes()], permalink.read_limit(50)).unwrap();
+
+        let (_, code, metadata) = code_block_parts(permalink.build_code_block(&read, 50));
+        assert_eq!(code, "c\nd");
+        assert!(metadata.contains("L3-L4"));
+    }
+
+    #[test]
+    fn build_code_block_range_starting_past_end_is_empty() {
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 9, end: 12 }));
+        let read = read_chunks(&[b"a\nb\n"], permalink.read_limit(50)).unwrap();
+
+        let (_, code, _) = code_block_parts(permalink.build_code_block(&read, 50));
+        assert_eq!(code, "");
+    }
+
+    #[test]
+    fn build_code_block_reversed_range_is_empty() {
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 4, end: 2 }));
+        let body = "d\ne\n";
+
+        let (_, code, _) = code_block_parts(permalink.build_code_block(body, 50));
+        assert_eq!(code, "");
+    }
+
+    #[test]
     fn early_read_keeps_truncation_flag_for_utf16le() {
         // UTF-16LE BOM followed by "hi\nj\n": the probe must reach past the `00`
         // completing the first `\n` to see that a second line exists.
@@ -1327,7 +1597,10 @@ mod tests {
     #[test]
     fn ensure_not_empty_rejects_line_range_past_end_of_file() {
         let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 20 }));
-        let result = ensure_not_empty(permalink.build_code_block("a\nb\n", 50));
+        // The body is read the way `expand` reads it: the lines before the range are
+        // skipped, so a range past the end of the file leaves nothing.
+        let read = read_chunks(&[b"a\nb\n"], permalink.read_limit(50)).unwrap();
+        let result = ensure_not_empty(permalink.build_code_block(&read, 50));
         assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
     }
 
@@ -1336,6 +1609,31 @@ mod tests {
         let permalink = make_permalink("f.rs", None);
         let content = ensure_not_empty(permalink.build_code_block("a\n", 50)).unwrap();
         assert_eq!(code_block_parts(content).1, "a");
+    }
+
+    #[test]
+    fn early_read_reversed_range_is_empty_for_a_long_body() {
+        // A reversed range ending before its own start - 1 never reaches the skip
+        // boundary, so the read must still terminate with an empty selection.
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 2 }));
+        let body = "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\n";
+        let read = read_chunks(&[body.as_bytes()], permalink.read_limit(50)).unwrap();
+
+        let (_, code, _) = code_block_parts(permalink.build_code_block(&read, 50));
+        assert_eq!(code, "");
+    }
+
+    #[test]
+    fn early_read_range_in_utf16le_shows_the_requested_lines() {
+        // UTF-16LE BOM followed by "a\nb\nc\nd\n"; the range starts at line 2 and is
+        // cut to 2 lines, so the body is read with a probe like any other.
+        let permalink = make_permalink("f.txt", Some(LineRange { start: 2, end: 99 }));
+        let body = b"\xff\xfea\0\n\0b\0\n\0c\0\n\0d\0\n\0";
+        let read = read_chunks(&[body], permalink.read_limit(2)).unwrap();
+
+        let (_, code, metadata) = code_block_parts(permalink.build_code_block(&read, 2));
+        assert_eq!(code, "b\nc");
+        assert!(metadata.contains("L2-L99, truncated to 2 lines"));
     }
 
     // --- is_commit_sha / shorten_ref ---
