@@ -219,6 +219,7 @@ impl GitHubPermalink {
         let body = read_body_limited(response, limit).await.inspect_err(|e| {
             tracing::warn!(
                 error = %e,
+                skip_lines = limit.skip_lines,
                 lines = limit.lines,
                 probe_bytes = limit.probe_bytes,
                 "failed to read body"
@@ -399,7 +400,8 @@ impl LimitedBody {
         self.newlines >= self.limit.lines && self.probed >= self.limit.probe_bytes
     }
 
-    /// Appends the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`].
+    /// Feeds `chunk` to [`Self::consume`], holding back the first bytes while the
+    /// encoding is sniffed.
     fn push(&mut self, chunk: &[u8]) -> Result<(), GitHubExpandError> {
         let Some(sniffing) = self.sniffing.as_mut() else {
             return self.consume(chunk);
@@ -417,7 +419,8 @@ impl LimitedBody {
     ///
     /// Why not skip right away: lines are counted in raw bytes, so in UTF-16LE the
     /// `00` completing a `\n` code unit would start the retained body and misalign
-    /// every following code unit. A UTF-16 body is therefore read from its start.
+    /// every following code unit. A UTF-16 body is therefore read from its start and
+    /// trimmed after decoding (see [`Self::finish`]).
     fn resolve_sniffing(&mut self) -> Result<(), GitHubExpandError> {
         let Some(held) = self.sniffing.take() else {
             return Ok(());
@@ -428,6 +431,8 @@ impl LimitedBody {
         self.consume(&held)
     }
 
+    /// Retains the part of `chunk` that is still needed, up to [`MAX_BODY_BYTES`]
+    /// retained and [`MAX_SKIPPED_BYTES`] skipped.
     fn consume(&mut self, chunk: &[u8]) -> Result<(), GitHubExpandError> {
         if self.is_complete() {
             return Ok(());
@@ -460,6 +465,10 @@ impl LimitedBody {
             probed = (self.limit.probe_bytes - self.probed).min(chunk.len() - end);
             end += probed;
         }
+
+        // A reversed range (`#L10-L2`) ends before the skip boundary, so the boundary
+        // is never found and `start` would stay past `end`. Nothing is displayed then.
+        let start = start.min(end);
 
         // The limit is checked against the retained slice, not the whole chunk: a
         // chunk that overshoots the limit only past the last needed byte is fine.
@@ -498,14 +507,24 @@ impl LimitedBody {
     ///
     /// When lines were skipped the body starts mid-file, so a U+FEFF at its start is
     /// ordinary content and is decoded as such.
+    ///
+    /// A UTF-16 body was read from its start, so the lines that were not skipped on
+    /// the raw bytes are dropped from the decoded text instead. This keeps the
+    /// contract that the result starts at the first displayed line.
     fn finish(mut self) -> Result<String, GitHubExpandError> {
         self.resolve_sniffing()?;
-        let decoded = if self.skip_lines > 0 {
-            encoding_rs::UTF_8.decode_without_bom_handling(&self.buf).0
-        } else {
-            encoding_rs::UTF_8.decode(&self.buf).0
-        };
-        Ok(decoded.into_owned())
+        if self.skip_lines > 0 {
+            let decoded = encoding_rs::UTF_8.decode_without_bom_handling(&self.buf).0;
+            return Ok(decoded.into_owned());
+        }
+        let decoded = encoding_rs::UTF_8.decode(&self.buf).0;
+        if self.limit.skip_lines == 0 {
+            return Ok(decoded.into_owned());
+        }
+        Ok(decoded
+            .split_inclusive('\n')
+            .skip(self.limit.skip_lines)
+            .collect())
     }
 }
 
@@ -1408,17 +1427,19 @@ mod tests {
     }
 
     #[test]
-    fn limited_body_skip_reads_utf16_from_its_start() {
+    fn limited_body_skip_reads_utf16_from_its_start_and_drops_skipped_lines_after_decoding() {
         // Skipping at the `0A` of a UTF-16LE `\n` would leave a stray `00` at the
-        // start of the retained body, so nothing is skipped and the BOM still applies.
+        // start of the retained body, so the raw bytes are kept and the BOM still
+        // applies; the skipped line is dropped from the decoded text.
         let result = read_chunks(&[b"\xff\xfeh\0i\0\n\0j\0\n\0"], skipping(1, full(2))).unwrap();
-        assert_eq!(result, "hi\nj\u{fffd}");
+        assert_eq!(result, "j\u{fffd}");
     }
 
     #[test]
     fn limited_body_skip_detects_utf16_bom_split_across_chunks() {
-        let result = read_chunks(&[b"\xff", b"\xfeh\0i\0\n\0"], skipping(1, full(5))).unwrap();
-        assert_eq!(result, "hi\n");
+        let result =
+            read_chunks(&[b"\xff", b"\xfeh\0i\0\n\0j\0\n\0"], skipping(1, full(5))).unwrap();
+        assert_eq!(result, "j\n");
     }
 
     // --- early truncation equivalence ---
@@ -1585,6 +1606,31 @@ mod tests {
         let permalink = make_permalink("f.rs", None);
         let content = ensure_not_empty(permalink.build_code_block("a\n", 50)).unwrap();
         assert_eq!(code_block_parts(content).1, "a");
+    }
+
+    #[test]
+    fn early_read_reversed_range_is_empty_for_a_long_body() {
+        // A reversed range ending before its own start - 1 never reaches the skip
+        // boundary, so the read must still terminate with an empty selection.
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 2 }));
+        let body = "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\n";
+        let read = read_chunks(&[body.as_bytes()], permalink.read_limit(50)).unwrap();
+
+        let (_, code, _) = code_block_parts(permalink.build_code_block(&read, 50));
+        assert_eq!(code, "");
+    }
+
+    #[test]
+    fn early_read_range_in_utf16le_shows_the_requested_lines() {
+        // UTF-16LE BOM followed by "a\nb\nc\nd\n"; the range starts at line 2 and is
+        // cut to 2 lines, so the body is read with a probe like any other.
+        let permalink = make_permalink("f.txt", Some(LineRange { start: 2, end: 99 }));
+        let body = b"\xff\xfea\0\n\0b\0\n\0c\0\n\0d\0\n\0";
+        let read = read_chunks(&[body], permalink.read_limit(2)).unwrap();
+
+        let (_, code, metadata) = code_block_parts(permalink.build_code_block(&read, 2));
+        assert_eq!(code, "b\nc");
+        assert!(metadata.contains("L2-L99, truncated to 2 lines"));
     }
 
     // --- is_commit_sha / shorten_ref ---
