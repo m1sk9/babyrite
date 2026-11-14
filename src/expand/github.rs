@@ -542,6 +542,20 @@ mod tests {
     }
 
     #[test]
+    fn parse_skips_permalink_with_overflowing_line_start() {
+        let text =
+            "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L99999999999999999999999";
+        assert!(GitHubPermalink::parse_all(text).is_empty());
+    }
+
+    #[test]
+    fn parse_skips_permalink_with_overflowing_line_end() {
+        let text =
+            "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L1-L99999999999999999999999";
+        assert!(GitHubPermalink::parse_all(text).is_empty());
+    }
+
+    #[test]
     fn parse_branch_name() {
         let text = "https://github.com/owner/repo/blob/main/src/lib.rs";
         let results = GitHubPermalink::parse_all(text);
