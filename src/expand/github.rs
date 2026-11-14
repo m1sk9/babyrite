@@ -132,13 +132,17 @@ impl GitHubPermalink {
         super::parse_links(text, &GITHUB_PERMALINK_REGEX, |captures| {
             let line_range = match captures.get(5) {
                 Some(start) => {
-                    let start = start.as_str().parse().ok()?;
+                    let start: usize = start.as_str().parse().ok()?;
                     // A missing end (e.g. `#L42`) means a single-line reference.
                     let end = match captures.get(6) {
                         Some(end) => end.as_str().parse().ok()?,
                         None => start,
                     };
-                    Some(LineRange { start, end })
+                    // GitHub displays a reversed range (`#L3-L1`) as if it were ordered.
+                    Some(LineRange {
+                        start: start.min(end),
+                        end: start.max(end),
+                    })
                 }
                 None => None,
             };
@@ -216,8 +220,15 @@ impl GitHubPermalink {
             "body read"
         );
 
-        let content = ensure_not_empty(self.build_code_block(&body, max_lines))
-            .inspect_err(|_| tracing::debug!("skipped permalink with nothing to show"))?;
+        // Logged here rather than in `ensure_not_empty`: a `tracing` macro in a unit-tested
+        // function leaves a partially covered line, as no subscriber is installed in tests.
+        let content = match ensure_not_empty(self.build_code_block(&body, max_lines)) {
+            Ok(content) => content,
+            Err(e) => {
+                tracing::debug!("skipped permalink with nothing to show");
+                return Err(e.into());
+            }
+        };
         tracing::debug!("code block built");
         Ok(content)
     }
@@ -525,6 +536,30 @@ mod tests {
         let range = results[0].line_range.unwrap();
         assert_eq!(range.start, 10);
         assert_eq!(range.end, 20);
+    }
+
+    #[test]
+    fn parse_permalink_with_reversed_line_range() {
+        let text = "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L20-L10";
+        let results = GitHubPermalink::parse_all(text);
+        assert_eq!(results.len(), 1);
+        let range = results[0].line_range.unwrap();
+        assert_eq!(range.start, 10);
+        assert_eq!(range.end, 20);
+    }
+
+    #[test]
+    fn parse_skips_permalink_with_overflowing_line_start() {
+        let text =
+            "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L99999999999999999999999";
+        assert!(GitHubPermalink::parse_all(text).is_empty());
+    }
+
+    #[test]
+    fn parse_skips_permalink_with_overflowing_line_end() {
+        let text =
+            "https://github.com/owner/repo/blob/abcd1234/src/lib.rs#L1-L99999999999999999999999";
+        assert!(GitHubPermalink::parse_all(text).is_empty());
     }
 
     #[test]
@@ -1293,13 +1328,6 @@ mod tests {
     fn ensure_not_empty_rejects_line_range_past_end_of_file() {
         let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 20 }));
         let result = ensure_not_empty(permalink.build_code_block("a\nb\n", 50));
-        assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
-    }
-
-    #[test]
-    fn ensure_not_empty_rejects_reversed_line_range() {
-        let permalink = make_permalink("f.rs", Some(LineRange { start: 3, end: 1 }));
-        let result = ensure_not_empty(permalink.build_code_block("a\nb\nc\n", 50));
         assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
     }
 
