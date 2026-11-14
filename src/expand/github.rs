@@ -111,6 +111,9 @@ pub enum GitHubExpandError {
     /// The fetched content exceeds the maximum allowed size.
     #[error("Content exceeds size limit")]
     ContentTooLarge,
+    /// The retrieved content is empty.
+    #[error("Content is empty")]
+    ContentEmpty,
     /// An HTTP error occurred.
     #[error(transparent)]
     Http(#[from] reqwest::Error),
@@ -210,7 +213,7 @@ impl GitHubPermalink {
             "body read"
         );
 
-        let content = self.build_code_block(&body, max_lines);
+        let content = ensure_not_empty(self.build_code_block(&body, max_lines))?;
         tracing::debug!("code block built");
         Ok(content)
     }
@@ -407,6 +410,20 @@ impl LimitedBody {
     /// `charset=utf-8`, which is also what `text` assumes when the charset is absent.
     fn finish(self) -> String {
         encoding_rs::UTF_8.decode(&self.buf).0.into_owned()
+    }
+}
+
+/// Rejects a code block with nothing to show.
+///
+/// Checked on the built block rather than the body so that a line range past the end
+/// of the file is rejected too. Whitespace-only counts as empty: it renders as a blank
+/// fence that carries only the language name.
+fn ensure_not_empty(content: ExpandedContent) -> Result<ExpandedContent, GitHubExpandError> {
+    match &content {
+        ExpandedContent::CodeBlock { code, .. } if code.trim().is_empty() => {
+            Err(GitHubExpandError::ContentEmpty)
+        }
+        _ => Ok(content),
     }
 }
 
@@ -1250,6 +1267,36 @@ mod tests {
         let (_, code, metadata) = code_block_parts(permalink.build_code_block(&read, 1));
         assert_eq!(code, "hi");
         assert!(metadata.contains("truncated to 1 lines"));
+    }
+
+    // --- ensure_not_empty ---
+
+    #[test]
+    fn ensure_not_empty_rejects_empty_file() {
+        let permalink = make_permalink("empty.rs", None);
+        let result = ensure_not_empty(permalink.build_code_block("", 50));
+        assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
+    }
+
+    #[test]
+    fn ensure_not_empty_rejects_whitespace_only_file() {
+        let permalink = make_permalink("blank.rs", None);
+        let result = ensure_not_empty(permalink.build_code_block("\n\n  \n", 50));
+        assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
+    }
+
+    #[test]
+    fn ensure_not_empty_rejects_line_range_past_end_of_file() {
+        let permalink = make_permalink("f.rs", Some(LineRange { start: 10, end: 20 }));
+        let result = ensure_not_empty(permalink.build_code_block("a\nb\n", 50));
+        assert!(matches!(result, Err(GitHubExpandError::ContentEmpty)));
+    }
+
+    #[test]
+    fn ensure_not_empty_keeps_block_with_content() {
+        let permalink = make_permalink("f.rs", None);
+        let content = ensure_not_empty(permalink.build_code_block("a\n", 50)).unwrap();
+        assert_eq!(code_block_parts(content).1, "a");
     }
 
     // --- is_commit_sha / shorten_ref ---
