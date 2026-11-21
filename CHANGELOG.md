@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.8](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.7...babyrite-v2.0.8) (2026-11-21)
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.6.8 ([#812](https://github.com/m1sk9/babyrite/issues/812)) ([5cc762d](https://github.com/m1sk9/babyrite/commit/5cc762d804912896b4461461f5a7384be65cae95))
+* **deps:** update dependency bun to v1.4.5 ([#818](https://github.com/m1sk9/babyrite/issues/818)) ([d6a07a0](https://github.com/m1sk9/babyrite/commit/d6a07a0543d84abbdf849ab5335e9f73f7684156))
+* **deps:** update dependency wrangler to v4.163.0 ([#814](https://github.com/m1sk9/babyrite/issues/814)) ([9c03ae2](https://github.com/m1sk9/babyrite/commit/9c03ae266319f06642448dae70c3dc2a35d8cc53))
+* **deps:** update dependency wrangler to v4.164.0 ([#815](https://github.com/m1sk9/babyrite/issues/815)) ([7ceeaac](https://github.com/m1sk9/babyrite/commit/7ceeaac03f2e20f756620114a9aa615d99317d3d))
+* **deps:** update dependency wrangler to v4.165.0 ([#817](https://github.com/m1sk9/babyrite/issues/817)) ([fae3267](https://github.com/m1sk9/babyrite/commit/fae3267942cbd6d18bef4674426154bf861ea549))
+* **deps:** update dependency wrangler to v4.166.0 ([#819](https://github.com/m1sk9/babyrite/issues/819)) ([36d4c0c](https://github.com/m1sk9/babyrite/commit/36d4c0cf1c962f802eed7207ae78ccece3128c5a))
+* **deps:** update rust crate regex to v1.13.2 ([#816](https://github.com/m1sk9/babyrite/issues/816)) ([73fcded](https://github.com/m1sk9/babyrite/commit/73fcded2c07925ed5099958a0f914bb524a2751f))
+* **deps:** update rust crate toml to v1.2.2 ([#820](https://github.com/m1sk9/babyrite/issues/820)) ([b578caf](https://github.com/m1sk9/babyrite/commit/b578caf3fedb391ecbaf7917d16c2ff48a45ecb8))
+* **deps:** update taiki-e/install-action digest to 75a7c0f ([#811](https://github.com/m1sk9/babyrite/issues/811)) ([29a7563](https://github.com/m1sk9/babyrite/commit/29a7563d81175c4606d1a7f16568423178ea0937))
+
 ## [2.0.7](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.6...babyrite-v2.0.7) (2026-11-14)
 
 
