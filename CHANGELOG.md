@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.9](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.8...babyrite-v2.0.9) (2026-11-24)
+
+
+### Miscellaneous
+
+* **deps:** update dependency wrangler to v4.167.0 ([#824](https://github.com/m1sk9/babyrite/issues/824)) ([b7d9e2b](https://github.com/m1sk9/babyrite/commit/b7d9e2b60936cbe6a366065df621e67dc423b354))
+* **deps:** update rust crate anyhow to v1.0.105 ([#822](https://github.com/m1sk9/babyrite/issues/822)) ([5282195](https://github.com/m1sk9/babyrite/commit/5282195c4d43f6caae9cfd6d36f23b914b54b0bf))
+* **deps:** update taiki-e/install-action digest to fe3acb5 ([#821](https://github.com/m1sk9/babyrite/issues/821)) ([f2f4a72](https://github.com/m1sk9/babyrite/commit/f2f4a727de94d8692c64476b260adcde9bed95ab))
+
 ## [2.0.8](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.7...babyrite-v2.0.8) (2026-11-21)
 
 
