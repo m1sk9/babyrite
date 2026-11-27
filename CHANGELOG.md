@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.10](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.9...babyrite-v2.0.10) (2026-11-27)
+
+
+### Miscellaneous
+
+* **deps:** update dependency @biomejs/biome to v2.6.9 ([#825](https://github.com/m1sk9/babyrite/issues/825)) ([30c1785](https://github.com/m1sk9/babyrite/commit/30c1785308491897f366e928f95353341bffc574))
+* **deps:** update dependency wrangler to v4.168.0 ([#826](https://github.com/m1sk9/babyrite/issues/826)) ([e7a78a9](https://github.com/m1sk9/babyrite/commit/e7a78a9eb9a7d30ba10965884eec18e335b575a1))
+* **deps:** update dependency wrangler to v4.169.0 ([#830](https://github.com/m1sk9/babyrite/issues/830)) ([ddfceeb](https://github.com/m1sk9/babyrite/commit/ddfceeb4a8f93456a7b1a7fd3fcdb37a04b8c21f))
+* **deps:** update rust crate toml to v1.2.3 ([#828](https://github.com/m1sk9/babyrite/issues/828)) ([29fd3d4](https://github.com/m1sk9/babyrite/commit/29fd3d4e9d48ed3e86f30e55dbe1fdf28bbee49a))
+
 ## [2.0.9](https://github.com/m1sk9/babyrite/compare/babyrite-v2.0.8...babyrite-v2.0.9) (2026-11-24)
 
 
